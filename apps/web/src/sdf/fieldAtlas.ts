@@ -72,24 +72,35 @@ export function partDiag(meshes: readonly { positions: Float32Array }[]): number
 
 type Allocation = PartFieldCost & { width?: number; height?: number }
 
-// RAA@6726387 crates/raa-lit/src/textures.rs: shortest fitting shelf, first on ties,
-// in upload order, with ids 1..1023. Area alone does not guarantee an allocation fits.
+// RAA rounds each texture side up to ATLAS_ALIGN texels before it places it (raa@e8f8577
+// crates/raa-lit/src/textures.rs:35 ATLAS_ALIGN, :100 round_up_align, :215 ShelfPacker::alloc).
+const ATLAS_ALIGN = 16
+
+function alignedSide(side: number): number {
+  return Math.ceil(side / ATLAS_ALIGN) * ATLAS_ALIGN
+}
+
+// The same placement as ShelfPacker::alloc: the aligned rect goes on the shortest shelf it fits, first on
+// ties, in upload order, with ids 1..1023. Area alone does not guarantee an allocation fits, and a plan
+// that packed the unaligned sides admitted parts RAA then refused with texture.atlas_full.
 function fitsAtlas(parts: readonly Allocation[], field: ReadonlySet<string>): boolean {
   const shelves: { width: number; height: number }[] = []
   let top = 0, textures = 0
   for (const p of parts) {
     if (!field.has(p.key) || p.bytes <= 0 || p.width === undefined || p.height === undefined) continue
     if (++textures > 1023 || p.width > ATLAS_SIZE || p.height > ATLAS_SIZE) return false
+    const width = alignedSide(p.width)
+    const height = alignedSide(p.height)
     let best: { width: number; height: number } | undefined
     for (const shelf of shelves) {
-      if (shelf.height >= p.height && shelf.width + p.width <= ATLAS_SIZE &&
+      if (shelf.height >= height && shelf.width + width <= ATLAS_SIZE &&
         (best === undefined || shelf.height < best.height)) best = shelf
     }
-    if (best !== undefined) best.width += p.width
+    if (best !== undefined) best.width += width
     else {
-      top += p.height
-      if (top > ATLAS_SIZE) return false
-      shelves.push({ width: p.width, height: p.height })
+      if (top + height > ATLAS_SIZE) return false
+      top += height
+      shelves.push({ width, height })
     }
   }
   return true

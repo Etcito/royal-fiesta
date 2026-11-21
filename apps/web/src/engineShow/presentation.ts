@@ -2,7 +2,7 @@ import type { ViewBuffer } from '@etcito/game-engine'
 import { RenderBridge } from '@etcito/game-engine/render'
 import type { RaaEngineView } from '@etcito/game-engine/render'
 import { readWorldState } from '@etcito/game-engine/world-state'
-import { schemaLayout } from '@etcito/game-engine/script'
+import { showSchemaLayout } from '@royal-fiesta/game/ege/showState'
 import { EngineFarView } from '@royal-fiesta/game/ege/showFar'
 import type { EngineShowEffectSinks } from '@royal-fiesta/game/ege/showEffects'
 import type {
@@ -152,7 +152,7 @@ export const ENGINE_PRESENTATION_READERS: EnginePresentationReaders = {
   tick: world => world.ref.timeline.module.engine.tick(world.ref.world),
   parked(world, entities) {
     const engine = world.ref.timeline.module.engine
-    const characters = readWorldState(engine, world.ref.world, schemaLayout(engine)).components.character ?? {}
+    const characters = readWorldState(engine, world.ref.world, showSchemaLayout(engine)).components.character ?? {}
     return new Set(entities.filter(entity => characters[String(entity)]?.mode === CharMode.parked))
   },
 }

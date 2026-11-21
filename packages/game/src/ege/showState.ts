@@ -1,6 +1,8 @@
 import { schemaLayout } from '@etcito/game-engine/script'
-import { readWorldState } from '@etcito/game-engine/world-state'
+import { decodeRecord, readWorldState } from '@etcito/game-engine/world-state'
 import type { RecordValues, WorldState } from '@etcito/game-engine/world-state'
+import type { EngineInstance } from '@etcito/game-engine/loader'
+import type { SchemaLayout } from '@etcito/game-engine/script'
 import { levelOf } from '@royal-fiesta/sim/course'
 import type { LevelSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
 import type { CourseV1 } from '../courseV1.ts'
@@ -13,6 +15,9 @@ import type { EngineRoundResult, EngineShowConfig, EngineShowSnapshot } from './
 const screens = ['vote', 'loading', 'intro', 'playing', 'overtime', 'results', 'podium', 'done'] as const
 const reasons = ['target', 'timeCap', 'lastStanding', 'allFell', 'overtime', 'teamWin', 'score', 'crown', 'playoff'] as const
 const required = ['show_season_cursor', 'show_presentation', 'show_roster_entry', 'show_candidate', 'show_round_result', 'show_result_seat', 'show_result_team']
+// Every component the decode below reads; the rest of the rules world is not decoded.
+const decodedComponents: ReadonlySet<string> = new Set([...required, 'show_used_map', 'show_catalog_entry'])
+type ComponentRows = Pick<WorldState, 'components'>
 
 function fail(path: string, problem: string): never {
   return refuse('ege-show-state', path, `${problem}; repair the authoritative rules world or its schema`)
@@ -22,7 +27,7 @@ function number(row: RecordValues, field: string, min = 0, max = 0xffffffff): nu
   if (typeof value !== 'number' || !Number.isInteger(value) || value < min || value > max) fail(field, 'invalid stored integer')
   return value
 }
-function rows(state: WorldState, name: string): [number, RecordValues][] {
+function rows(state: ComponentRows, name: string): [number, RecordValues][] {
   const component = state.components[name]
   if (!component) fail(name, 'missing required component declaration')
   return Object.entries(component).map(([id, row]) => [Number(id), row])
@@ -43,15 +48,106 @@ function unique(values: number[], path: string): number[] {
   if (new Set(values).size !== values.length) fail(path, 'duplicate room seat')
   return values
 }
-function read(config: EngineShowConfig, world: number, confirmedTick: number) {
+
+const layouts = new WeakMap<EngineInstance, SchemaLayout>()
+
+/**
+ * The engine's parsed schema layout, parsed once per engine instance. An engine holds one schema for its
+ * lifetime (a schema change is a deliberate restart with a new engine), so the cached layout cannot go stale.
+ */
+export function showSchemaLayout(engine: EngineInstance): SchemaLayout {
+  let layout = layouts.get(engine)
+  if (layout === undefined) {
+    layout = schemaLayout(engine)
+    layouts.set(engine, layout)
+  }
+  return layout
+}
+
+type ShowData = ReturnType<typeof decode>
+const memos = new WeakMap<EngineShowConfig, { world: number; bytes: Uint8Array; data: ShowData }>()
+
+/** Byte equality of two buffers; whole words are compared where both views are word aligned. */
+export function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false
+  let at = 0
+  if (a.byteOffset % 4 === 0 && b.byteOffset % 4 === 0) {
+    const words = a.length >>> 2
+    const x = new Uint32Array(a.buffer, a.byteOffset, words)
+    const y = new Uint32Array(b.buffer, b.byteOffset, words)
+    for (let i = 0; i < words; i++) if (x[i] !== y[i]) return false
+    at = words * 4
+  }
+  for (let i = at; i < a.length; i++) if (a[i] !== b[i]) return false
+  return true
+}
+
+/** An independent copy of one decoded result: callers never share storage with the memo or with each other. */
+function copyResult(result: EngineRoundResult): EngineRoundResult {
+  return {
+    ...result, ranking: [...result.ranking], qualified: [...result.qualified], eliminated: [...result.eliminated],
+    points: [...result.points], teamScores: [...result.teamScores],
+  }
+}
+
+/** Forgets the memoized rules decode of one show configuration; the next read decodes the world again. */
+export function dropShowStateMemo(config: EngineShowConfig): void {
+  memos.delete(config)
+}
+
+/**
+ * The decoded rules world, memoized per show configuration against the world's own snapshot bytes: a step,
+ * vote, host patch, rollback, resimulation or a reused world handle changes those bytes and drops the memo,
+ * so a memoized read always equals a fresh decode. The memo stays private: every public read returns copies.
+ */
+function read(config: EngineShowConfig, world: number, confirmedTick: number): ShowData {
   if (!Number.isSafeInteger(confirmedTick) || confirmedTick < 0) fail('confirmedTick', 'expected a nonnegative integer')
-  const layout = schemaLayout(config.engine)
+  const layout = showSchemaLayout(config.engine)
   if (layout.key !== config.identity.schemaKey || config.identity.backend !== 'engine' || !config.identity.moduleKey) fail('identity', 'loaded schema does not match publication identity')
-  for (const name of required) if (!layout.components.some(c => c.name === name && c.lane === 'simulation')) fail(name, 'missing required schema component')
   const bytes = config.engine.snapshot(world)
+  const memo = memos.get(config)
+  if (memo !== undefined && memo.world === world && sameBytes(memo.bytes, bytes)) return memo.data
+  memos.delete(config)
+  const copy = bytes.slice()
+  const data = decode(config, world, layout, copy)
+  memos.set(config, { world, bytes: copy, data })
+  return data
+}
+
+/**
+ * The rows of the components this reader uses, decoded from an EGW1 snapshot with the same block walk and
+ * record decoder as the engine's readWorldState (simulation-lane components sorted by id). A snapshot the walk
+ * does not recognise returns null and the caller uses readWorldState, which reports the format error.
+ */
+function readComponents(bytes: Uint8Array, layout: SchemaLayout): ComponentRows | null {
+  if (bytes.byteLength < 48 || bytes[0] !== 0x45 || bytes[1] !== 0x47 || bytes[2] !== 0x57 || bytes[3] !== 0x31) return null
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const components: WorldState['components'] = {}
+  let at = 48 + view.getUint32(24, true) * 4
+  for (const decl of layout.components.filter(c => c.lane === 'simulation').sort((a, b) => a.id - b.id)) {
+    if (at + 8 > bytes.byteLength) return null
+    const count = view.getUint32(at, true)
+    const recordSize = view.getUint32(at + 4, true)
+    const first = at + 8 + count * 4
+    if (recordSize !== decl.size || first + count * recordSize > bytes.byteLength) return null
+    if (decodedComponents.has(decl.name)) {
+      const block: Record<string, RecordValues> = {}
+      for (let i = 0; i < count; i++) {
+        const start = first + i * recordSize
+        block[String(view.getUint32(at + 8 + i * 4, true))] = decodeRecord(decl, bytes.subarray(start, start + recordSize))
+      }
+      components[decl.name] = block
+    }
+    at = first + count * recordSize
+  }
+  return { components }
+}
+
+function decode(config: EngineShowConfig, world: number, layout: SchemaLayout, bytes: Uint8Array) {
+  for (const name of required) if (!layout.components.some(c => c.name === name && c.lane === 'simulation')) fail(name, 'missing required schema component')
   const kind = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(8, true)
   if (layout.world_kinds[kind]?.name !== 'show_rules') fail('world', 'expected a show_rules world')
-  const state = readWorldState(config.engine, world, layout)
+  const state = readComponents(bytes, layout) ?? readWorldState(config.engine, world, layout)
   const cursors = rows(state, 'show_season_cursor')
   const presentations = rows(state, 'show_presentation')
   if (cursors.length !== 1 || presentations.length !== 1) fail('show_presentation', 'expected one cursor and one presentation')
@@ -90,7 +186,7 @@ function catalog(config: EngineShowConfig, index: number) {
   if (!entry || typeof entry.id !== 'string' || !entry.id) fail('catalog', `invalid map index ${index}`)
   return entry
 }
-function decodeResult(config: EngineShowConfig, state: WorldState, owner: number, row: RecordValues): EngineRoundResult {
+function decodeResult(config: EngineShowConfig, state: ComponentRows, owner: number, row: RecordValues): EngineRoundResult {
   const index = number(row, 'index')
   const map = catalog(config, number(row, 'map'))
   const courseIndex = number(row, 'course')
@@ -121,14 +217,15 @@ function decodeResult(config: EngineShowConfig, state: WorldState, owner: number
 export function readShowState(config: EngineShowConfig, world: number, confirmedTick: number, faults: number): EngineShowSnapshot {
   if (!Number.isSafeInteger(faults) || faults < 0) fail('faults', 'expected a nonnegative integer')
   const data = read(config, world, confirmedTick)
-  const results = data.decoded.filter(result => confirmedTick > result.endTick)
+  const results = data.decoded.filter(result => confirmedTick > result.endTick).map(copyResult)
   const winner = [...results].reverse().find(result => result.champion !== -1)
-  return { tick: data.tick, round: data.round, screen: data.screen, seatOf: data.seatOf, alive: data.alive, candidates: data.candidates, results, champion: winner?.champion ?? null, faults }
+  return { tick: data.tick, round: data.round, screen: data.screen, seatOf: [...data.seatOf], alive: [...data.alive], candidates: [...data.candidates], results, champion: winner?.champion ?? null, faults }
 }
 
 export function readShowRoundResult(config: EngineShowConfig, world: number, confirmedTick: number): EngineRoundResult | null {
   const data = read(config, world, confirmedTick)
-  return data.decoded.find(result => result.index === data.resultIndex && confirmedTick > result.endTick) ?? null
+  const result = data.decoded.find(entry => entry.index === data.resultIndex && confirmedTick > entry.endTick)
+  return result === undefined ? null : copyResult(result)
 }
 
 /** The script-committed map/course selection of one round, decoded from the rules world only. */

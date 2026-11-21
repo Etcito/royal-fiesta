@@ -1,6 +1,7 @@
 import type { CaptureResult } from '../../../../tools/engineCaptureJob.ts'
 import type { EngineShowPage, EnginePageState } from './page.ts'
 import { BTN, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
+import { checkPhase } from '../game/checkProgress.ts'
 
 /** One managed scenario: it receives the ready page and its typed inventory arguments. */
 export type EngineShowScenario = (page: EngineShowPage, args: Readonly<Record<string, unknown>>) => Promise<CaptureResult>
@@ -31,10 +32,19 @@ export interface ShowArgs {
   testMode: true
   seed: number
   humans: number
+  /** Nominal head counts for EngineShowConfig.plan; absent keeps the scenario's own plan. */
+  plan?: readonly number[]
 }
 
 /**
- * Validates the show arguments; only scenario, testMode, seed and humans are accepted. The known set
+ * The show plan the confirmed-podium scenario remounts with when its row names none: three real rounds
+ * (sixty seats, a cut to twelve, the final) instead of the default six, so the whole show fits one GPU job.
+ * No other scenario changes the plan.
+ */
+export const PODIUM_PLAN: readonly number[] = [60, 12, 1]
+
+/**
+ * Validates the show arguments; only scenario, testMode, seed, humans and an optional plan are accepted. The known set
  * defaults to the shipped scenario ids so a Node selection check can validate the inventory without a
  * browser page having registered its runners.
  */
@@ -42,7 +52,7 @@ export function parseShowArgs(value: unknown, known: ReadonlySet<string> = new S
   if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error('[engine-show] args must be an object')
   const args = value as Record<string, unknown>
   for (const key of Object.keys(args)) {
-    if (!['scenario', 'testMode', 'seed', 'humans'].includes(key)) throw new Error(`[engine-show] args/${key} is unknown`)
+    if (!['scenario', 'testMode', 'seed', 'humans', 'plan'].includes(key)) throw new Error(`[engine-show] args/${key} is unknown`)
   }
   if (typeof args.scenario !== 'string' || !known.has(args.scenario)) throw new Error('[engine-show] args/scenario is unknown')
   if (args.testMode !== true) throw new Error('[engine-show] args/testMode must be true')
@@ -50,7 +60,14 @@ export function parseShowArgs(value: unknown, known: ReadonlySet<string> = new S
   if (!Number.isInteger(args.humans) || (args.humans as number) < 1 || (args.humans as number) > 8) {
     throw new Error('[engine-show] args/humans must be between 1 and 8')
   }
-  return { scenario: args.scenario, testMode: true, seed: args.seed as number, humans: args.humans as number }
+  const parsed: ShowArgs = { scenario: args.scenario, testMode: true, seed: args.seed as number, humans: args.humans as number }
+  if (args.plan === undefined) return parsed
+  const plan = args.plan
+  if (!Array.isArray(plan) || plan.length < 2 || plan.some(count => !Number.isInteger(count) || count < 1)
+    || plan.some((count, i) => i > 0 && count >= plan[i - 1]) || plan[plan.length - 1] !== 1) {
+    throw new Error('[engine-show] args/plan must list strictly decreasing positive head counts ending at 1')
+  }
+  return { ...parsed, plan: [...plan] as number[] }
 }
 
 /** One real local sample: the S1 code stored by the simulation and the local character's response. */
@@ -348,8 +365,136 @@ export const SHOW_SCENARIO_REQUIRE: Readonly<Record<string, readonly string[]>> 
   'engine-show-winner-podium': PODIUM_REQUIRE,
 }
 
-/** Installs the engineShow operation immediately; the call awaits the mounted, prepared page. */
+/** Every page failure seen since the watch started: console.error text, uncaught errors, rejections and failed loads. */
+export interface ShowErrorWatch {
+  errors(): string[]
+  stop(): void
+}
+
+interface ErrorSources {
+  console?: { error: (...values: unknown[]) => void }
+  window?: {
+    addEventListener: (type: string, listener: (event: never) => void, capture?: boolean) => void
+    removeEventListener: (type: string, listener: (event: never) => void, capture?: boolean) => void
+  }
+}
+
+const ERROR_LIMIT = 200
+
+function errorText(value: unknown): string {
+  if (value instanceof Error) return value.message
+  if (typeof value === 'string') return value
+  try { return JSON.stringify(value) ?? String(value) } catch { return String(value) }
+}
+
+/**
+ * Records the page's failures instead of stopping at the first one: each console.error line, uncaught error,
+ * unhandled rejection and failed resource load is kept once, in order, and reaches the facts as `gpuErrors`.
+ */
+export function watchShowErrors(sources: ErrorSources = {
+  console: typeof console === 'undefined' ? undefined : console,
+  window: typeof window === 'undefined' ? undefined : window as unknown as ErrorSources['window'],
+}): ShowErrorWatch {
+  const seen: string[] = []
+  const note = (message: string): void => {
+    if (seen.length < ERROR_LIMIT && !seen.includes(message)) seen.push(message)
+  }
+  const target = sources.console
+  const original = target?.error
+  const patched = (...values: unknown[]): void => {
+    note(`console.error: ${values.map(errorText).join(' ')}`)
+    original?.apply(target, values)
+  }
+  if (target !== undefined) target.error = patched
+  const onError = (event: { message?: unknown; error?: unknown; target?: unknown }): void => {
+    const source = event.target as { src?: unknown; href?: unknown; tagName?: unknown } | null | undefined
+    const failedLoad = source !== null && typeof source === 'object' && typeof source.tagName === 'string'
+    if (failedLoad) note(`failed load: ${String(source.tagName).toLowerCase()} ${String(source.src ?? source.href ?? '')}`)
+    else note(`error: ${typeof event.message === 'string' && event.message !== '' ? event.message : errorText(event.error)}`)
+  }
+  const onRejection = (event: { reason?: unknown }): void => { note(`unhandled rejection: ${errorText(event.reason)}`) }
+  sources.window?.addEventListener('error', onError as (event: never) => void, true)
+  sources.window?.addEventListener('unhandledrejection', onRejection as (event: never) => void)
+  return {
+    errors: () => [...seen],
+    stop(): void {
+      if (target !== undefined && target.error === patched && original !== undefined) target.error = original
+      sources.window?.removeEventListener('error', onError as (event: never) => void, true)
+      sources.window?.removeEventListener('unhandledrejection', onRejection as (event: never) => void)
+    },
+  }
+}
+
+/** The page clock time (ms since navigation) after which a scenario fails itself with its position named. */
+export const SHOW_PAGE_BUDGET_MS = 270_000
+const SHOW_SLICE_MS = 100
+const TIMER_YIELD_MS = 2000
+
+/** Paces a scenario's fixed simulation ticks so the page keeps answering between them. */
+export interface ShowPacer {
+  /** Call after every simulated tick; `where` names the authoritative position for progress and failures. */
+  tick(where: () => string): Promise<void>
+}
+
+function nextTask(): Promise<void> {
+  if (typeof MessageChannel === 'undefined') return new Promise(resolve => { setTimeout(resolve, 0) })
+  return new Promise(resolve => {
+    const channel = new MessageChannel()
+    channel.port1.onmessage = () => { channel.port1.close(); resolve() }
+    channel.port2.postMessage(0)
+  })
+}
+
+/**
+ * The simulation keeps its fixed tick and order; only wall time is sliced. After each slice the pacer publishes
+ * the scenario's position as the page progress, yields one task (a timer task every two seconds, since
+ * requestAnimationFrame is suspended in the capture frame) and refuses once the page clock passes the budget,
+ * naming the scenario, the position and the measured tick rate instead of a silent job timeout.
+ */
+export function createShowPacer(scenario: string, options: {
+  sliceMs?: number
+  budgetMs?: number
+  now?: () => number
+  yieldTask?: (timer: boolean) => Promise<void>
+  phase?: (text: string) => void
+} = {}): ShowPacer {
+  const now = options.now ?? (() => performance.now())
+  const sliceMs = options.sliceMs ?? SHOW_SLICE_MS
+  const budgetMs = options.budgetMs ?? SHOW_PAGE_BUDGET_MS
+  const phase = options.phase ?? checkPhase
+  const yieldTask = options.yieldTask ?? (timer => timer ? new Promise<void>(resolve => { setTimeout(resolve, 0) }) : nextTask())
+  const started = now()
+  let sliceStart = started
+  let timerAt = started
+  let ticks = 0
+  return {
+    async tick(where) {
+      ticks++
+      const at = now()
+      if (at - sliceStart < sliceMs) return
+      const rate = Math.round(ticks * 1000 / Math.max(1, at - started))
+      const position = `${where()}; ${ticks} ticks stepped at ${rate} ticks/s`
+      phase(`engine-show: ${scenario}: ${position}`)
+      if (at > budgetMs) {
+        throw new Error(`[engine-show] ${scenario} passed its ${Math.round(budgetMs / 1000)} s page budget at ${position}; `
+          + 'the scenario needs fewer simulated ticks or a faster tick to finish inside one GPU job')
+      }
+      const timer = at - timerAt >= TIMER_YIELD_MS
+      if (timer) timerAt = at
+      await yieldTask(timer)
+      sliceStart = now()
+    },
+  }
+}
+
+let pageWatch: ShowErrorWatch | null = null
+
+/**
+ * Installs the engineShow operation immediately; the call awaits the mounted, prepared page. The failure watch
+ * starts here, before any loading, so startup diagnostics reach every capture's `gpuErrors`.
+ */
 export function registerEngineShowOps(page: Promise<EngineShowPage>): void {
+  pageWatch ??= watchShowErrors()
   const target = window as unknown as { nmcGpu: { ops: Record<string, (input: unknown) => Promise<unknown>> } }
   target.nmcGpu = { ops: { engineShow: input => runShowOperation(page, input) } }
 }
@@ -361,22 +506,19 @@ export async function runShowOperation(page: Promise<EngineShowPage>, input: unk
   if (run === undefined) throw new Error(`[engine-show] scenario '${args.scenario}' is not registered`)
   const mounted = await page
   await mounted.ready
-  const errors: string[] = []
-  const onError = (event: ErrorEvent): void => { errors.push(event.message || String(event.error)) }
-  const onRejection = (event: PromiseRejectionEvent): void => { errors.push(String(event.reason)) }
-  if (typeof window !== 'undefined') {
-    window.addEventListener('error', onError)
-    window.addEventListener('unhandledrejection', onRejection as EventListener)
-  }
+  const watch = pageWatch ?? watchShowErrors()
   try {
+    checkPhase(`engine-show: ${args.scenario}`)
     const result = await run(mounted, { ...args })
     const facts = result.facts !== null && typeof result.facts === 'object' ? result.facts as Record<string, unknown> : {}
-    return { json: { facts: { ...facts, gpuErrors: errors }, capture: result.capture }, files: [] }
+    return { json: { facts: { ...facts, gpuErrors: watch.errors() }, capture: result.capture }, files: [] }
+  } catch (error) {
+    // A failed scenario still reports everything the page logged, so one pass names every cause.
+    const seen = watch.errors()
+    if (seen.length === 0) throw error
+    throw new Error(`${error instanceof Error ? error.message : String(error)} | page errors: ${seen.join(' | ')}`, { cause: error })
   } finally {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('error', onError)
-      window.removeEventListener('unhandledrejection', onRejection as EventListener)
-    }
+    if (watch !== pageWatch) watch.stop()
   }
 }
 

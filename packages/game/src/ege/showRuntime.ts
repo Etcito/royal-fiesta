@@ -1,5 +1,4 @@
 import type { EngineInstance } from '@etcito/game-engine/loader'
-import { schemaLayout } from '@etcito/game-engine/script'
 import type { LayoutDecl, SchemaLayout } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
 import type { EngineDomainSim } from '@etcito/game-engine/zones'
@@ -9,9 +8,10 @@ import { refuse } from '@royal-fiesta/sim/refusal'
 import { engineCodeOfS1 } from './inputCodes.ts'
 import { createEngineShowFactory } from './showFactory.ts'
 import type { EngineShowFactory } from './showFactory.ts'
-import { readShowSelection } from './showState.ts'
+import { readShowSelection, sameBytes, showSchemaLayout } from './showState.ts'
 import type { EngineShowSelection } from './showState.ts'
 import type {
+  EnginePresentationWorld,
   EngineShowConfig,
   EngineShowObservation,
   EngineShowPresentation,
@@ -44,6 +44,37 @@ interface PhysicsRound {
 }
 
 type ObservationKind = EngineShowObservation['kind']
+
+const ZONE_ID = 'ege.zone.id'
+
+/**
+ * The EGW1 snapshot bytes a world's template-to-live entity mapping is derived from: the alive entity ids and the
+ * whole `ege.zone.id` component block. Equal bytes give an equal mapping. A layout without that simulation
+ * component yields undefined and the mapping is then never reused.
+ */
+function mappingBytes(bytes: Uint8Array, layout: SchemaLayout): { entities: Uint8Array; zones: Uint8Array } | undefined {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const entityCount = view.getUint32(24, true)
+  let at = 48 + entityCount * 4
+  // The id count is part of the length; the header words between it and the ids hold per-tick values.
+  const entities = bytes.subarray(48, at)
+  for (const decl of layout.components.filter(entry => entry.lane === 'simulation').sort((a, b) => a.id - b.id)) {
+    const count = view.getUint32(at, true)
+    const recordSize = view.getUint32(at + 4, true)
+    const end = at + 8 + count * 4 + count * recordSize
+    if (decl.name === ZONE_ID) return { entities, zones: bytes.subarray(at, end) }
+    at = end
+  }
+  return undefined
+}
+
+/** The live mapping of one physics incarnation with copies of the snapshot bytes it was resolved from. */
+interface WorldMemo {
+  readonly sim: EngineDomainSim
+  readonly world: EnginePresentationWorld
+  readonly entities: Uint8Array
+  readonly zones: Uint8Array
+}
 
 /** A copied `show_lifecycle_input` patch: the host facts are applied before the next rules step. */
 function patchLifecycle(
@@ -156,6 +187,7 @@ class ShowRuntime implements EngineShowRuntime {
   private acknowledgedRound = -1
   private confirmedResult = -2
   private cursorEntity: number | undefined
+  private worldMemo: WorldMemo | undefined
   private readonly votes = new Map<string, number>()
   private readonly listeners: ((observation: EngineShowObservation) => void)[] = []
   private disposed = false
@@ -188,7 +220,7 @@ class ShowRuntime implements EngineShowRuntime {
   presentation(): EngineShowPresentation {
     this.assertLive()
     const physics = this.physics
-    const world = physics === undefined ? null : this.factory.presentationWorld(physics.sim)
+    const world = physics === undefined ? null : this.presentationWorld(physics.sim)
     return {
       showId: this.factory.showId,
       tick: this.engine.tick(this.global.world),
@@ -197,6 +229,27 @@ class ShowRuntime implements EngineShowRuntime {
       course: physics?.selection.courseData ?? null,
       worlds: world === null ? [] : [world],
     }
+  }
+
+  /**
+   * The factory's live metadata of the physics world. Resolving it decodes the whole world, so the resolved
+   * mapping is kept for this incarnation while the snapshot bytes it derives from (alive ids and zone ids) are
+   * unchanged; every call still reads the world reference (tick, confirmation, replay state) anew. A step,
+   * rollback or resimulation that changes those bytes resolves again, and release drops the kept mapping.
+   */
+  private presentationWorld(sim: EngineDomainSim): EnginePresentationWorld | null {
+    const key = mappingBytes(this.engine.snapshot(sim.world), this.layout)
+    const memo = this.worldMemo
+    if (key !== undefined && memo !== undefined && memo.sim === sim
+      && sameBytes(memo.entities, key.entities) && sameBytes(memo.zones, key.zones)) {
+      return { ...memo.world, ref: this.factory.worldRef(sim) }
+    }
+    this.worldMemo = undefined
+    // Copy before the factory reads the engine again: the snapshot view is only valid until the next engine call.
+    const kept = key === undefined ? undefined : { entities: key.entities.slice(), zones: key.zones.slice() }
+    const world = this.factory.presentationWorld(sim)
+    if (world !== null && kept !== undefined) this.worldMemo = { sim, world, ...kept }
+    return world
   }
 
   onPresentation(listener: (observation: EngineShowObservation) => void): () => void {
@@ -312,17 +365,17 @@ class ShowRuntime implements EngineShowRuntime {
     const after = this.snapshot()
     const released = after.screen === 'results' || after.screen === 'podium' || after.screen === 'done'
     try {
-      this.notify('post-tick')
+      this.notify('post-tick', after)
     } finally {
       if (released) this.releasePhysics()
     }
   }
 
   /** Delivers one observation synchronously; listener failures surface after every listener ran. */
-  private notify(kind: ObservationKind): void {
+  private notify(kind: ObservationKind, snapshot: EngineShowSnapshot = this.snapshot()): void {
     if (this.listeners.length === 0) return
     const observation: EngineShowObservation = {
-      kind, tick: this.engine.tick(this.global.world), snapshot: this.snapshot(), presentation: this.presentation(),
+      kind, tick: this.engine.tick(this.global.world), snapshot, presentation: this.presentation(),
     }
     let failure: unknown
     for (const listener of [...this.listeners]) {
@@ -363,6 +416,7 @@ class ShowRuntime implements EngineShowRuntime {
 
   private openPhysics(round: number, seats: readonly number[], selection: EngineShowSelection, tick: number): void {
     this.releasePhysics()
+    this.worldMemo = undefined
     const sim = this.factory.create(
       { id: round + 1, kind: 'seat', cells: [], seats: seats.map((_, roundSeat) => roundSeat), replicas: [0] },
       tick,
@@ -396,6 +450,7 @@ class ShowRuntime implements EngineShowRuntime {
       this.notify('before-release')
     } finally {
       this.physics = undefined
+      this.worldMemo = undefined
       this.factory.release(physics.sim)
     }
   }
@@ -451,7 +506,7 @@ export async function createEngineShow(config: EngineShowConfig): Promise<Engine
   const factory = await createEngineShowFactory(config)
   let global: EngineDomainSim | undefined
   try {
-    const layout = schemaLayout(config.engine)
+    const layout = showSchemaLayout(config.engine)
     global = factory.create({ id: 0, kind: 'global', cells: [], seats: [], replicas: [0] }, 0)
     return new ShowRuntime(config, factory, layout, global)
   } catch (error) {

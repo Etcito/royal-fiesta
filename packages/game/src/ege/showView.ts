@@ -1,7 +1,7 @@
 import type { EngineInstance } from '@etcito/game-engine/loader'
 import { entityPoses } from '@etcito/game-engine/preview'
 import type { PreviewPose } from '@etcito/game-engine/preview'
-import { schemaLayout } from '@etcito/game-engine/script'
+import { showSchemaLayout } from './showState.ts'
 import { readWorldState } from '@etcito/game-engine/world-state'
 import type { RecordValues, WorldState } from '@etcito/game-engine/world-state'
 import { CharMode, SLIDE_STROKE, strokeAnimPhase } from '@royal-fiesta/sim/character/constants'
@@ -29,7 +29,7 @@ export interface EngineViewReaders {
 
 export const ENGINE_VIEW_READERS: EngineViewReaders = {
   poses: (engine, world, ids, alpha) => (ids.length === 0 ? [] : entityPoses(engine, world, ids, alpha)),
-  state: (engine, world) => readWorldState(engine, world, schemaLayout(engine)),
+  state: (engine, world) => readWorldState(engine, world, showSchemaLayout(engine)),
 }
 
 /** One live physics world of the current presentation, with its borrowed poses and state for this refresh only. */

@@ -2,8 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { NEUTRAL_CODE, inputCode } from '@royal-fiesta/sim/input'
 import {
-  parseShowArgs, registerEngineShowOps, registerScenario, runShowOperation, scenarioIds,
-  ShowFactsCollector, PODIUM_REQUIRE, ROUND_REQUIRE, SHOW_COMMON_REQUIRE, SHOW_SCENARIO_IDS, SHOW_SCENARIO_REQUIRE, SIMPLE_REQUIRE,
+  createShowPacer, parseShowArgs, registerEngineShowOps, registerScenario, runShowOperation, scenarioIds, watchShowErrors,
+  ShowFactsCollector, PODIUM_PLAN, PODIUM_REQUIRE, ROUND_REQUIRE, SHOW_COMMON_REQUIRE, SHOW_SCENARIO_IDS, SHOW_SCENARIO_REQUIRE, SIMPLE_REQUIRE,
 } from '../src/engineShow/ops.ts'
 import type { EngineShowFacts } from '../src/engineShow/ops.ts'
 import { requirementProblems } from '../../../tools/engineCaptureJob.ts'
@@ -51,6 +51,13 @@ test('show arguments reject unknown fields, scenarios and invalid values', () =>
   assert.throws(() => parseShowArgs({ ...ARGS, humans: 9 }), /humans/)
   assert.throws(() => parseShowArgs({ ...ARGS, seed: -1 }), /seed/)
   assert.throws(() => parseShowArgs(null), /object/)
+  // The optional plan passes through unchanged; a row without one keeps its scenario's plan.
+  assert.equal('plan' in parseShowArgs(ARGS), false)
+  assert.deepEqual(parseShowArgs({ ...ARGS, plan: [60, 12, 1] }).plan, [60, 12, 1])
+  assert.deepEqual(PODIUM_PLAN, [60, 12, 1])
+  for (const plan of [[], [60], [60, 60, 1], [12, 60, 1], [60, 12], [60, 1.5, 1], [60, 0, 1], '60,12,1']) {
+    assert.throws(() => parseShowArgs({ ...ARGS, plan }), /plan/)
+  }
 })
 
 test('scenario registration is early, typed and refuses duplicates', () => {
@@ -93,6 +100,80 @@ test('the engineShow operation is installed before the page and awaits the real 
   } finally {
     delete (globalThis as unknown as { window?: unknown }).window
   }
+})
+
+test('the scenario pacer yields between slices, publishes the position and keeps the tick order', async () => {
+  let clock = 0
+  const phases: string[] = []
+  const yields: boolean[] = []
+  const pacer = createShowPacer('probe', {
+    sliceMs: 100, budgetMs: 10_000, now: () => clock, phase: text => phases.push(text),
+    yieldTask: async timer => { yields.push(timer) },
+  })
+  const order: number[] = []
+  for (let i = 0; i < 60; i++) {
+    order.push(i)
+    clock += 40
+    await pacer.tick(() => `round 0 screen 'playing' tick ${i}`)
+  }
+  assert.deepEqual(order, Array.from({ length: 60 }, (_, i) => i))
+  assert.equal(yields.length, 20, 'three 40 ms ticks fill one 100 ms slice')
+  assert.ok(yields.includes(true) && yields.includes(false), 'timer tasks and plain tasks both get a turn')
+  assert.equal(phases.length, yields.length)
+  assert.match(phases[0], /^engine-show: probe: round 0 screen 'playing' tick 2; 3 ticks stepped at 25 ticks\/s$/)
+})
+
+test('the scenario pacer refuses past the page budget and names where the show stood', async () => {
+  let clock = 0
+  const phases: string[] = []
+  const pacer = createShowPacer('engine-show-winner-podium', {
+    sliceMs: 100, budgetMs: 1000, now: () => clock, phase: text => phases.push(text), yieldTask: async () => undefined,
+  })
+  const run = async (): Promise<void> => {
+    for (let i = 0; i < 100; i++) {
+      clock += 50
+      await pacer.tick(() => `round 1 screen 'playing' tick ${i}`)
+    }
+  }
+  await assert.rejects(run(), /engine-show-winner-podium passed its 1 s page budget at round 1 screen 'playing' tick 21; 22 ticks stepped at 20 ticks\/s/)
+  assert.match(phases.at(-1) ?? '', /tick 21/, 'the failing position is also the last published progress')
+})
+
+test('the page failure watch keeps every console error, uncaught error, rejection and failed load once', () => {
+  const printed: unknown[][] = []
+  const fakeConsole = { error: (...values: unknown[]) => { printed.push(values) } }
+  const original = fakeConsole.error
+  const listeners = new Map<string, (event: unknown) => void>()
+  const fakeWindow = {
+    addEventListener: (type: string, listener: (event: never) => void) => { listeners.set(type, listener as (event: unknown) => void) },
+    removeEventListener: (type: string) => { listeners.delete(type) },
+  }
+  const watch = watchShowErrors({ console: fakeConsole, window: fakeWindow })
+  fakeConsole.error('[sdf-port] texture.atlas_full', 'jungle.floor-tile#jungle_floor_tile/__root__')
+  fakeConsole.error('[sdf-port] texture.atlas_full', 'jungle.floor-tile#jungle_floor_tile/__root__')
+  listeners.get('error')?.({ message: "show effects: entity 0 has no publisher for event 'ege.contact'" })
+  listeners.get('error')?.({ target: { tagName: 'SCRIPT', src: 'assets/missing.js' } })
+  listeners.get('unhandledrejection')?.({ reason: new Error('upload paint stalled') })
+  assert.deepEqual(watch.errors(), [
+    'console.error: [sdf-port] texture.atlas_full jungle.floor-tile#jungle_floor_tile/__root__',
+    "error: show effects: entity 0 has no publisher for event 'ege.contact'",
+    'failed load: script assets/missing.js',
+    'unhandled rejection: upload paint stalled',
+  ])
+  assert.equal(printed.length, 2, 'the console still prints')
+  watch.stop()
+  assert.equal(fakeConsole.error, original)
+  assert.equal(listeners.size, 0)
+})
+
+test('a failing scenario still reports every page error seen in the same pass', async () => {
+  registerScenario('failing-pass-probe', async () => {
+    console.error('[sdf-port] texture.atlas_full probe#g/body')
+    throw new Error('the show stopped early')
+  })
+  const page = Promise.resolve({ ready: Promise.resolve(), state: () => { throw new Error('unused') }, dispose() {}, presentation: () => null } as EngineShowPage)
+  await assert.rejects(runShowOperation(page, { ...ARGS, scenario: 'failing-pass-probe' }),
+    /the show stopped early \| page errors: console\.error: \[sdf-port\] texture\.atlas_full probe#g\/body/)
 })
 
 test('the shared facts collector counts real samples, audits, progress and effects', () => {

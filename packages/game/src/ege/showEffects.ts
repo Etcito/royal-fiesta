@@ -1,6 +1,6 @@
 import { EventBridge, worldEventSource } from '@etcito/game-engine/events'
 import type { BridgeEvent, EventSource } from '@etcito/game-engine/events'
-import { schemaLayout } from '@etcito/game-engine/script'
+import { showSchemaLayout } from './showState.ts'
 import type { LayoutDecl, SchemaLayout } from '@etcito/game-engine/script'
 import type {
   EnginePresentationWorld,
@@ -114,7 +114,7 @@ export class EngineShowEffects {
     const existing = this.lanes.get(key)
     if (existing !== undefined) return existing
     const engine = world.ref.timeline.module.engine
-    const layout = schemaLayout(engine)
+    const layout = showSchemaLayout(engine)
     const names = eventNames(layout)
     const decls = new Map(layout.events.map((decl) => [decl.id, decl] as const))
     const raw = worldEventSource(engine, world.ref.world)

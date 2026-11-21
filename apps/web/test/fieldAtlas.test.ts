@@ -244,3 +244,15 @@ test('texture id exhaustion also falls back before RAA allocation', () => {
   assert.deepEqual(plan.demoted, ['part-0'])
   assert.equal(plan.field.size, 1023)
 })
+
+// RAA places each texture with its sides rounded up to 16 texels (raa@e8f8577 crates/raa-lit/src/textures.rs:100
+// round_up_align): a full-width slab 50 texels tall takes a 64-texel shelf, so 64 of them fill the atlas, not 81.
+test('shelf planning rounds texture sides to the atlas alignment RAA allocates with', () => {
+  const program = slabProgram([64, 50, 64])
+  const parts = Array.from({ length: 68 }, (_, i) => ({ key: `part-${String(i).padStart(2, '0')}`, diag: 0, program }))
+  const { plan } = planFieldPrograms(parts)
+  assert.ok(fieldGridBytes(program.grid) * parts.length < FIELD_ATLAS_BYTES, 'the byte budget alone admits every part')
+  assert.ok(parts.length * 50 <= 4096, 'unaligned shelves would also admit every part')
+  assert.equal(plan.field.size, 64, '4096 / 64 aligned shelves of one full-width slab each')
+  assert.deepEqual(plan.demoted, ['part-00', 'part-01', 'part-02', 'part-03'])
+})

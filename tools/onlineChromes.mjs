@@ -190,22 +190,36 @@ async function playPage(page) {
   if (played !== true) throw new Error(`${page.name}: rfEngine.play() returned ${shown(played)}`)
 }
 
+/**
+ * Ordered launch steps of the engine scenario. A late client's page is opened and start-ready, and left unpressed,
+ * before client 1 presses Play: a localhost page gets a dev lobby that starts shortly after the first player
+ * (docs/network.md), so the engine page cannot load inside that window. Client 2 presses Play only after client 1
+ * reports lobby-ready, so the late press lands inside the open lobby window.
+ */
+export function engineLaunchPlan(lateClient) {
+  return lateClient
+    ? ['open 1', 'open 2', 'start-ready 1', 'start-ready 2', 'press 1', 'lobby-ready 1', 'press 2', 'same-lobby 2']
+    : ['open 1', 'open 2', 'start-ready 1', 'press 1', 'lobby-ready 1', 'start-ready 2', 'press 2', 'same-lobby 2']
+}
+
 async function runEngine(options, d, owned) {
   const until = options.until ?? 'round-ended'
   const deadlineAt = d.now() + options.deadline * 1000
   const pages = []
-  const first = await openPage(options, d, 0, owned)
-  pages.push(first)
-  if (!options.lateClient) pages.push(await openPage(options, d, 1, owned))
-  await pollPage(d, first, deadlineAt, 'client 1 start ready', s => s?.ready === true && s.screen === 'start')
-  await playPage(first)
-  await pollPage(d, first, deadlineAt, 'client 1 lobby-ready', (s, sig) => sig.includes('lobby-ready') && s?.lobbyId !== null)
-  const lobbyId = first.state.lobbyId
-  const second = options.lateClient ? await openPage(options, d, 1, owned) : pages[1]
-  if (options.lateClient) pages.push(second)
-  await pollPage(d, second, deadlineAt, 'client 2 start ready', s => s?.ready === true && s.screen === 'start')
-  await playPage(second)
-  await pollPage(d, second, deadlineAt, 'client 2 same lobby', s => s?.lobbyId === lobbyId)
+  const ready = s => s?.ready === true && s.screen === 'start'
+  let first = null, second = null, lobbyId = null
+  for (const step of engineLaunchPlan(options.lateClient)) {
+    if (step === 'open 1') { first = await openPage(options, d, 0, owned); pages.push(first) }
+    else if (step === 'open 2') { second = await openPage(options, d, 1, owned); pages.push(second) }
+    else if (step === 'start-ready 1') await pollPage(d, first, deadlineAt, 'client 1 start ready', ready)
+    else if (step === 'start-ready 2') await pollPage(d, second, deadlineAt, 'client 2 start ready', ready)
+    else if (step === 'press 1') await playPage(first)
+    else if (step === 'lobby-ready 1') {
+      await pollPage(d, first, deadlineAt, 'client 1 lobby-ready', (s, sig) => sig.includes('lobby-ready') && s?.lobbyId !== null)
+      lobbyId = first.state.lobbyId
+    } else if (step === 'press 2') await playPage(second)
+    else if (step === 'same-lobby 2') await pollPage(d, second, deadlineAt, 'client 2 same lobby', s => s?.lobbyId === lobbyId)
+  }
   d.log(`[harness] client 2 joined lobby ${lobbyId}`)
   for (const page of pages) {
     await pollPage(d, page, deadlineAt, 'flow match', s => s?.flow === 'match' && s.humans === options.clients)

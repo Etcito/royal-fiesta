@@ -33,6 +33,7 @@ interface HarnessModule {
   parseHarnessArgs(argv: string[]): HarnessOptions
   evaluateCompletion(states: EngineShellState[], signals: string[][], exceptions: number[], until: Until): { ok: boolean; problems: string[] }
   run(options: HarnessOptions, deps: RunDeps): Promise<number>
+  engineLaunchPlan(lateClient: boolean): string[]
 }
 
 const harness = await import(pathToFileURL(resolve('tools/onlineChromes.mjs')).href) as HarnessModule
@@ -82,13 +83,21 @@ function makeWorld(options: { advance?: (page: FakePage) => void; hideOnBackgrou
   const spawns: { name: string; alphaReady: boolean }[] = []
   const foreign = new FakeChild()
   const errors: unknown[][] = []
+  const events: string[] = []
+  let pressedBetaAfterLobbyReady = false
   const page = (name: string): FakePage => {
     let found = pages.get(name)
     if (found === undefined) {
       found = {
         name, state: baseState(name), signals: ['page-ready'],
         onRead: current => options.advance?.(current),
-        play: () => { found!.state.flow = 'queued'; found!.state.lobbyId = 'L1'; found!.signals.push('lobby-ready') },
+        play: () => {
+          events.push(`press ${name}`)
+          if (name === 'Beta') pressedBetaAfterLobbyReady = (pages.get('Alpha')?.signals ?? []).includes('lobby-ready')
+          found!.state.flow = 'queued'
+          found!.state.lobbyId = 'L1'
+          found!.signals.push('lobby-ready')
+        },
       }
       pages.set(name, found)
     }
@@ -100,7 +109,7 @@ function makeWorld(options: { advance?: (page: FakePage) => void; hideOnBackgrou
   const evaluate = (p: FakePage, expression: string): unknown => {
     if (expression.includes('.signals')) return p.signals.slice()
     if (expression.includes('.play')) { p.play(); return true }
-    if (expression.includes('.state')) { p.onRead?.(p); return { ...p.state } }
+    if (expression.includes('.state')) { events.push(`read ${p.name}`); p.onRead?.(p); return { ...p.state } }
     if (expression.includes('[innerWidth')) return [960, 540]
     return ''
   }
@@ -149,7 +158,7 @@ function makeWorld(options: { advance?: (page: FakePage) => void; hideOnBackgrou
     log: () => {},
     error: (...args) => { errors.push(args) },
   }
-  return { deps, pages, page, children, spawns, foreign, errors }
+  return { deps, pages, page, children, spawns, foreign, errors, events, pressedBetaAfterLobbyReady: () => pressedBetaAfterLobbyReady }
 }
 
 function options(argv: string[]): HarnessOptions {
@@ -234,12 +243,23 @@ test('evaluateCompletion fails each missing transition and passes the full accep
   assert.equal(harness.evaluateCompletion(good, [['podium-ready', 'hub-returned'], ['podium-ready', 'hub-returned']], [0, 0], 'show-ended').ok, true)
 })
 
-test('the late client spawns only after client A reports lobby-ready', async () => {
+test('the late client page opens and is start-ready before client A presses Play, and presses after lobby-ready', async () => {
+  const plan = harness.engineLaunchPlan(true)
+  const at = (step: string) => plan.indexOf(step)
+  assert.ok(at('open 2') < at('press 1'))
+  assert.ok(at('start-ready 2') < at('press 1'))
+  assert.ok(at('lobby-ready 1') < at('press 2'))
+  assert.ok(at('press 2') < at('same-lobby 2'))
+
   const world = makeWorld({ advance: successAdvance })
   const code = await harness.run(options(['--late-client']), world.deps)
   assert.equal(code, 0)
   assert.deepEqual(world.spawns.map(s => s.name), ['Alpha', 'Beta'])
-  assert.equal(world.spawns[1].alphaReady, true)
+  assert.equal(world.spawns[1].alphaReady, false)
+  const events = world.events
+  assert.ok(events.indexOf('read Beta') < events.indexOf('press Alpha'), events.join(','))
+  assert.ok(events.indexOf('press Alpha') < events.indexOf('press Beta'), events.join(','))
+  assert.equal(world.pressedBetaAfterLobbyReady(), true)
 })
 
 test('the background step fails while visibility stays visible and passes hidden with a moving tick', async () => {

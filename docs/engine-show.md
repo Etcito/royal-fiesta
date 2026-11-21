@@ -50,7 +50,7 @@ node tools/onlineChromes.mjs --engine --clients 2 --bots 60 --late-client --back
 
 With the origin above, `--url` is `http://localhost:5191/game.html`. `--server` is the production relay `wss://relay.etcito.com/ws`. Both are the defaults, and they can be passed explicitly.
 
-Client 2 starts late. It is launched only after client 1 reports lobby-ready, and it must report client 1's lobby id before the round starts. Client 1 is hidden. Once both clients are in a match, the harness opens a blank tab in client 1's browser and activates it. Client 1 must read `visibility` `hidden`, and its tick must advance while it is hidden. The harness brings client 1 back to the foreground after the terminal condition. No throttling-disabling flags are passed.
+Client 2 starts late. Its page is opened before client 1 presses Play, and the harness waits for its start screen and leaves it unpressed. Client 1 then presses Play and the harness waits for its lobby-ready. Only after that does it press Play in client 2, so the late press lands inside the open lobby window (a localhost page gets a dev lobby that starts shortly after the first player, and the engine page cannot load inside that window). Client 2 must report client 1's lobby id before the round starts. Client 1 is hidden. Once both clients are in a match, the harness opens a blank tab in client 1's browser and activates it. Client 1 must read `visibility` `hidden`, and its tick must advance while it is hidden. The harness brings client 1 back to the foreground after the terminal condition. No throttling-disabling flags are passed.
 
 The milestone criterion is: "two clients and 58 bots play one full round with `?engine=1` and no desync is reported".
 
@@ -61,7 +61,7 @@ Flags, from contract `onlineChromes engine CLI`:
 | `--engine` | Each client URL gets `engine=1`. Without it the older duration run runs, with `--seconds` (default 60). |
 | `--clients 2` | Two human clients (1 to 4 allowed). |
 | `--bots 60` | Total seats, sent as `bots=60`: two humans and 58 bots. |
-| `--late-client` | Client 2 is launched after client 1's lobby-ready. |
+| `--late-client` | Client 2's page is opened and start-ready before client 1 presses Play; client 2 presses Play after client 1's lobby-ready. |
 | `--background-client` | Client 1 is genuinely hidden after the round starts. |
 | `--until round-ended` | State-driven completion. `show-ended` waits for `podium-ready` and `hub-returned` instead. |
 | `--deadline 900` | Overall budget in seconds (default 900). |

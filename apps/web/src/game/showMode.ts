@@ -8,7 +8,7 @@ import { createOfflineFullMatch } from '@royal-fiesta/game/net/offlineFullMatch'
 import type { ZoneFullMatch, ZoneFullRound } from '@royal-fiesta/game/net/zoneFullMatch'
 import type { ZoneRoundResult } from '@royal-fiesta/game/net/zoneRounds'
 import type { Action, GameScreen } from '@royal-fiesta/game/screens/nav'
-import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
+import { decodeInput, encodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { PlayerInput } from '@royal-fiesta/sim/input'
 import { refuse } from '@royal-fiesta/sim/refusal'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
@@ -19,8 +19,15 @@ import { PROFILES } from '@royal-fiesta/sim/match/setup'
 import { zoneContent } from '../zone/zoneContent.ts'
 import { prepareZoneNetScene } from '../zone/zoneNetScene.ts'
 import type { ZoneNetScene } from '../zone/zoneNetScene.ts'
-import { ShowDirector } from './showDirector.ts'
-import type { ShowFrame } from './showDirector.ts'
+import { ShowDirector, engineShowPort } from './showDirector.ts'
+import type { ShowFrame, ShowPort } from './showDirector.ts'
+import type { EngineRoundResult, EngineShowObservation, EngineShowRuntime } from '@royal-fiesta/game/ege/showTypes'
+import { EngineShowView } from '@royal-fiesta/game/ege/showView'
+import { EngineShowEffects } from '@royal-fiesta/game/ege/showEffects'
+import type { SceneReadView } from '@royal-fiesta/game/render/sceneReadView'
+import { EngineSeatPresenter, engineEffectSinks, farPenguinBridge } from '../engineShow/presentation.ts'
+import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
+import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { loadShowContent } from './showContent.ts'
 import type { ShowContent } from './showContent.ts'
 import { prepareCourse } from '../render/pipelineGate.ts'
@@ -78,6 +85,21 @@ export class ShowMode {
   private look: WornLook | null
   // Online: PlayFlow steps the match and disposes it; this show only presents it.
   private driven = false
+  // Engine show (ShowMode.engine): the runtime, its read view, effects, far figures and the scene it presents on.
+  private engineRuntime: EngineShowRuntime | null = null
+  private port: ShowPort | null = null
+  private readView: EngineShowView | null = null
+  private effects: EngineShowEffects | null = null
+  private presenter: EngineSeatPresenter | null = null
+  private bridge: ReturnType<typeof farPenguinBridge> | null = null
+  private unsubscribe: (() => void) | null = null
+  private engineKey = ''
+  /**
+   * Receipt -> confirmed result. Only the grant sink of engineEffectSinks (presentation.ts:45, its grant(receipt, result)
+   * parameters typed string and EngineRoundResult) writes it, once per confirmed result receipt; ShowMode reads nothing
+   * else from it, and the economy reward stays with ShowAdapter's rewardOffline over results().
+   */
+  private readonly grants = new Map<string, EngineRoundResult>()
 
   private constructor(options: ShowModeOptions) {
     this.options = options
@@ -131,6 +153,42 @@ export class ShowMode {
       mode.fail(error)
     }
     return mode
+  }
+
+  /**
+   * Handoff: Game switch share 7/8: offline engine start, hub, show, podium and return in the shell - ShowMode.engine(options,
+   * runtime, content, { driven: false }) is what the shell calls with an offline EngineShowRuntime; today it builds the
+   * ShowDirector on engineShowPort(runtime, localSeat), subscribes one runtime.onPresentation listener, and frame() advances
+   * runtime.frame itself. ShowMode owns the runtime and disposes it. Attached by wrapping the return value in ShowAdapter.
+   * Handoff: Game switch share 8/8: online engine show in the shell through PlayFlow - ShowMode.engine(options, runtime,
+   * content, { driven: true }) is called by PlayFlow.show with the runtime it steps; today ShowMode only presents it and
+   * never frames or disposes that runtime. The runtime stays owned by PlayFlow.
+   */
+  static engine(options: ShowModeOptions, runtime: EngineShowRuntime, content: ShowContent, mode: { driven: boolean }): ShowMode {
+    const show = new ShowMode(options)
+    show.driven = mode.driven
+    show.engineRuntime = runtime
+    try {
+      show.port = engineShowPort(runtime, show.localSeat)
+      show.director = new ShowDirector(show.port, content.info, seat => show.name(seat), show.localSeat,
+        options.voteMs ?? DEFAULT_VOTE_MS, PROFILES.sprint.introTicks * 1000 / 60)
+      show.readView = new EngineShowView(runtime)
+      show.readView.refresh(1)
+      show.presenter = new EngineSeatPresenter()
+      show.effects = new EngineShowEffects(runtime, engineEffectSinks(() => ({ play: cue => { show.sounds.push(cue) } }), show.grants))
+      show.unsubscribe = runtime.onPresentation(observation => show.observeEngine(observation))
+      show.current = show.director.step(null, 0)
+    } catch (error) {
+      show.fail(error)
+    }
+    return show
+  }
+
+  /** The EngineShowView while a physics world is presented, else null (legacy create/online always null). */
+  view(): SceneReadView | null {
+    const runtime = this.engineRuntime
+    if (runtime === null || this.readView === null) return null
+    return runtime.presentation().worlds.some(world => ['seat', 'field', 'hub'].includes(world.ref.kind)) ? this.readView : null
   }
 
   private get localSeat(): number { return this.options.localSeat ?? 0 }
@@ -203,7 +261,7 @@ export class ShowMode {
   get failure(): string | null { return this.error }
   get finished(): boolean { return this.current?.finished ?? false }
   get models(): ShowFrame | null { return this.current }
-  results(): ZoneRoundResult[] { return this.full?.show.rounds ?? [] }
+  results(): ZoneRoundResult[] { return this.port !== null ? [...this.port.show.rounds] : this.full?.show.rounds ?? [] }
   screen(): GameScreen { return this.current?.screen ?? 'vote' }
   cues(): string[] { const sounds = this.sounds; this.sounds = []; return sounds }
 
@@ -220,6 +278,7 @@ export class ShowMode {
   }
 
   frame(dtS: number, action: Action | null, human: PlayerInput | readonly PlayerInput[]): void {
+    if (this.engineRuntime !== null) { this.frameEngine(dtS, action, human); return }
     if (this.disposed || this.error !== null || this.full === null || this.director === null) return
     const dt = Number.isFinite(dtS) ? Math.max(0, dtS) : 0
     try {
@@ -245,6 +304,93 @@ export class ShowMode {
       }
     } catch (error) {
       this.fail(error)
+    }
+  }
+
+  /** Offline (not driven) the script owns timing: runtime.frame runs every frame, whatever the director holds. */
+  private frameEngine(dtS: number, action: Action | null, human: PlayerInput | readonly PlayerInput[]): void {
+    const runtime = this.engineRuntime
+    if (this.disposed || this.error !== null || this.director === null || runtime === null) return
+    const dt = Number.isFinite(dtS) ? Math.max(0, dtS) : 0
+    try {
+      if (!this.driven) runtime.frame(dt, roomSeat => this.engineCode(roomSeat, human))
+      this.current = this.director.step(action, dt * 1000)
+      this.sounds.push(...this.current.sounds)
+      this.loadEngine(runtime)
+      this.effects?.pump()
+      const visible = ['countdown', 'round', 'spectate'].includes(this.screen())
+      this.canvas.style.display = visible ? '' : 'none'
+      for (const stage of this.stages) stage.canvas.style.display = visible ? 'none' : stage.display
+      if (visible && this.scene !== null && this.readView !== null && this.presenter !== null) {
+        this.presenter.refill(runtime.presentation(), runtime.snapshot(), this.readView.nearSeats())
+        this.bridge?.sync(this.presenter.submission().view)
+        this.scene.present(this.readView, 1, dt)
+        this.scene.render()
+      }
+    } catch (error) {
+      this.fail(error)
+    }
+  }
+
+  /** The S1 code of a human room seat (the local human in slot 0); every other seat is neutral. */
+  private engineCode(roomSeat: number, human: PlayerInput | readonly PlayerInput[]): number {
+    if (roomSeat >= this.humanCount) return NEUTRAL_CODE
+    const input = Array.isArray(human) ? human[roomSeat] : roomSeat === 0 ? human : undefined
+    return input === undefined ? NEUTRAL_CODE : encodeInput(input)
+  }
+
+  /** Post-tick: refresh the read view, observe the scene once for this tick, feed the far figures. Before-release only invalidates. */
+  private observeEngine(observation: EngineShowObservation): void {
+    const view = this.readView
+    if (this.disposed || view === null || this.presenter === null) return
+    if (observation.kind === 'before-release') {
+      this.presenter.observe(observation, new Set())
+      return
+    }
+    view.refresh(1)
+    this.scene?.observe(view)
+    this.presenter.observe(observation, view.nearSeats())
+  }
+
+  /** A new round or course: the scene is rebuilt on the presented course; the director's worldReady follows its load. */
+  private loadEngine(runtime: EngineShowRuntime): void {
+    const presentation = runtime.presentation()
+    const course = presentation.course
+    if (course === null) return
+    const key = `${presentation.round}:${course.id}`
+    if (key === this.engineKey) return
+    this.engineKey = key
+    this.scene?.dispose()
+    this.scene = null
+    this.bridge?.dispose()
+    this.bridge = null
+    void this.prepareEngine(key, presentation.round, course)
+  }
+
+  /** Same zone scene and course gate as the legacy prepare(); a rejection fails the show and never falls back. */
+  private async prepareEngine(key: string, round: number, course: ResolvedCourse): Promise<void> {
+    const runtime = this.engineRuntime
+    if (runtime === null) return
+    const live = (): boolean => !this.disposed && this.error === null && this.engineKey === key
+    try {
+      const content = await checkAwait(`round ${round}: content ${course.id}`, () => zoneContent('sprint', course.id))
+      const seats = runtime.snapshot().seatOf
+      const local = Math.max(0, seats.indexOf(this.localSeat))
+      const prepared = await checkAwait(`round ${round}: render port`, () => prepareZoneNetScene({
+        canvas: this.canvas, crowdCull: seats.length > 8, followSeats: [local], orbit: this.options.orbit, course,
+        createPort: content.createPort, assets: content.assets, bean: content.bean, character: content.character,
+        skinned: content.skinned, dressing: content.dressing,
+      }))
+      if (!live()) { prepared.dispose(); return }
+      const scene = prepared.attach(seats.length, local)
+      this.scene = scene
+      this.bridge = farPenguinBridge(scene.port, content.bean)
+      if (this.readView !== null) scene.present(this.readView, 1, 0)
+      await checkAwait(`round ${round}: scene paint and animation`, () => scene.ready())
+      await prepareCourse(scene.port, course.id, { cancelled: () => !live() })
+      if (live()) this.director?.worldReady(round)
+    } catch (error) {
+      if (live()) this.fail(error)
     }
   }
 
@@ -323,7 +469,28 @@ export class ShowMode {
     return domain === undefined ? null : { round, seat, domain }
   }
 
+  /**
+   * Engine: the legacy HudState shape built from the snapshot. The snapshot carries no phase timers, course index, target
+   * or final flag, so those fields are zero or false; qualifiedCount counts the latest confirmed result's qualified seats.
+   */
+  private engineHud(): { view: MatchViewState; names: string[]; seat: number } | null {
+    const runtime = this.engineRuntime
+    if (runtime === null) return null
+    const snapshot = runtime.snapshot()
+    const seat = snapshot.seatOf.indexOf(this.localSeat)
+    if (seat < 0) return null
+    const latest = snapshot.results[snapshot.results.length - 1]
+    const view: MatchViewState = {
+      tick: snapshot.tick, phase: ['playing', 'overtime'].includes(snapshot.screen) ? Phase.playing : Phase.intro,
+      phaseTicksLeft: 0, roundIndex: snapshot.round, roundKind: null, final: false, courseIndex: 0, roundTicksLeft: 0,
+      alive: snapshot.alive.length, qualifiedCount: latest?.qualified.length ?? 0, target: 0,
+      winner: snapshot.champion ?? -1, podium: [],
+    }
+    return { view, names: snapshot.seatOf.map(roomSeat => this.name(roomSeat)), seat }
+  }
+
   hud() {
+    if (this.engineRuntime !== null) return this.engineHud()
     const local = this.humanDomain()
     if (local === null) return null
     const { round, seat, domain } = local
@@ -356,6 +523,14 @@ export class ShowMode {
   }
 
   listener(): ListenerPose | null {
+    if (this.engineRuntime !== null) {
+      const seat = this.engineRuntime.snapshot().seatOf.indexOf(this.localSeat)
+      const view = this.view()
+      if (seat < 0 || view === null) return null
+      const out: CharacterView = { pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 }, mode: 0, status: 0, parked: true, teleportTick: 0 }
+      const character = view.character(seat, out)
+      return { x: character.pos.x, y: character.pos.y, z: character.pos.z, fx: character.facing.x, fz: character.facing.z }
+    }
     const local = this.humanDomain()
     if (local === null) return null
     const state = local.domain.state(local.seat)
@@ -374,6 +549,18 @@ export class ShowMode {
     this.disposed = true
     if (!this.driven) this.full?.dispose()
     this.full = null
+    this.unsubscribe?.()
+    this.unsubscribe = null
+    this.effects?.dispose()
+    this.effects = null
+    this.readView?.dispose()
+    this.readView = null
+    this.presenter?.clear()
+    this.presenter = null
+    this.bridge?.dispose()
+    this.bridge = null
+    if (!this.driven) this.engineRuntime?.dispose()
+    this.engineRuntime = null
     this.scene?.dispose()
     this.scene = null
     this.canvas.remove()

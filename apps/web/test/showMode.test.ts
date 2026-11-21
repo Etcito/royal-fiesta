@@ -9,13 +9,14 @@ import { showMaps } from '@royal-fiesta/game/net/zoneRounds'
 import { loadZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import { decodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
 import type { ShowContent } from '../src/game/showContent.ts'
+import type { EngineRoundResult, EngineShowObservation, EngineShowRuntime, EngineShowSnapshot } from '@royal-fiesta/game/ege/showTypes'
 
 // Replace only browser content/render boundaries; the offline match and bots are real.
 const browser: {
-  content?: ShowContent; ready: () => Promise<void>; disposed: number
+  content?: ShowContent; ready: () => Promise<void>; disposed: number; rejectScene: boolean
   configs: { voteMs: number | undefined; intermissionMs: number | undefined }[]
 } = {
-  ready: () => Promise.resolve(), disposed: 0, configs: [],
+  ready: () => Promise.resolve(), disposed: 0, rejectScene: false, configs: [],
 }
 Object.assign(globalThis, { __showModeTest: browser })
 // The real full match, wrapped so a test can see the config ShowMode hands it.
@@ -26,11 +27,14 @@ const hooks = registerHooks({
       const stubs: Record<string, string> = {
         './showContent.ts': 'export const loadShowContent = async () => globalThis.__showModeTest.content',
         '../zone/zoneContent.ts': 'export const zoneContent = async () => ({ assets: () => ({}), bean: {}, character: {}, skinned: undefined, dressing: {}, createPort: async () => ({}) })',
-        '../zone/zoneNetScene.ts': `export const prepareZoneNetScene = async () => ({
-          attach: () => ({ feed: { far() {}, sleep() {} }, update() {}, render() {},
-            ready: () => globalThis.__showModeTest.ready(),
-            dispose: () => { globalThis.__showModeTest.disposed++ } }), dispose() {}
-        })`,
+        '../zone/zoneNetScene.ts': `export const prepareZoneNetScene = async () => {
+          if (globalThis.__showModeTest.rejectScene) throw new Error('scene refused')
+          return {
+            attach: () => ({ feed: { far() {}, sleep() {} }, update() {}, render() {}, present() {}, observe() {},
+              port: { registerAsset: () => 0 }, ready: () => globalThis.__showModeTest.ready(),
+              dispose: () => { globalThis.__showModeTest.disposed++ } }), dispose() {}
+          }
+        }`,
         '@royal-fiesta/game/net/offlineFullMatch': `import * as real from ${JSON.stringify(fullMatch)}
 export const createOfflineFullMatch = (R, cfg) => {
   globalThis.__showModeTest.configs.push({ voteMs: cfg.voteMs, intermissionMs: cfg.intermissionMs })
@@ -195,4 +199,132 @@ test('multiple local humans sample independently, including compacted later-roun
     assert.deepEqual(out[0], humans[0])
     assert.deepEqual(out[1], humans[2])
   } finally { mode.dispose() }
+})
+
+// Engine show: a scripted runtime walks vote, loading, playing, results, podium and done; the real view, effects and director run.
+type ScriptState = { screen: EngineShowSnapshot['screen']; results?: EngineRoundResult[]; champion?: number }
+const ROUND: EngineRoundResult = {
+  index: 0, map: 'race-choice-2', course: 'test-flat-race', kind: 'race', final: false, playoff: false, endTick: 600,
+  reason: 'target', ranking: [0, 1, 2], qualified: [0, 1], eliminated: [2], points: [3, 2, 1], teamScores: [], champion: -1,
+}
+const SCRIPT: ScriptState[] = [
+  { screen: 'vote' }, { screen: 'loading' }, { screen: 'playing' },
+  { screen: 'results', results: [ROUND] }, { screen: 'podium', results: [ROUND], champion: 0 },
+  { screen: 'done', results: [ROUND], champion: 0 },
+]
+const flush = () => new Promise<void>(resolve => setImmediate(resolve))
+// Each scripted state holds for HOLD frames, longer than the director's countdown, so every screen is reached.
+const HOLD = 240
+
+function fakeRuntime() {
+  const listeners = new Set<(observation: EngineShowObservation) => void>()
+  const fake = { at: 0, frames: 0, votes: [] as [number, number][], disposed: 0 }
+  const state = (): ScriptState => SCRIPT[Math.min(fake.at, SCRIPT.length - 1)]
+  const snapshot = (): EngineShowSnapshot => {
+    const s = state()
+    return {
+      tick: fake.at, round: 0, screen: s.screen, seatOf: [0, 1, 2], alive: [0, 1, 2],
+      candidates: ['race-choice-2', 'race-choice-3'], results: s.results ?? [], champion: s.champion ?? null, faults: 0,
+    }
+  }
+  const presentation = () => ({
+    showId: 'fake', tick: fake.at, round: 0, map: 'race-choice-2', worlds: [],
+    course: state().screen === 'vote' ? null : courses[0],
+  })
+  const runtime: EngineShowRuntime = {
+    identity: { backend: 'engine', schemaKey: 1, moduleKey: 'fake' }, mode: 'local',
+    snapshot, presentation, worlds: () => [],
+    frame(_dtS, sample) {
+      fake.frames++
+      fake.at = Math.min(Math.floor(fake.frames / HOLD), SCRIPT.length - 1)
+      sample(0)
+      for (const listener of listeners) listener({ kind: 'post-tick', tick: fake.at, snapshot: snapshot(), presentation: presentation() })
+    },
+    vote(roomSeat, candidate) { fake.votes.push([roomSeat, candidate]) },
+    onPresentation(listener) { listeners.add(listener); return () => { listeners.delete(listener) } },
+    dispose() { fake.disposed++ },
+  }
+  return { runtime, fake, listeners }
+}
+async function drive(show: ReturnType<typeof ShowMode.engine>, fake: ReturnType<typeof fakeRuntime>['fake'], driven: boolean) {
+  const screens: string[] = []
+  for (let i = 0; i < 3000 && !show.finished; i++) {
+    if (driven) fake.at = Math.min(Math.floor(i / HOLD), SCRIPT.length - 1)
+    show.frame(1 / 60, null, neutralInput())
+    await flush()
+    screens.push(show.screen())
+  }
+  return screens
+}
+
+test('engine show offline: runtime.frame once per frame and the screens follow vote to finished', async () => {
+  const { runtime, fake } = fakeRuntime()
+  const show = ShowMode.engine(options(), runtime, browser.content!, { driven: false })
+  try {
+    const screens = await drive(show, fake, false)
+    assert.equal(fake.frames, screens.length)
+    assert.equal(screens[0], 'vote')
+    assert.ok(screens.includes('countdown'))
+    assert.ok(screens.includes('round'))
+    assert.equal(show.finished, true)
+    assert.ok(show.models?.endScreen)
+  } finally { show.dispose() }
+})
+
+test('engine show driven: runtime.frame is never called and the screens follow the snapshot', async () => {
+  const { runtime, fake } = fakeRuntime()
+  const show = ShowMode.engine(options(), runtime, browser.content!, { driven: true })
+  try {
+    const screens = await drive(show, fake, true)
+    assert.equal(fake.frames, 0)
+    assert.equal(screens[0], 'vote')
+    assert.ok(screens.includes('round'))
+    assert.equal(show.finished, true)
+  } finally { show.dispose() }
+})
+
+test('engine show pick reaches runtime.vote with the local seat and results are the confirmed results', async () => {
+  const { runtime, fake } = fakeRuntime()
+  const show = ShowMode.engine(options(), runtime, browser.content!, { driven: true })
+  try {
+    show.frame(1 / 60, null, neutralInput())
+    await flush()
+    show.pick(1)
+    assert.deepEqual(fake.votes, [[0, 1]])
+    await drive(show, fake, true)
+    assert.deepEqual(show.results().map(result => [result.index, result.endTick]), [[0, 600]])
+  } finally { show.dispose() }
+})
+
+test('engine show dispose unsubscribes every listener, disposes the runtime only when offline, and is idempotent', async () => {
+  for (const driven of [false, true]) {
+    const { runtime, fake, listeners } = fakeRuntime()
+    const show = ShowMode.engine(options(), runtime, browser.content!, { driven })
+    show.frame(1 / 60, null, neutralInput())
+    await flush()
+    assert.ok(listeners.size > 0)
+    show.dispose()
+    show.dispose()
+    assert.equal(listeners.size, 0)
+    assert.equal(fake.disposed, driven ? 0 : 1)
+  }
+})
+
+test('engine show with a rejected scene preparation sets failure and never falls back', async () => {
+  const { runtime, fake } = fakeRuntime()
+  browser.rejectScene = true
+  const show = ShowMode.engine(options(), runtime, browser.content!, { driven: false })
+  try {
+    for (let i = 0; i < 400 && show.failure === null; i++) {
+      show.frame(1 / 60, null, neutralInput())
+      await flush()
+    }
+    assert.equal(show.failure, 'scene refused')
+    const frames = fake.frames
+    show.frame(1 / 60, null, neutralInput())
+    assert.equal(fake.frames, frames)
+  } finally {
+    browser.rejectScene = false
+    show.dispose()
+  }
 })

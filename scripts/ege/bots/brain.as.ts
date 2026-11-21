@@ -77,6 +77,32 @@ function putCode(row: BotReactionChunk, index: u32, value: u32): void {
   else fail('reaction code index is outside its chunk')
 }
 
+const S1_BUTTON_MASK: u32 = 0x70000
+
+function axisS1(axis: i32): u32 {
+  const clamped = axis < -127 ? -127 : (axis > 127 ? 127 : axis)
+  return <u32>(clamped + 127)
+}
+
+function axisEngine(byte: u32): i32 {
+  const clamped: u32 = byte > 254 ? 254 : byte
+  return <i32>clamped - 127
+}
+
+/** Engine axis bytes become offset S1 bytes; button bits 16..18 survive unchanged. */
+function s1OfEngine(code: u32): u32 {
+  const qx = <i32><i8><u8>(code & 0xff)
+  const qz = <i32><i8><u8>((code >>> 8) & 0xff)
+  return axisS1(qx) | (axisS1(qz) << 8) | (code & S1_BUTTON_MASK)
+}
+
+/** Offset S1 axis bytes become signed engine bytes; button bits 16..18 survive unchanged. */
+function engineOfS1(code: u32): u32 {
+  const qx = axisEngine(code & 0xff)
+  const qz = axisEngine((code >>> 8) & 0xff)
+  return (<u32>qx & 0xff) | ((<u32>qz & 0xff) << 8) | (code & S1_BUTTON_MASK)
+}
+
 function wobble(code: u32, angle: f64): u32 {
   const x = <f64><i8><u8>code / 127.0
   const z = <f64><i8><u8>(code >>> 8) / 127.0
@@ -186,7 +212,7 @@ export function rf_show_controls(): void {
     if (identity.bot != 0 || identity.input_slot < 0) continue
     const control = getComponent<ShowControl>(identities.entity(i), ShowControl.ID, ShowControl.SIZE)
     if (!isNull<ShowControl>(control)) {
-      control.code = inputCode(<u32>identity.input_slot)
+      control.code = s1OfEngine(inputCode(<u32>identity.input_slot))
       setComponent<ShowControl>(identities.entity(i), ShowControl.ID, ShowControl.SIZE, control)
     }
   }
@@ -222,14 +248,16 @@ export function rf_show_bots(): void {
     rng.next()
     memory.rng_state = rng.state
     if (now % 45 == 0) memory.wobble = wobbleDraw
-    let proposed = control.code
+    let proposed: u32 = 0
     if (due) {
       const pathNode = planShowRoute(seatEntity, now)
       proposed = showTraversalControl(seatEntity, now, pathNode)
       proposed = applyShowBehaviour(seatEntity, now, proposed)
       proposed = wobble(proposed, skill.aim_error * memory.wobble)
+    } else {
+      proposed = engineOfS1(control.code)
     }
-    control.code = reaction(seatEntity, proposed, authored.reaction_ticks)
+    control.code = s1OfEngine(reaction(seatEntity, proposed, authored.reaction_ticks))
     setComponent<ShowControl>(seatEntity, ShowControl.ID, ShowControl.SIZE, control)
     memories.write()
   }

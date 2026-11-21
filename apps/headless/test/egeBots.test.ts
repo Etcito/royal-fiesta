@@ -553,14 +553,60 @@ async function runBrain(delay: number, steps: number) {
 
 test('bot brain preserves neutral no-route output and reaction delay endpoints', async () => {
   const immediate = await runBrain(0, 1)
-  assert.equal(immediate.components.show_control['35'].code, 0)
+  assert.equal(immediate.components.show_control['35'].code, 32639, 'no-route neutral is S1 neutral')
   assert.equal(Object.values(immediate.components.bot_route ?? {}).length, 0)
   const delayed = await runBrain(120, 121)
   assert.equal(delayed.components.bot_reaction['36']?.code_count ?? Object.values(delayed.components.bot_reaction).find((r: any) => r.owner === 35)?.code_count, 120)
-  assert.equal(delayed.components.show_control['35'].code, 0)
+  assert.equal(delayed.components.show_control['35'].code, 32639, 'warm-up neutral is S1 neutral')
 })
 
-test('show human controls copy the assigned SDK slot and leave bot controls alone at high seat ids', async () => {
+// Engine inputs as the runtime passes them to the host. Expected S1 codes are hand-derived:
+// axis byte a maps to a + 127 after clamping to -127..127; buttons keep bits 16..18.
+const HUMAN_INPUTS = [
+  0,
+  0x7f,
+  0x81,
+  0x80,
+  0x10000,
+  0x20000,
+  0x40000,
+  0x8100,
+]
+const HUMAN_EXPECTED = [
+  32639,
+  32766,
+  32512,
+  32512,
+  98175,
+  163711,
+  294783,
+  127,
+]
+
+test('show human controls convert assigned engine slots to S1 with neutral, signs, buttons and clamping', async () => {
+  const schema = JSON.parse(brainSchemaText())
+  const worldKind = schema.world_kinds.find((kind: any) => kind.name === 'bots_brain_probe')
+  worldKind.schedule = [worldKind.schedule[0]]
+  const entities: any[] = Array.from({ length: 35 }, () => ({ components: {} }))
+  HUMAN_INPUTS.forEach((_, slot) => {
+    entities.push({ components: { show_seat_identity: { room_seat: 50 + slot, round_seat: 50 + slot, input_slot: slot, bot: 0 }, show_control: { code: 1 } } })
+  })
+  entities.push({ components: { show_seat_identity: { room_seat: 59, round_seat: 59, input_slot: -1, bot: 1 }, show_control: { code: 0x55 } } })
+  const engine = await loadEngine()
+  const controlsSchema = JSON.stringify(schema)
+  engine.setSchema(controlsSchema)
+  const module = await loadScript(engine, await compileBrainWasm(controlsSchema), { name: 'bots-control-probe' })
+  const world = engine.createWorld({ format: 'ege.scene', version: 1, world_kind: 'bots_brain_probe', seed: 7, entities })
+  new ScriptHost(module).stepTick(world, HUMAN_INPUTS)
+  const controls = readWorldState(engine, world, schemaLayout(engine)).components.show_control
+  HUMAN_EXPECTED.forEach((expected, slot) => {
+    assert.equal(controls[String(35 + slot)].code, expected, `slot ${slot} input ${HUMAN_INPUTS[slot]}`)
+  })
+  assert.equal(controls['43'].code, 0x55, 'bot control is left to the brain path')
+  assert.equal(module.faultCount, 0, JSON.stringify(module.faults[0]))
+})
+
+test('show human control keeps a high stable seat id mapped to its slot and leaves bots alone', async () => {
   const schema = JSON.parse(brainSchemaText())
   const worldKind = schema.world_kinds.find((kind: any) => kind.name === 'bots_brain_probe')
   worldKind.schedule = [worldKind.schedule[0]]
@@ -574,7 +620,7 @@ test('show human controls copy the assigned SDK slot and leave bot controls alon
   const world = engine.createWorld({ format: 'ege.scene', version: 1, world_kind: 'bots_brain_probe', seed: 7, entities })
   new ScriptHost(module).stepTick(world, Array.from({ length: 8 }, (_, slot) => slot * 101))
   const controls = readWorldState(engine, world, schemaLayout(engine)).components.show_control
-  assert.equal(controls['35'].code, 606)
+  assert.equal(controls['35'].code, 33245, 'engine 606 is axes +94,+2 and S1 221,129')
   assert.equal(controls['36'].code, 0x55)
   assert.equal(module.faultCount, 0, JSON.stringify(module.faults[0]))
 })

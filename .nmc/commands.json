@@ -151,5 +151,93 @@
     "command": "node --experimental-strip-types tools/egeBricks.ts build compile",
     "timeout_s": 1800,
     "after": ["core-bricks-build"]
+  },
+  {
+    "command": "node --experimental-strip-types tools/egeBricks.ts build",
+    "name": "g7-offline-bricks-build",
+    "timeout_s": 1800
+  },
+  {
+    "after": [
+      "g7-offline-bricks-build"
+    ],
+    "command": "node --experimental-strip-types tools/egeScripts.ts build --out out/ege",
+    "name": "g7-offline-scripts-build",
+    "timeout_s": 1800
+  },
+  {
+    "after": [
+      "g7-offline-scripts-build"
+    ],
+    "command": "npm run build",
+    "name": "g7-offline-web-build",
+    "timeout_s": 1800
+  },
+  {
+    "after": [
+      "g7-offline-web-build"
+    ],
+    "command": "npm run typecheck",
+    "name": "g7-offline-typecheck",
+    "timeout_s": 1800
+  },
+  {
+    "after": [
+      "g7-offline-web-build"
+    ],
+    "command": "npm run guard",
+    "name": "g7-offline-guard",
+    "timeout_s": 300
+  },
+  {
+    "after": [
+      "g7-offline-web-build"
+    ],
+    "command": "node --experimental-strip-types --test apps/headless/test/egeBots.test.ts packages/game/test/egeShowFactory.test.ts apps/headless/test/egeShow.test.ts packages/game/test/sceneReadView.test.ts packages/game/test/sceneView.test.ts packages/game/test/sceneViewAnimRate.test.ts packages/game/test/sceneViewNetAnimRate.test.ts packages/game/test/egeSceneSim.test.ts apps/web/test/engineRoundPage.test.ts apps/web/test/engineRoundRun.test.ts packages/game/test/egeShowFar.test.ts packages/game/test/egeShowEffects.test.ts packages/game/test/egeShowView.test.ts tools/test/engineRoundCapture.test.ts tools/test/engineCaptureJob.test.ts apps/web/test/engineShowReady.test.ts apps/web/test/engineShowPage.test.ts apps/web/test/engineShowPresentation.test.ts",
+    "name": "g7-offline-unit-check",
+    "timeout_s": 3600
+  },
+  {
+    "after": [
+      "g7-offline-typecheck",
+      "g7-offline-guard",
+      "g7-offline-unit-check"
+    ],
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts check --stage offline --page apps/web/dist --out out/engine-show/offline",
+    "name": "g7-offline-check",
+    "timeout_s": 900
+  },
+  {
+    "after": [
+      "g7-offline-check"
+    ],
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts clean --stage offline --page apps/web/dist --out out/engine-show/offline",
+    "name": "g7-offline-clean",
+    "timeout_s": 60
+  },
+  {
+    "after": [
+      "g7-offline-clean"
+    ],
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts render --stage offline --page apps/web/dist --out out/engine-show/offline",
+    "name": "g7-offline-render",
+    "timeout_s": 3600
+  },
+  {
+    "after": [
+      "g7-offline-render"
+    ],
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts fresh --stage offline --page apps/web/dist --out out/engine-show/offline",
+    "name": "g7-offline-fresh",
+    "timeout_s": 300
+  },
+  {
+    "after": [
+      "g7-offline-render",
+      "g7-offline-fresh"
+    ],
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts judge --stage offline --page apps/web/dist --out out/engine-show/offline --budget-s 3300",
+    "name": "g7-offline-judge",
+    "timeout_s": 3600
   }
 ]

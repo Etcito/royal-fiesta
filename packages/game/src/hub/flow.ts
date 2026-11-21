@@ -1,11 +1,16 @@
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
+import type { GroupTransport } from '@gamesaloon/rollback/zones'
 import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
-import { neutralInput } from '@royal-fiesta/sim/input'
+import { encodeInput, neutralInput } from '@royal-fiesta/sim/input'
 import type { MatchLog } from '@royal-fiesta/sim/match/log'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
 import type { CharacterView, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
+import type { EngineModuleIdentity } from '../../../../tools/egeScripts.ts'
+import { requireEnginePeers, requireLegacyPeers } from '../ege/admission.ts'
+import type { HubRuntime } from '../ege/hub.ts'
+import type { EngineShowRuntime } from '../ege/showTypes.ts'
 import { controlsToInput, emptyControls } from '../client/inputMap.ts'
 import type { RawControls } from '../client/inputMap.ts'
 import { createOnlineMatch } from '../net/onlineMatch.ts'
@@ -34,6 +39,14 @@ import type { RemoteView } from './remotes.ts'
 
 export type FlowState = 'connecting' | 'hub' | 'queued' | 'choosing' | 'watching' | 'match' | 'podium' | 'returning' | 'failed'
 export interface FlowEvent { ms: number; client: string; state: FlowState; detail: Record<string, string | number | boolean | number[]> }
+/** The hub-facing surface: the legacy HubWorld and the engine HubRuntime both satisfy it. */
+export type FlowHub = Pick<HubWorld, 'tick' | 'botCount' | 'step' | 'state' | 'botViews' | 'respawn' | 'onQueuePad' | 'setEmote' | 'emote' | 'free'>
+/** The optional engine backend: an absent backend keeps every legacy factory. */
+export interface FlowBackend {
+  identity: EngineModuleIdentity
+  createHub: (plaza: ResolvedCourse, spawn: number) => Promise<HubRuntime>
+  createMatch: (matched: ZoneMatched, net: GroupTransport) => Promise<EngineShowRuntime>
+}
 export interface FlowDeps {
   R: RapierModule; relayUrl: string; ws: WsFactory; hubCode: string | 'new'; name: string; colour: number
   zones: ReadonlyMap<string, ZonesFile>
@@ -57,6 +70,7 @@ export interface FlowDeps {
   seats?: number
   voteMs?: number
   intermissionMs?: number
+  backend?: FlowBackend
 }
 
 const STEP_S = 1 / 60
@@ -68,6 +82,9 @@ export class PlayFlow {
   private code: string | null = null
   private hubSeat = 0
   private hubWorld: HubWorld | null = null
+  private engineHub: HubRuntime | null = null
+  private showRuntime: EngineShowRuntime | null = null
+  private winner = -1
   private hubClient: RelayClient | null = null
   private matchClient: ZoneRelayClient | null = null
   private matchRoom: MatchRoom | null = null
@@ -114,10 +131,15 @@ export class PlayFlow {
 
   get state(): FlowState { return this.current }
   get hubCode(): string | null { return this.code }
-  get hub(): HubWorld {
-    if (!this.hubWorld) throw new RefusalError('hub', 'PlayFlow.hub', 'hub is unavailable; await start() and read it before close()')
-    return this.hubWorld
+  get hub(): FlowHub {
+    const hub = this.hubWorld ?? this.engineHub
+    if (!hub) throw new RefusalError('hub', 'PlayFlow.hub', 'hub is unavailable; await start() and read it before close()')
+    return hub
   }
+  /** The engine hub, or null on the legacy path. */
+  get hubRuntime(): HubRuntime | null { return this.engineHub }
+  /** The engine show while seated, or null (the legacy match keeps `match`). */
+  get show(): EngineShowRuntime | null { return this.showRuntime }
   get match(): OnlineMatch | null { return this.netMatch }
   get mesh(): ZoneMeshTransport | null { return this.transport }
   /** Round trip to the GameSaloon relay (lobby, signaling), null before it is measured. */
@@ -137,7 +159,7 @@ export class PlayFlow {
     const client = this.matchClient
     if (!client || client.matched || this.current !== 'queued') return
     this.lobbyTracker.entered(this.d.now())
-    client.lobbyAgain(this.d.partySize, { g: 'royal-fiesta', v: 1, name: this.d.name, c: this.d.colour }, true)
+    client.lobbyAgain(this.d.partySize, this.lobbyPayload(), true)
   }
 
   /** Answers a lobby choice (state 'choosing': only an older server asks; the flow answers it by itself at once). */
@@ -145,6 +167,19 @@ export class PlayFlow {
     const client = this.matchClient
     if (this.current !== 'choosing' || !client) return
     try { client.lobbyPick(p, this.lobbyTracker.pick(p)) } catch (e) { this.fail(e) }
+  }
+
+  /** Creates the hub (the backend's engine hub when present); a close during creation frees the late hub once. */
+  private async openHub(spawn: number): Promise<boolean> {
+    const d = this.d
+    if (!d.backend) {
+      this.hubWorld = new HubWorld(d.R, d.plaza, spawn)
+      return true
+    }
+    const hub = await d.backend.createHub(d.plaza, spawn)
+    if (this.closed) { hub.free(); return false }
+    this.engineHub = hub
+    return true
   }
 
   async start(): Promise<void> {
@@ -161,7 +196,7 @@ export class PlayFlow {
       }
       if (this.sharedHub) {
         // The lobby socket carries the hub: the walkable plaza now, the others once the lobby lists them.
-        this.hubWorld = new HubWorld(d.R, d.plaza, this.hubSeat)
+        if (!(await this.openHub(this.hubSeat))) return
         if (d.pilot) this.hubPilot = new HubPilot(d.plaza, this.hubSeat, d.partySize)
         this.transition('hub', { seat: this.hubSeat, shared: true })
         void this.queue()
@@ -194,7 +229,7 @@ export class PlayFlow {
         this.code = d.hubCode
       }
       if (this.closed) return
-      this.hubWorld = new HubWorld(d.R, d.plaza, this.hubSeat)
+      if (!(await this.openHub(this.hubSeat))) return
       if (d.pilot) this.hubPilot = new HubPilot(d.plaza, this.hubSeat, d.partySize)
       this.hello(d.now())
       this.transition('hub', { seat: this.hubSeat, code: this.code! })
@@ -208,13 +243,16 @@ export class PlayFlow {
       if (!Number.isFinite(dtS) || dtS < 0) throw new RefusalError('hub', 'frame.dtS', 'expected finite nonnegative seconds; pass the elapsed frame time')
       const now = this.d.now()
       if (this.current === 'returning') {
-        this.hubWorld!.free()
-        this.hubWorld = null
-        this.hubWorld = new HubWorld(this.d.R, this.d.plaza, this.hubSeat)
+        if (this.engineHub) this.engineHub.respawn(this.hubSeat)
+        else {
+          this.hubWorld!.free()
+          this.hubWorld = null
+          this.hubWorld = new HubWorld(this.d.R, this.d.plaza, this.hubSeat)
+        }
         this.pad = new QueuePad()
         this.accumulator = 0
         this.lastState = -Infinity
-        this.transition('hub', { winner: this.savedLog!.winner })
+        this.transition('hub', { winner: this.winner })
         if (this.lobbyMode) void this.queue()
       }
       if (emote !== 0) this.hub.setEmote(emote, now)
@@ -236,29 +274,53 @@ export class PlayFlow {
           if (event === 'cancel' && this.current === 'queued') void this.cancelQueue()
         }
       } else if (this.current === 'match' || this.current === 'podium') {
-        const match = this.netMatch!
-        if (!match.done) {
-          match.frame(dtS, out => {
-            if (this.matchPilot) this.matchPilot.sample(match.sim, out[0])
-            else controlsToInput(controls ?? this.idle, match.sim.character(this.matchClient!.seat, this.matchChar).facing, out[0])
-          })
-        }
-        if (this.current === 'match' && match.sim.phase(this.view).phase === Phase.podium) this.transition('podium')
-        // One peer waits for dissolution so simultaneous finishes cannot race a
-        // final bye against the relay clearing cadence on the remaining seat.
-        const waitForDissolution = this.matchRoom!.seated && this.matchClient!.seat === this.matchRoom!.lastSeat
-        if (this.current === 'podium' && match.done && (this.d.presentationDone?.() ?? true) && !waitForDissolution) {
-          this.savedLog = match.log()
-          const client = this.matchClient!
-          this.matchClient = null
-          this.disconnect(client)
-          this.matchRoom = null
-          match.dispose()
-          this.netMatch = null
-          this.transport?.close('the show ended')
-          this.transport = null
-          this.matchPilot = null
-          this.transition('returning')
+        if (this.showRuntime) {
+          const runtime = this.showRuntime
+          // Controls are world space: the shell rotated them by its camera, and S1 is world space.
+          runtime.frame(dtS, () => encodeInput(controlsToInput(controls ?? this.idle, { x: 0, z: 1 }, this.input)))
+          const snap = runtime.snapshot()
+          if (this.current === 'match' && (snap.screen === 'podium' || snap.screen === 'done')) this.transition('podium')
+          // One peer waits for dissolution so simultaneous finishes cannot race a
+          // final bye against the relay clearing cadence on the remaining seat.
+          const waitForDissolution = this.matchRoom!.seated && this.matchClient!.seat === this.matchRoom!.lastSeat
+          if (this.current === 'podium' && snap.screen === 'done' && (this.d.presentationDone?.() ?? true) && !waitForDissolution) {
+            this.winner = snap.champion ?? -1
+            this.showRuntime = null
+            runtime.dispose()
+            const client = this.matchClient!
+            this.matchClient = null
+            this.matchRoom = null
+            this.disconnect(client)
+            this.transport?.close('the show ended')
+            this.transport = null
+            this.transition('returning', { winner: this.winner })
+          }
+        } else {
+          const match = this.netMatch!
+          if (!match.done) {
+            match.frame(dtS, out => {
+              if (this.matchPilot) this.matchPilot.sample(match.sim, out[0])
+              else controlsToInput(controls ?? this.idle, match.sim.character(this.matchClient!.seat, this.matchChar).facing, out[0])
+            })
+          }
+          if (this.current === 'match' && match.sim.phase(this.view).phase === Phase.podium) this.transition('podium')
+          // One peer waits for dissolution so simultaneous finishes cannot race a
+          // final bye against the relay clearing cadence on the remaining seat.
+          const waitForDissolution = this.matchRoom!.seated && this.matchClient!.seat === this.matchRoom!.lastSeat
+          if (this.current === 'podium' && match.done && (this.d.presentationDone?.() ?? true) && !waitForDissolution) {
+            this.savedLog = match.log()
+            this.winner = this.savedLog.winner
+            const client = this.matchClient!
+            this.matchClient = null
+            this.disconnect(client)
+            this.matchRoom = null
+            match.dispose()
+            this.netMatch = null
+            this.transport?.close('the show ended')
+            this.transport = null
+            this.matchPilot = null
+            this.transition('returning')
+          }
         }
       }
       this.broadcast(now)
@@ -273,15 +335,19 @@ export class PlayFlow {
     this.closed = true
     const clients = [this.hubClient, this.matchClient]
     const match = this.netMatch
+    const show = this.showRuntime
     const hub = this.hubWorld
+    const engineHub = this.engineHub
     this.hubClient = null
     this.matchClient = null
     this.matchRoom = null
     this.netMatch = null
+    this.showRuntime = null
     this.hubWorld = null
+    this.engineHub = null
     this.transport?.close(reason)
     this.transport = null
-    for (const release of [...clients.map(client => () => { if (client) this.disconnect(client) }), () => match?.dispose(), () => hub?.free()]) {
+    for (const release of [...clients.map(client => () => { if (client) this.disconnect(client) }), () => match?.dispose(), () => show?.dispose(), () => hub?.free(), () => engineHub?.free()]) {
       try { release() } catch (e) { this.fail(e) }
     }
   }
@@ -304,7 +370,7 @@ export class PlayFlow {
       await client.connect()
       if (!this.active(client) || this.cancelling) return
       this.queueRequested = true
-      const payload = { g: 'royal-fiesta' as const, v: 1 as const, name: d.name, c: d.colour }
+      const payload = this.lobbyPayload()
       let m: ZoneMatched
       if (this.lobbyMode) {
         this.fallingBack = false
@@ -317,6 +383,11 @@ export class PlayFlow {
         }
       } else m = await client.queue(d.partySize, this.queuePayload())
       if (!this.active(client) || this.cancelling) return
+      // G7.5 admission runs before the mesh connects and before any show construction.
+      const engine = d.backend
+      if (engine) requireEnginePeers(engine.identity, m.opps)
+      else requireLegacyPeers(m.opps)
+      if (!this.active(client) || this.cancelling) return
       // A lobby round seats whoever was there (1..partySize humans); bots take the other places.
       const humans = m.players
       const setup = netSetup(m.seed, humans, 'sprint', d.courses, Math.max(humans, d.seats ?? NET_PLAYERS))
@@ -325,8 +396,15 @@ export class PlayFlow {
       })
       if (!this.active(client) || this.cancelling) { transport.close(); return }
       this.transport = transport
-      this.netMatch = createOnlineMatch(d.R, { setup, localPeer: m.youAre, humanPeers: humans }, d.zones, this.transport, { rtt: this.transport.rtt, cpuMs: d.now, season: d.season, voteMs: d.voteMs, intermissionMs: d.intermissionMs })
-      if (d.pilot) this.matchPilot = new Pilot(m.youAre, m.seed)
+      if (engine) {
+        if (this.current !== 'queued') this.transition('queued')
+        const show = await engine.createMatch(m, transport)
+        if (this.closed || this.cancelling || this.matchClient !== client) { show.dispose(); return }
+        this.showRuntime = show
+      } else {
+        this.netMatch = createOnlineMatch(d.R, { setup, localPeer: m.youAre, humanPeers: humans }, d.zones, this.transport, { rtt: this.transport.rtt, cpuMs: d.now, season: d.season, voteMs: d.voteMs, intermissionMs: d.intermissionMs })
+        if (d.pilot) this.matchPilot = new Pilot(m.youAre, m.seed)
+      }
       this.accumulator = 0
       this.lastState = -Infinity
       this.transition('match', { seat: m.youAre, seed: m.seed })
@@ -336,10 +414,17 @@ export class PlayFlow {
     }
   }
 
+  private lobbyPayload(): { g: 'royal-fiesta'; v: 1; name: string; c: number; engine?: EngineModuleIdentity } {
+    const base = { g: 'royal-fiesta' as const, v: 1 as const, name: this.d.name, c: this.d.colour }
+    return this.d.backend ? { ...base, engine: this.d.backend.identity } : base
+  }
+
   private queuePayload(): ZoneQueuePayload {
-    return { g: 'royal-fiesta', v: 1, zones: 1, name: this.d.name, seats: 1, course: 'online-show',
+    const payload: ZoneQueuePayload = { g: 'royal-fiesta', v: 1, zones: 1, name: this.d.name, seats: 1, course: 'online-show',
       tuning: setupHash(netSetup(0, 1, 'sprint', this.d.courses, this.d.seats ?? NET_PLAYERS)),
       m: { cpuMs: 2, bandwidthKbps: 4096, latencyMs: 30, spareSlots: 3 } }
+    if (this.d.backend) payload.engine = this.d.backend.identity
+    return payload
   }
 
   private onLobby(client: ZoneRelayClient, msg: LobbyServerMsg): void {
@@ -348,7 +433,7 @@ export class PlayFlow {
       const step = this.lobbyTracker.apply(msg, this.d.now())
       if (this.sharedHub) this.sharedPresence(msg)
       if (step.kind === 'fail') throw new RefusalError('hub', 'lobby', `${step.reason}: the GameSaloon lobby refused; reload to try again`)
-      if (step.kind === 'reenter') client.lobbyAgain(this.d.partySize, { g: 'royal-fiesta', v: 1, name: this.d.name, c: this.d.colour })
+      if (step.kind === 'reenter') client.lobbyAgain(this.d.partySize, this.lobbyPayload())
       const stage = this.lobbyTracker.view.stage
       const next: FlowState = stage === 'choosing' ? 'choosing' : stage === 'spectator' ? 'watching' : 'queued'
       if (next !== this.current) this.transition(next, { lobby: this.lobbyTracker.view.id ?? '' })
@@ -369,9 +454,10 @@ export class PlayFlow {
     if (msg.t !== 'lobby_state') return
     this.buffer.roster(v.members.filter(m => m.k !== v.you))
     // Each member arrives on its own spawn (by presence key), so a full lobby does not stand in one spot.
-    if (v.you !== null && v.id !== this.placedIn && this.hubWorld) {
+    const hub = this.hubWorld ?? this.engineHub
+    if (v.you !== null && v.id !== this.placedIn && hub) {
       this.placedIn = v.id
-      this.hubWorld.respawn(v.you)
+      hub.respawn(v.you)
     }
   }
 

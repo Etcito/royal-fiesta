@@ -6,7 +6,10 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { before, test } from 'node:test'
 import { initRapier } from '@gamesaloon/rollback-rapier'
 import type { RapierModule } from '@gamesaloon/rollback-rapier'
+import type { CharState } from '@royal-fiesta/sim/character/system'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
+import type { PlayerInput } from '@royal-fiesta/sim/input'
+import type { EngineModuleIdentity } from '../../../tools/egeScripts.ts'
 import { fixtureResolver } from '../src/assets.ts'
 import { basisFromFacing } from '../src/client/cameraBasis.ts'
 import { emptyControls } from '../src/client/inputMap.ts'
@@ -14,8 +17,12 @@ import type { RawControls } from '../src/client/inputMap.ts'
 import { loadCourse } from '../src/course.ts'
 import { matchCourses } from '../src/courseSet.ts'
 import type { CourseEntry } from '../src/courseSet.ts'
+import type { HubRuntime } from '../src/ege/hub.ts'
+import type { EngineShowPresentation, EngineShowRuntime, EngineShowSnapshot, EngineWorldRef } from '../src/ege/showTypes.ts'
 import { PlayFlow } from '../src/hub/flow.ts'
-import type { FlowEvent, FlowState } from '../src/hub/flow.ts'
+import type { FlowBackend, FlowEvent, FlowState } from '../src/hub/flow.ts'
+import type { RemoteView } from '../src/hub/remotes.ts'
+import type { SceneReadView } from '../src/render/sceneReadView.ts'
 import { HUB_MAX_ACTS_PER_MIN, HUB_RATE_HZ, HUB_MATCH_RATE_HZ } from '../src/hub/protocol.ts'
 import { lobbyLines } from '../src/hub/lobby.ts'
 import { LoopbackRelay } from '../src/net/loopbackRelay.ts'
@@ -65,7 +72,7 @@ class World {
     performance.now = () => this.ms
   }
 
-  add(name: string, colour: number, hubCode: string | 'new', partySize: 2 | 3 | 4, pilot: boolean, matchmaking?: 'lobby' | 'pad'): Client {
+  add(name: string, colour: number, hubCode: string | 'new', partySize: 2 | 3 | 4, pilot: boolean, matchmaking?: 'lobby' | 'pad', backend?: FlowBackend): Client {
     const inner = this.relay.factory()
     const c: Client = { flow: null as unknown as PlayFlow, socks: [], events: [] }
     const ws: WsFactory = url => {
@@ -84,7 +91,7 @@ class World {
     }
     c.flow = new PlayFlow({
       R, rtc: this.rtc.backend(this.clients.length), relayUrl: 'loopback://relay', ws, hubCode, name, colour, courses, zones, plaza, partySize,
-      now: () => this.ms, pilot, log: ev => c.events.push(ev), matchmaking,
+      now: () => this.ms, pilot, log: ev => c.events.push(ev), matchmaking, backend,
     })
     this.clients.push(c)
     return c
@@ -463,5 +470,219 @@ test('lobby: one shared hub; every member is drawn with its name, colour and mov
     await w.until(() => a.flow.remotes(w.ms).length === 1 && c.flow.remotes(w.ms).length === 1, 2000)
     assert.equal(a.flow.remotes(w.ms)[0].name, 'Cid')
     assertClean(w)
+  } finally { w.close() }
+})
+
+// Engine backend fakes: the flow only needs these members to drive the engine path.
+const IDENTITY_A: EngineModuleIdentity = { backend: 'engine', schemaKey: 7, moduleKey: 'build-a' }
+const IDENTITY_B: EngineModuleIdentity = { backend: 'engine', schemaKey: 7, moduleKey: 'build-b' }
+
+function freshChar(): CharState {
+  return {
+    pos: { x: 0, y: 0, z: 0 }, vel: { x: 0, y: 0, z: 0 }, facing: { x: 0, z: 1 },
+    mode: 0, grounded: false, groundObstacle: -1, knockbacks: 0, teleportTick: 0,
+  }
+}
+
+class FakeHub implements HubRuntime {
+  tick = 0
+  botCount = 0
+  spawn = 0
+  faults = 0
+  freed = 0
+  respawns = 0
+  private readonly char = freshChar()
+  step(_input: PlayerInput): void { this.tick++ }
+  state(out: CharState): CharState { return Object.assign(out, this.char) }
+  botViews(): RemoteView[] { return [] }
+  respawn(spawn: number): void { this.respawns++; this.spawn = spawn }
+  onQueuePad(): boolean { return false }
+  setEmote(_id: number, _nowMs: number): void {}
+  emote(_nowMs: number): number { return 0 }
+  free(): void { this.freed++ }
+  view(): SceneReadView { return null as unknown as SceneReadView }
+}
+
+class FakeShow implements EngineShowRuntime {
+  readonly mode = 'local' as const
+  readonly identity: EngineModuleIdentity
+  readonly screens: readonly EngineShowSnapshot['screen'][]
+  disposed = 0
+  private frames = 0
+  constructor(identity: EngineModuleIdentity, screens: readonly EngineShowSnapshot['screen'][] = ['podium', 'done']) {
+    this.identity = identity
+    this.screens = screens
+  }
+  snapshot(): EngineShowSnapshot {
+    return {
+      tick: this.frames, round: 0, screen: this.screens[Math.min(this.frames, this.screens.length - 1)],
+      seatOf: [], alive: [], candidates: [], results: [], champion: 3, faults: 0,
+    }
+  }
+  frame(_dtS: number, _sample: (roomSeat: number) => number): void { this.frames++ }
+  vote(_roomSeat: number, _candidate: number): void {}
+  worlds(): readonly EngineWorldRef[] { return [] }
+  presentation(): EngineShowPresentation { return { showId: 'fake', tick: this.frames, round: 0, map: null, course: null, worlds: [] } }
+  onPresentation(): () => void { return () => {} }
+  dispose(): void { this.disposed++ }
+}
+
+function backendOf(identity: EngineModuleIdentity, hub: HubRuntime, match: FlowBackend['createMatch']): FlowBackend {
+  return { identity, createHub: async () => hub, createMatch: match }
+}
+
+test('engine backend: a pending createHub keeps connecting, refuses hub and frees the late hub once', async () => {
+  const w = new World(51)
+  const late = new FakeHub()
+  let requested = 0
+  let resolve!: (hub: HubRuntime) => void
+  const backend: FlowBackend = {
+    identity: IDENTITY_A,
+    createHub: () => { requested++; return new Promise<HubRuntime>(r => { resolve = r }) },
+    createMatch: async () => { throw new Error('createMatch must not run') },
+  }
+  try {
+    const c = w.add('Bean0', 0, 'new', 2, false, undefined, backend)
+    const started = c.flow.start()
+    await w.until(() => requested === 1, 2000)
+    assert.equal(c.flow.state, 'connecting')
+    assert.equal(c.flow.hubRuntime, null)
+    assert.throws(() => c.flow.hub, /hub is unavailable/)
+    c.flow.close()
+    resolve(late)
+    await started
+    await w.settle()
+    assert.equal(late.freed, 1)
+  } finally { w.close() }
+})
+
+test('engine backend: a rejected createHub fails with its message', async () => {
+  const w = new World(52)
+  const backend: FlowBackend = { identity: IDENTITY_A, createHub: async () => { throw new Error('hub exploded') }, createMatch: async () => { throw new Error('createMatch must not run') } }
+  try {
+    const c = w.add('Bean0', 0, 'new', 2, false, undefined, backend)
+    void c.flow.start()
+    await w.until(() => c.flow.state === 'failed', 2000)
+    assert.equal(c.events.find(e => e.state === 'failed')?.detail.message, 'hub exploded')
+    assert.equal(c.flow.hubRuntime, null)
+  } finally { w.close() }
+})
+
+test('engine backend: two moduleKeys in one lobby both refuse the lobby.opps mismatch before createMatch', async () => {
+  const w = new World(53, { waitMs: 1000 })
+  let matches = 0
+  const match: FlowBackend['createMatch'] = async () => { matches++; return new FakeShow(IDENTITY_A) }
+  try {
+    const a = w.add('Ann', 0, 'new', 2, false, 'lobby', backendOf(IDENTITY_A, new FakeHub(), match))
+    const b = w.add('Bob', 1, 'new', 2, false, 'lobby', backendOf(IDENTITY_B, new FakeHub(), match))
+    void a.flow.start()
+    void b.flow.start()
+    await w.until(() => a.flow.state === 'failed' && b.flow.state === 'failed', 5000)
+    for (const c of [a, b]) {
+      const message = String(c.events.find(e => e.state === 'failed')?.detail.message)
+      assert.match(message, /\[ege-online\] lobby\.opps\/\d\.engine: module identity mismatch/)
+    }
+    assert.equal(matches, 0)
+  } finally { w.close() }
+})
+
+test('engine backend: an opponent without an identity is refused like a mismatch', async () => {
+  const w = new World(54, { waitMs: 1000 })
+  let matches = 0
+  const match: FlowBackend['createMatch'] = async () => { matches++; return new FakeShow(IDENTITY_A) }
+  try {
+    const a = w.add('Ann', 0, 'new', 2, false, 'lobby', backendOf(IDENTITY_A, new FakeHub(), match))
+    const b = w.add('Bob', 1, 'new', 2, false, 'lobby')
+    void a.flow.start()
+    void b.flow.start()
+    await w.until(() => a.flow.state === 'failed', 5000)
+    const message = String(a.events.find(e => e.state === 'failed')?.detail.message)
+    assert.match(message, /\[ege-online\] lobby\.opps\/\d\.engine: missing or malformed engine module identity/)
+    assert.equal(matches, 0)
+  } finally { w.close() }
+})
+
+test('engine backend: a pending createMatch stays queued and a close disposes the late runtime once', async () => {
+  const w = new World(55, { waitMs: 1000 })
+  const hub = new FakeHub()
+  const show = new FakeShow(IDENTITY_A)
+  let requested = 0
+  let resolve!: (runtime: EngineShowRuntime) => void
+  const backend: FlowBackend = {
+    identity: IDENTITY_A,
+    createHub: async () => hub,
+    createMatch: () => { requested++; return new Promise<EngineShowRuntime>(r => { resolve = r }) },
+  }
+  try {
+    const c = w.add('Ann', 0, 'new', 2, false, 'lobby', backend)
+    void c.flow.start()
+    await w.until(() => requested === 1, 5000)
+    for (let i = 0; i < 10; i++) {
+      await w.step()
+      assert.equal(c.flow.state, 'queued')
+      assert.equal(c.flow.show, null)
+    }
+    c.flow.close()
+    resolve(show)
+    await w.settle()
+    assert.equal(show.disposed, 1)
+    assert.equal(hub.freed, 1)
+  } finally { w.close() }
+})
+
+test('engine backend: a rejected createMatch fails with its message', async () => {
+  const w = new World(56, { waitMs: 1000 })
+  const hub = new FakeHub()
+  const backend: FlowBackend = {
+    identity: IDENTITY_A,
+    createHub: async () => hub,
+    createMatch: async () => { throw new Error('show exploded') },
+  }
+  try {
+    const c = w.add('Ann', 0, 'new', 2, false, 'lobby', backend)
+    void c.flow.start()
+    await w.until(() => c.flow.state === 'failed', 5000)
+    assert.equal(c.events.find(e => e.state === 'failed')?.detail.message, 'show exploded')
+    assert.equal(hub.freed, 1)
+  } finally { w.close() }
+})
+
+test('engine backend: a show reaches podium, returning and the hub, disposing once and respawning the hub once', async () => {
+  const w = new World(57, { waitMs: 1000 })
+  const host = w.add('Host', 0, 'new', 2, false)
+  void host.flow.start()
+  await w.until(() => host.flow.state === 'hub', 1000)
+  const hub = new FakeHub()
+  const show = new FakeShow(IDENTITY_A, ['playing', 'podium', 'done'])
+  const backend: FlowBackend = { identity: IDENTITY_A, createHub: async () => hub, createMatch: async () => show }
+  try {
+    const c = w.add('Ann', 1, host.flow.hubCode!, 2, false, 'lobby', backend)
+    void c.flow.start()
+    await w.until(() => c.flow.state === 'match', 5000)
+    assert.equal(c.flow.show, show)
+    assert.equal(c.flow.match, null)
+    await w.until(() => c.events.some(e => e.state === 'returning'), 3000)
+    assert.equal(show.disposed, 1)
+    assert.equal(c.flow.show, null)
+    assert.equal(c.flow.lastLog, null)
+    await w.until(() => c.events.filter(e => e.state === 'hub').length >= 2, 3000)
+    assert.equal(hub.respawns, 1)
+    const states = c.events.map(e => e.state)
+    const from = states.indexOf('match')
+    assert.deepEqual(states.slice(from, from + 4), ['match', 'podium', 'returning', 'hub'])
+  } finally { w.close() }
+})
+
+test('legacy flow: an opponent payload carrying an engine key fails through requireLegacyPeers', async () => {
+  const w = new World(58, { waitMs: 1000 })
+  const backend: FlowBackend = { identity: IDENTITY_A, createHub: async () => new FakeHub(), createMatch: async () => new FakeShow(IDENTITY_A) }
+  try {
+    const a = w.add('Ann', 0, 'new', 2, false, 'lobby', backend)
+    const b = w.add('Bob', 1, 'new', 2, false, 'lobby')
+    void a.flow.start()
+    void b.flow.start()
+    await w.until(() => b.flow.state === 'failed', 5000)
+    const message = String(b.events.find(e => e.state === 'failed')?.detail.message)
+    assert.match(message, /\[ege-online\] lobby\.opps\/\d\.engine: an \?engine=1 client joined a legacy show/)
   } finally { w.close() }
 })

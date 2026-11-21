@@ -157,7 +157,9 @@ export class EngineShowEffects {
     sequence: string,
     decl: LayoutDecl | undefined,
   ): void {
-    const publisher = world.publishers.get(event.entity)
+    // Engine-emitted events (ege.contact) come from any physical scene entity, not only zone publishers;
+    // a live scene entity publishes under a stable identity, any other entity is still reported.
+    const publisher = world.publishers.get(event.entity) ?? (liveEntities(world).has(event.entity) ? `entity/${event.entity}` : undefined)
     if (publisher === undefined) {
       throw new Error(`show effects: entity ${event.entity} has no publisher for event '${event.name}'`)
     }
@@ -271,4 +273,15 @@ function readField(payload: DataView, type: LayoutDecl['fields'][number]['type']
     case 'f64':
       return payload.getFloat64(offset, true)
   }
+}
+
+const liveSets = new WeakMap<EnginePresentationWorld, ReadonlySet<number>>()
+
+function liveEntities(world: EnginePresentationWorld): ReadonlySet<number> {
+  let set = liveSets.get(world)
+  if (set === undefined) {
+    set = new Set(world.entities.values())
+    liveSets.set(world, set)
+  }
+  return set
 }

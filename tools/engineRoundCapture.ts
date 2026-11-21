@@ -1,16 +1,15 @@
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { execFileSync, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { allocateAttempt, captureStore, currentAttempt, keptRowsWith, loadCaptureRows, priorOutcomes, requirementProblems, renderOrder as sharedRenderOrder, restoreRetained, writeJson as json, copyRecord as copy } from './engineCaptureJob.ts'
-import type { CaptureBuild, CaptureKept, CaptureRun } from './engineCaptureJob.ts'
+import { allocateAttempt, captureBuild, captureStageStore, currentAttempt, freshEngineCapture, keptRowsWith, loadCaptureRows, renderEngineCapture, requirementProblems, renderOrder as sharedRenderOrder, writeJson as json, copyRecord as copy } from './engineCaptureJob.ts'
+import type { CaptureBuild, CaptureJobConfig, CaptureKept, CaptureResult, CaptureRow } from './engineCaptureJob.ts'
 import { refuse, isRefusal } from '../packages/sim/src/refusal.ts'
 import { focusedFeature, parseRunArgs } from '../apps/web/src/engineRound/run.ts'
 import type { RoundRunArgs } from '../apps/web/src/engineRound/run.ts'
 import { buildContentIndex, packContent } from './content.ts'
-import { publishDist, renderOp } from '../apps/headless/src/gpuClient.ts'
+import { renderOp } from '../apps/headless/src/gpuClient.ts'
 import { unwrapOp } from '../apps/headless/src/gpuRecord.ts'
-import { gpuWaitSeconds, waitForGpuClient } from './chromeCheck.ts'
 import { parseScore } from './judgeLoop.ts'
 import { repoRoot } from './bricks.ts'
 import { harnessRound } from '../apps/headless/src/egeHarness.ts'
@@ -40,12 +39,8 @@ function options(argv: string[]): { op: string; milestone: string; page: string;
   return { op: op!, milestone: values.get('--milestone')!, page: values.get('--page')!, out: values.get('--out')!, budget: values.has('--budget-s') ? Number(values.get('--budget-s')) : Infinity }
 }
 
-function buildIdentity(): Build {
-  return { commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot(), encoding: 'utf8' }).trim() }
-}
-
 function storeFor(milestone: string, out: string): string {
-  return captureStore(`engine-round-${milestone}`, out)
+  return captureStageStore('engine-round-', milestone, out)
 }
 
 async function check(args: ReturnType<typeof options>): Promise<void> {
@@ -57,7 +52,7 @@ async function check(args: ReturnType<typeof options>): Promise<void> {
   const root = repoRoot()
   const index = buildContentIndex()
   const indexIds = new Set(index.courses.map(course => course.id))
-  const build = buildIdentity()
+  const build = captureBuild()
   for (const row of rows) {
     const id = row.args.course
     const fixture = join(root, 'fixtures/ege', `${id}.course.json`)
@@ -69,7 +64,7 @@ async function check(args: ReturnType<typeof options>): Promise<void> {
       }
     } finally { round.dispose() }
   }
-  json(join(args.out, 'selection.json'), { milestone: args.milestone, build, rows })
+  json(join(args.out, 'selection.json'), { milestone: args.milestone, build, rows: rows.map(row => ({ ...row, stage: row.milestone })) })
   console.log(`engine-round: check ${rows.length} rows`)
 }
 
@@ -79,8 +74,6 @@ function clean(args: ReturnType<typeof options>): void {
   if (!existsSync(selectionPath)) refuse('engine-round', selectionPath, 'run check first')
   allocateAttempt(storeFor(args.milestone, delivery), selectionPath)
 }
-
-type Run = CaptureRun
 
 function current(args: ReturnType<typeof options>) {
   const delivery = resolve(args.out)
@@ -94,92 +87,61 @@ export function renderOrder(rows: InventoryRow[], failed: readonly string[], ren
   return sharedRenderOrder(rows, failed, rendered)
 }
 
-async function render(args: ReturnType<typeof options>): Promise<number> {
-  const ctx = current(args)
-  const { selection, store, dir, delivery, attempt } = ctx
-  const reusable = keptRowsWith<InventoryRow>('ENGINE_ROUND_RERENDER_ALL', store, selection.rows, selection.build, true)
-  const { failed, rendered } = priorOutcomes(store)
-  const run: Run = { attempt, build: selection.build, kept: reusable.kept, rendered: [], failed: [] }
-  const saveRun = () => { json(join(dir, 'run.json'), run); copy(join(dir, 'run.json'), join(delivery, 'run.json')) }
-  restoreRetained(store, dir, delivery, reusable.kept)
-  copy(join(dir, 'selection.json'), join(delivery, 'selection.json'))
-  saveRun()
-  const ordered = sharedRenderOrder(reusable.render, failed, rendered)
-  console.log(`engine-round: kept ${reusable.kept.length}, rendering ${ordered.length}`)
-  if (!ordered.length) return 0
-  await waitForGpuClient(gpuWaitSeconds(process.env.NMC_GPU_WAIT_S))
-  const scratch = mkdtempSync(join(tmpdir(), 'engine-round-page-'))
+function roundArgs(value: unknown): RoundRunArgs {
+  try { return parseRunArgs(value) } catch (error) {
+    const field = error && typeof error === 'object' && 'path' in error ? String((error as { path: unknown }).path).replace(/^args\./, '') : ''
+    refuse('engine-round', `args${field ? `/${field}` : ''}`, error instanceof Error ? error.message : String(error))
+  }
+}
+
+/** Stages the selected built page with its engineRound operation descriptor; content packing stays here. */
+function stageRoundPage(source: string, target: string, rows: readonly CaptureRow<RoundRunArgs>[]): void {
+  cpSync(source, target, { recursive: true })
+  const content = join(target, 'content')
+  const index = packContent(content, undefined, new Set())
+  for (const id of new Set(rows.map(row => row.args.course))) {
+    const fixture = join(repoRoot(), 'fixtures/ege', `${id}.course.json`)
+    if (!index.courses.some(course => course.id === id) && existsSync(fixture)) {
+      const path = `courses/${id}.course.json`
+      copy(fixture, join(content, path))
+      index.courses.push({ id, path })
+    }
+  }
+  json(join(content, 'index.json'), index)
+  json(join(target, 'nmc.gpu.json'), { page: 'engine-round.html', ops: ['engineRound'] })
+}
+
+async function renderRound(row: CaptureRow<RoundRunArgs>, pageRef: string): Promise<CaptureResult> {
+  const job = mkdtempSync(join(tmpdir(), 'engine-round-job-'))
   try {
-    cpSync(args.page, scratch, { recursive: true })
-    const content = join(scratch, 'content')
-    const index = packContent(content, undefined, new Set())
-    for (const id of new Set(selection.rows.map(row => row.args.course))) {
-      const fixture = join(repoRoot(), 'fixtures/ege', `${id}.course.json`)
-      if (!index.courses.some(course => course.id === id) && existsSync(fixture)) {
-        const path = `courses/${id}.course.json`
-        copy(fixture, join(content, path))
-        index.courses.push({ id, path })
-      }
-    }
-    json(join(content, 'index.json'), index)
-    json(join(scratch, 'nmc.gpu.json'), { page: 'engine-round.html', ops: ['engineRound'] })
-    const pageRef = await publishDist(scratch)
-    for (const row of ordered) {
-      const job = join(dir, 'jobs', row.id)
-      try {
-        rmSync(join(dir, row.filename), { force: true })
-        rmSync(join(delivery, row.filename), { force: true })
-        rmSync(job, { recursive: true, force: true })
-        const result = await renderOp('engineRound', row.args, job, row.id, pageRef)
-        const output = unwrapOp(result, 'facts').out
-        const capture = output.capture as Record<string, unknown> | undefined
-        if (!capture || capture.name !== row.filename || typeof capture.base64 !== 'string') throw new Error('invalid capture output')
-        const image = Buffer.from(capture.base64, 'base64')
-        if (!image.length) throw new Error('empty capture')
-        const problems = requireProblems(output.facts, row.require)
-        if (problems.length) throw new Error(problems.join('; '))
-        const { base64: _base64, ...metadata } = capture
-        json(join(job, 'input.json'), row.args)
-        json(join(job, 'result.json'), { facts: output.facts, capture: metadata })
-        writeFileSync(join(dir, row.filename), image)
-        copy(job, join(delivery, 'jobs', row.id))
-        copy(join(dir, row.filename), join(delivery, row.filename))
-        run.rendered.push(row.id)
-      } catch (error) {
-        rmSync(job, { recursive: true, force: true })
-        run.failed.push({ id: row.id, message: error instanceof Error ? error.message : String(error) })
-        console.error(`engine-round: ${row.id}: ${run.failed.at(-1)!.message}`)
-      }
-      saveRun()
-    }
-  } finally { rmSync(scratch, { recursive: true, force: true }) }
-  return run.failed.length ? 1 : 0
+    const rendered = await renderOp('engineRound', row.args, job, row.id, pageRef)
+    return unwrapOp(rendered, 'facts').out as unknown as CaptureResult
+  } finally { rmSync(job, { recursive: true, force: true }) }
+}
+
+function roundConfig(page: string, source?: string): CaptureJobConfig<RoundRunArgs> {
+  return {
+    topic: 'engine-round-',
+    inventory: INVENTORY,
+    page,
+    parseArgs: roundArgs,
+    validateSelection: async rows => { if (source !== undefined) stageRoundPage(source, page, rows) },
+    run: (row, pageRef) => renderRound(row, pageRef),
+  }
+}
+
+function sharedArgv(operation: 'render' | 'fresh', args: ReturnType<typeof options>): string[] {
+  return [operation, '--stage', args.milestone, '--page', args.page, '--out', args.out]
+}
+
+async function render(args: ReturnType<typeof options>): Promise<number> {
+  const scratch = mkdtempSync(join(tmpdir(), 'engine-round-page-'))
+  try { return await renderEngineCapture(roundConfig(scratch, args.page), sharedArgv('render', args)) }
+  finally { rmSync(scratch, { recursive: true, force: true }) }
 }
 
 function fresh(args: ReturnType<typeof options>): number {
-  const { selection, delivery, dir } = current(args)
-  let failures = 0
-  for (const row of selection.rows) {
-    try {
-      const image = join(delivery, row.filename)
-      if (statSync(image).size === 0) throw new Error('image is empty')
-      const job = join(delivery, 'jobs', row.id)
-      const origin = join(dir, 'jobs', row.id)
-      for (const file of ['input.json', 'result.json']) {
-        if (!readFileSync(join(job, file)).equals(readFileSync(join(origin, file)))) throw new Error(`${file} differs from attempt`)
-      }
-      const result = JSON.parse(readFileSync(join(job, 'result.json'), 'utf8')) as { facts: unknown }
-      const problems = requireProblems(result.facts, row.require)
-      for (const problem of problems) {
-        failures++
-        console.error(`engine-round: ${row.id}: ${problem}`)
-      }
-    } catch (error) {
-      failures++
-      console.error(`engine-round: ${row.id}: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
-  return failures ? 1 : 0
+  return freshEngineCapture(roundConfig(args.page), sharedArgv('fresh', args))
 }
 
 type Verdict = { filename: string; description: string; heldConstant?: string[]; attempt: number; score: number | null; pass: boolean }

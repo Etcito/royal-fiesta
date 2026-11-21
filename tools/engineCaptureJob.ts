@@ -1,7 +1,12 @@
-import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { refuse } from '../packages/sim/src/refusal.ts'
+import { decodePng } from '../apps/headless/src/gpuRecord.ts'
+import { publishDist } from '../apps/headless/src/gpuClient.ts'
+import { gpuWaitSeconds, waitForGpuClient } from './chromeCheck.ts'
+import { repoRoot } from './bricks.ts'
 
 /** Output filename rule shared by every capture inventory (E8). */
 export const CAPTURE_FILENAME = /^[a-z0-9-]+[.]png$/
@@ -259,4 +264,255 @@ export function keptRowsWith<R extends CaptureIdentity>(switchName: string, stor
  */
 export function keptRows<A>(storeDir: string, rows: readonly CaptureRow<A>[], build: CaptureBuild): { kept: CaptureKept[]; render: CaptureRow<A>[] } {
   return keptRowsWith<CaptureRow<A>>('ENGINE_SHOW_RERENDER_ALL', storeDir, rows, build, true)
+}
+
+/** Width of every delivered capture (E8). */
+export const CAPTURE_WIDTH = 1920
+/** Height of every delivered capture (E8). */
+export const CAPTURE_HEIGHT = 1080
+
+/**
+ * Result a managed operation returns for one row: the facts the requirements judge and the encoded
+ * PNG the shared job validates, persists and delivers.
+ */
+export type CaptureResult = {
+  facts: unknown
+  capture: { name: string; width: number; height: number; mime: 'image/png'; base64: string }
+}
+
+/**
+ * One inventory family wired to the shared lifecycle. `topic` names the store prefix (a trailing '/'
+ * or '-' appends the stage directly, otherwise the stage is a child folder), `page` is the staged
+ * page directory published once per render, `validateSelection` validates and may stage the rows,
+ * and `run` performs only the scenario's managed operation.
+ */
+export type CaptureJobConfig<A> = {
+  topic: string
+  inventory: string
+  page: string
+  parseArgs: (value: unknown) => A
+  validateSelection: (rows: readonly CaptureRow<A>[]) => Promise<void>
+  run: (row: CaptureRow<A>, pageRef: string) => Promise<CaptureResult>
+}
+
+/** Shared CLI operation vector: one operation, then --stage/--page/--out and optional --budget-s. */
+export type CaptureOptions = {
+  operation: 'check' | 'clean' | 'render' | 'fresh' | 'judge'
+  stage: string
+  page: string
+  out: string
+  budget: number
+}
+
+const CAPTURE_USAGE = 'usage: <check|clean|render|fresh|judge> --stage <stage> --page <dir> --out <dir> [--budget-s <s>]'
+const OPERATIONS = ['check', 'clean', 'render', 'fresh', 'judge']
+
+/** Parses the shared capture CLI; the caller maps a thrown error to exit status 2. */
+export function captureOptions(argv: readonly string[]): CaptureOptions {
+  const [operation, ...rest] = argv
+  if (operation === undefined || !OPERATIONS.includes(operation) || rest.length % 2 !== 0) throw new Error(CAPTURE_USAGE)
+  const values = new Map<string, string>()
+  for (let i = 0; i < rest.length; i += 2) {
+    const flag = rest[i]
+    if (!['--stage', '--page', '--out', '--budget-s'].includes(flag) || values.has(flag)) throw new Error(CAPTURE_USAGE)
+    values.set(flag, rest[i + 1])
+  }
+  const stage = values.get('--stage')
+  const page = values.get('--page')
+  const out = values.get('--out')
+  const budget = values.get('--budget-s')
+  if (!stage || !page || !out) throw new Error(CAPTURE_USAGE)
+  if (budget !== undefined && (!Number.isFinite(Number(budget)) || Number(budget) < 0)) throw new Error(CAPTURE_USAGE)
+  return { operation: operation as CaptureOptions['operation'], stage, page, out, budget: budget === undefined ? Infinity : Number(budget) }
+}
+
+/** Stage store: `<topic>/<stage>`, or `<topic><stage>` when the topic ends with '/' or '-' (engine-round-mN). */
+export function captureStageStore(topic: string, stage: string, out: string): string {
+  const namespace = /[/-]$/.test(topic) ? `${topic}${stage}` : `${topic}/${stage}`
+  return captureStore(namespace, out)
+}
+
+/** Current publication/build identity used for retention and freshness. */
+export function captureBuild(): CaptureBuild {
+  return { commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot(), encoding: 'utf8' }).trim() }
+}
+
+function topicName(topic: string): string {
+  return topic.replace(/[/-]+$/, '') || 'ege-capture'
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function storedRows<A>(config: CaptureJobConfig<A>, selection: CaptureSelection<CaptureRow<A>>, stage: string): CaptureRow<A>[] {
+  const area = topicName(config.topic)
+  if (!Array.isArray(selection.rows)) refuse(area, 'selection', 'rows must be a list')
+  return selection.rows.map((item: unknown, index: number) => {
+    const row = item as CaptureRow<A>
+    const at = `selection/rows/${index}`
+    if (!row || typeof row !== 'object') refuse(area, at, 'must be a capture row')
+    if (typeof row.id !== 'string' || !row.id) refuse(area, `${at}/id`, 'must be a non-empty string')
+    if (typeof row.stage !== 'string') refuse(area, `${at}/stage`, 'must be a string')
+    if (row.stage !== stage) refuse(area, `${at}/stage`, `'${row.stage}' is not the selected stage '${stage}'`)
+    if (typeof row.filename !== 'string' || !CAPTURE_FILENAME.test(row.filename)) refuse(area, `${at}/filename`, 'must match ^[a-z0-9-]+[.]png$')
+    if (!Array.isArray(row.require) || row.require.some(rule => typeof rule !== 'string' || !validRequirement(rule))) refuse(area, `${at}/require`, 'contains a rule outside the E8 grammar')
+    if (typeof row.description !== 'string') refuse(area, `${at}/description`, 'must be a string')
+    if (!Array.isArray(row.held_constant) || row.held_constant.some(value => typeof value !== 'string')) refuse(area, `${at}/held_constant`, 'must be a string list')
+    return { ...row, args: config.parseArgs(row.args) }
+  })
+}
+
+function acceptedCapture(row: CaptureRow<unknown>, result: CaptureResult): { bytes: Buffer; metadata: { name: string; width: number; height: number; mime: 'image/png' } } {
+  const capture = result?.capture
+  if (!capture || typeof capture !== 'object') throw new Error('managed operation returned no capture')
+  if (capture.name !== row.filename) throw new Error(`capture name ${JSON.stringify(capture.name)} is not '${row.filename}'`)
+  if (capture.mime !== 'image/png') throw new Error(`capture mime ${JSON.stringify(capture.mime)} is not 'image/png'`)
+  if (capture.width !== CAPTURE_WIDTH || capture.height !== CAPTURE_HEIGHT) throw new Error(`capture is ${capture.width}x${capture.height}, not ${CAPTURE_WIDTH}x${CAPTURE_HEIGHT}`)
+  if (typeof capture.base64 !== 'string' || capture.base64.length === 0) throw new Error('capture base64 is empty')
+  const bytes = Buffer.from(capture.base64, 'base64')
+  if (bytes.length === 0) throw new Error('capture PNG bytes are empty')
+  decodePng(bytes, CAPTURE_WIDTH, CAPTURE_HEIGHT, row.filename)
+  return { bytes, metadata: { name: capture.name, width: capture.width, height: capture.height, mime: capture.mime } }
+}
+
+function attemptRun(dir: string): CaptureRun | undefined {
+  try {
+    return JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8')) as CaptureRun
+  } catch { return undefined }
+}
+
+function retainedOrigins(dir: string): Map<string, number> {
+  return new Map((attemptRun(dir)?.kept ?? []).map(item => [item.id, item.attempt]))
+}
+
+/**
+ * Handoff: G7-CAPTURE-JOB: finish the shared lifecycle and judgment calls renderEngineCapture and
+ * freshEngineCapture for the shared selection, build, current-attempt and job registry. Rendering
+ * attaches the reuse decision from keptRows (tools/engineCaptureJob.ts:265) with the stage store,
+ * current build and validated rows today.
+ *
+ * Rendering resolves the current attempt, validates its stored rows, publishes the staged page once
+ * for the selected job, then runs config.run per row; each successful image and job record is saved
+ * immediately and run.json is rewritten after every row, including failures. Freshness re-checks the
+ * current build, the copied selection, job records, required facts and each row's retained origin
+ * without running an operation.
+ */
+export async function renderEngineCapture<A>(config: CaptureJobConfig<A>, argv: readonly string[]): Promise<number> {
+  let args: CaptureOptions
+  try { args = captureOptions(argv) } catch { console.error(CAPTURE_USAGE); return 2 }
+  if (args.operation !== 'render') { console.error(CAPTURE_USAGE); return 2 }
+  const area = topicName(config.topic)
+  try {
+    const out = resolve(args.out)
+    const store = captureStageStore(config.topic, args.stage, out)
+    const { attempt, dir, selection } = currentAttempt<CaptureRow<A>>(store)
+    const build = captureBuild()
+    if (!selection.build || selection.build.commit !== build.commit) {
+      refuse(area, join(store, 'current.json'), `selection was validated at ${String(selection.build?.commit ?? 'no build')} but HEAD is ${build.commit}; run check and clean again`)
+    }
+    const rows = storedRows(config, selection, args.stage)
+    const reusable = keptRows(store, rows, build)
+    const { failed, rendered } = priorOutcomes(store)
+    const run: CaptureRun = { attempt, build, kept: reusable.kept, rendered: [], failed: [] }
+    const saveRun = () => {
+      writeJson(join(dir, 'run.json'), run)
+      copyRecord(join(dir, 'run.json'), join(out, 'run.json'))
+    }
+    restoreRetained(store, dir, out, reusable.kept)
+    copyRecord(join(dir, 'selection.json'), join(out, 'selection.json'))
+    saveRun()
+    const ordered = renderOrder(reusable.render, failed, rendered)
+    console.log(`${area}: kept ${reusable.kept.length}, rendering ${ordered.length}`)
+    if (ordered.length === 0) return 0
+    await config.validateSelection(rows)
+    await waitForGpuClient(gpuWaitSeconds(process.env.NMC_GPU_WAIT_S))
+    const pageRef = await publishDist(config.page)
+    for (const row of ordered) {
+      const job = join(dir, 'jobs', row.id)
+      try {
+        rmSync(join(dir, row.filename), { force: true })
+        rmSync(join(out, row.filename), { force: true })
+        rmSync(job, { recursive: true, force: true })
+        const output = await config.run(row, pageRef)
+        const capture = acceptedCapture(row, output)
+        const problems = requirementProblems(output.facts, row.require)
+        if (problems.length) throw new Error(problems.join('; '))
+        writeJson(join(job, 'input.json'), row.args)
+        writeJson(join(job, 'result.json'), { facts: output.facts, capture: capture.metadata })
+        writeFileSync(join(dir, row.filename), capture.bytes)
+        copyRecord(job, join(out, 'jobs', row.id))
+        copyRecord(join(dir, row.filename), join(out, row.filename))
+        run.rendered.push(row.id)
+      } catch (error) {
+        rmSync(job, { recursive: true, force: true })
+        run.failed.push({ id: row.id, message: messageOf(error) })
+        console.error(`${area}: ${row.id}: ${run.failed.at(-1)!.message}`)
+      }
+      saveRun()
+    }
+    return run.failed.length ? 1 : 0
+  } catch (error) {
+    console.error(`${area}: ${messageOf(error)}`)
+    return 1
+  }
+}
+
+/** Re-checks the current attempt's copied and retained records; see renderEngineCapture for the shared registry. */
+export function freshEngineCapture<A>(config: CaptureJobConfig<A>, argv: readonly string[]): number {
+  let args: CaptureOptions
+  try { args = captureOptions(argv) } catch { console.error(CAPTURE_USAGE); return 2 }
+  if (args.operation !== 'fresh') { console.error(CAPTURE_USAGE); return 2 }
+  const area = topicName(config.topic)
+  try {
+    const out = resolve(args.out)
+    const store = captureStageStore(config.topic, args.stage, out)
+    const { attempt, dir, selection } = currentAttempt<CaptureRow<A>>(store)
+    const build = captureBuild()
+    if (!selection.build || selection.build.commit !== build.commit) {
+      refuse(area, join(store, 'current.json'), `selection was validated at ${String(selection.build?.commit ?? 'no build')} but HEAD is ${build.commit}; run check and clean again`)
+    }
+    const rows = storedRows(config, selection, args.stage)
+    const run = attemptRun(dir)
+    if (run && (!run.build || run.build.commit !== build.commit)) refuse(area, join(dir, 'run.json'), `run record was written for another build; rerun render`)
+    const deliverySelection = join(out, 'selection.json')
+    if (!existsSync(deliverySelection) || !readFileSync(deliverySelection).equals(readFileSync(join(dir, 'selection.json')))) {
+      throw new Error('delivery selection differs from the current attempt; rerun render')
+    }
+    const origins = retainedOrigins(dir)
+    let failures = 0
+    for (const row of rows) {
+      try {
+        const retained = origins.get(row.id)
+        const origin = retained === undefined ? dir : join(store, 'attempts', String(retained))
+        const image = join(out, row.filename)
+        const bytes = readFileSync(image)
+        if (bytes.length === 0) throw new Error('image is empty')
+        decodePng(bytes, CAPTURE_WIDTH, CAPTURE_HEIGHT, image)
+        if (!bytes.equals(readFileSync(join(origin, row.filename)))) throw new Error(`image differs from attempt ${retained ?? attempt}`)
+        const job = join(out, 'jobs', row.id)
+        const source = join(origin, 'jobs', row.id)
+        for (const file of ['input.json', 'result.json']) {
+          if (!readFileSync(join(job, file)).equals(readFileSync(join(source, file)))) throw new Error(`${file} differs from attempt ${retained ?? attempt}`)
+        }
+        const result = JSON.parse(readFileSync(join(job, 'result.json'), 'utf8')) as { facts?: unknown; capture?: { name?: unknown; width?: unknown; height?: unknown; mime?: unknown } }
+        const capture = result.capture
+        if (!capture || capture.name !== row.filename || capture.mime !== 'image/png' || capture.width !== CAPTURE_WIDTH || capture.height !== CAPTURE_HEIGHT) {
+          throw new Error('job capture metadata does not match the row')
+        }
+        const problems = requirementProblems(result.facts, row.require)
+        for (const problem of problems) {
+          failures++
+          console.error(`${area}: ${row.id}: ${problem}`)
+        }
+      } catch (error) {
+        failures++
+        console.error(`${area}: ${row.id}: ${messageOf(error)}`)
+      }
+    }
+    return failures ? 1 : 0
+  } catch (error) {
+    console.error(`${area}: ${messageOf(error)}`)
+    return 1
+  }
 }

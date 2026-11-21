@@ -4,6 +4,7 @@ import { loadEngine } from '@etcito/game-engine'
 import { loadScript, schemaLayout, ScriptHost } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
 import { RF_EGE_SCHEMA } from '@royal-fiesta/game/ege/files'
+import { engineCodeOfS1 } from '@royal-fiesta/game/ege/inputCodes'
 import { emitEngineScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import type { EmittedScene } from '@royal-fiesta/game/ege/sceneEmitter'
 import { encodeInput, NEUTRAL_CODE } from '@royal-fiesta/sim/input'
@@ -925,11 +926,15 @@ test('the hub drives local control and moves the human forward', async () => {
   rig.doc.resources.season_params = { mode: 9, a: seat }
   const { world, host, module, faults } = await showHost(rig)
   try {
-    stepShow({ host, world, module, faults }, NEUTRAL_CODE)
+    stepShow({ host, world, module, faults }, 0)
     const neutral = readWorldState(rig.engine, world, rig.layout)
     assert.equal(Number((neutral.components.show_control as any)[String(seat)].code), NEUTRAL_CODE)
     const start = lastProbe(neutral, 1)
-    for (let i = 0; i < 30; i++) stepShow({ host, world, module, faults }, MOVE_FORWARD)
+    const forward = engineCodeOfS1(MOVE_FORWARD)
+    stepShow({ host, world, module, faults }, forward)
+    const firstForward = readWorldState(rig.engine, world, rig.layout)
+    assert.equal(Number((firstForward.components.show_control as any)[String(seat)].code), MOVE_FORWARD)
+    for (let i = 0; i < 29; i++) stepShow({ host, world, module, faults }, forward)
     const moved = readWorldState(rig.engine, world, rig.layout)
     const end = lastProbe(moved, 1)
     assert.ok(end > start + 1000, `local forward movement ${start}mm -> ${end}mm`)
@@ -1035,6 +1040,107 @@ test('hub wandering keeps its seeded target and rng in schema state across resto
     assert.equal(Number(replayLaterBot.wander_z), Number(laterBot.wander_z))
     assert.equal(Number(replayLaterBot.rng_state), Number(laterBot.rng_state))
     rig.engine.freeWorld(restored)
+  } finally {
+    rig.engine.freeWorld(world)
+  }
+})
+
+function posOf(state: any, seat: number): number[] {
+  const t = (state.components['ege.transform'] as any)[String(seat)]
+  return Array.isArray(t.pos) ? t.pos.map(Number) : [Number(t.pos_0), Number(t.pos_1), Number(t.pos_2)]
+}
+
+function horizontalDistance(state: any, seat: number, x: number, z: number): number {
+  const p = posOf(state, seat)
+  return Math.hypot(p[0] - x, p[2] - z)
+}
+
+function wanderTargetOf(state: any, occupant: number): { x: number; z: number } {
+  const row = (state.components.show_hub_occupant as any)[String(occupant)]
+  return { x: Number(row.wander_x), z: Number(row.wander_z) }
+}
+
+function showCodeOf(state: any, seat: number): number {
+  return Number((state.components.show_control as any)[String(seat)].code)
+}
+
+test('hub lobby bots walk toward their wander targets', async () => {
+  const rig = await showDocument('show_hub', HUB_WORLD, [0, 1], [0, -1], [true, false])
+  rig.doc.entities.push({ components: { show_hub_state: { owner: 0, occupants: 1, humans: 0, bots: 1, tick: 0, rng_state: 7 } } })
+  rig.doc.entities.push({ components: { show_hub_occupant: {
+    owner: 0, room_seat: 1, round_seat: 1, kind: 1, emote: 0, active: 1,
+    wander_x: 0, wander_z: 0, wander_tick: 0, rng_state: 0x1234,
+  } } })
+  const occupant = rig.doc.entities.length - 1
+  const human = rig.scene.seatEntities[0]
+  const bot = rig.scene.seatEntities[1]
+  rig.doc.resources.season_params = { mode: 9, a: human }
+  const { world, host, module, faults } = await showHost(rig)
+  try {
+    stepShow({ host, world, module, faults }, 0)
+    const first = readWorldState(rig.engine, world, rig.layout)
+    const target = wanderTargetOf(first, occupant)
+    const start = horizontalDistance(first, bot, target.x, target.z)
+    if (start > 0.5) assert.notEqual(showCodeOf(first, bot), 32639, 'the bot steers toward its target')
+    const saved = rig.engine.snapshot(world).slice()
+    for (let i = 2; i <= 119; i++) stepShow({ host, world, module, faults }, 0)
+    const live = readWorldState(rig.engine, world, rig.layout)
+    assert.ok(horizontalDistance(live, bot, target.x, target.z) <= start - 0.5, 'the live bot walks toward its target')
+    assert.equal(showCodeOf(live, human), 32639, 'the human seat stays neutral')
+
+    const restored = rig.engine.createWorld(JSON.stringify(rig.doc))
+    rig.engine.restore(restored, saved)
+    for (let i = 2; i <= 119; i++) stepShow({ host, world: restored, module, faults }, 0)
+    const replay = readWorldState(rig.engine, restored, rig.layout)
+    const replayTarget = wanderTargetOf(replay, occupant)
+    assert.equal(replayTarget.x, target.x)
+    assert.equal(replayTarget.z, target.z)
+    assert.ok(horizontalDistance(replay, bot, target.x, target.z) <= start - 0.5, 'the restored bot walks toward its target')
+    rig.engine.freeWorld(restored)
+  } finally {
+    rig.engine.freeWorld(world)
+  }
+})
+
+test('hub human neutral input stores S1 neutral and does not drift', async () => {
+  const rig = await showDocument('show_hub', HUB_WORLD, [0], [0], [true])
+  rig.doc.entities.push({ components: { show_hub_state: { owner: 0, occupants: 0, humans: 0, bots: 0, tick: 0, rng_state: 7 } } })
+  const seat = rig.scene.seatEntities[0]
+  rig.doc.resources.season_params = { mode: 9, a: seat }
+  const { world, host, module, faults } = await showHost(rig)
+  try {
+    for (let i = 0; i < 30; i++) stepShow({ host, world, module, faults }, 0)
+    const settled = posOf(readWorldState(rig.engine, world, rig.layout), seat)
+    for (let i = 0; i < 60; i++) {
+      stepShow({ host, world, module, faults }, 0)
+      const state = readWorldState(rig.engine, world, rig.layout)
+      assert.equal(showCodeOf(state, seat), 32639, `neutral S1 at settle tick ${i}`)
+    }
+    const end = posOf(readWorldState(rig.engine, world, rig.layout), seat)
+    const drift = Math.hypot(end[0] - settled[0], end[2] - settled[2])
+    assert.ok(drift < 0.05, `human horizontal drift ${drift}m`)
+  } finally {
+    rig.engine.freeWorld(world)
+  }
+})
+
+test('hub human axes and buttons reach show_control as S1', async () => {
+  const rig = await showDocument('show_hub', HUB_WORLD, [0], [0], [true])
+  rig.doc.entities.push({ components: { show_hub_state: { owner: 0, occupants: 0, humans: 0, bots: 0, tick: 0, rng_state: 7 } } })
+  const seat = rig.scene.seatEntities[0]
+  rig.doc.resources.season_params = { mode: 9, a: seat }
+  const { world, host, module, faults } = await showHost(rig)
+  try {
+    const inputs = [
+      { moveX: 1, moveZ: -1, jump: true, dive: false, grab: false },
+      { moveX: -1, moveZ: 1, jump: false, dive: true, grab: true },
+    ]
+    for (const input of inputs) {
+      const s1 = encodeInput(input)
+      stepShow({ host, world, module, faults }, engineCodeOfS1(s1))
+      const state = readWorldState(rig.engine, world, rig.layout)
+      assert.equal(showCodeOf(state, seat), s1, `S1 code for ${JSON.stringify(input)}`)
+    }
   } finally {
     rig.engine.freeWorld(world)
   }

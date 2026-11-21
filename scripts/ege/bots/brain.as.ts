@@ -90,7 +90,7 @@ function axisEngine(byte: u32): i32 {
 }
 
 /** Engine axis bytes become offset S1 bytes; button bits 16..18 survive unchanged. */
-function s1OfEngine(code: u32): u32 {
+export function s1OfEngine(code: u32): u32 {
   const qx = <i32><i8><u8>(code & 0xff)
   const qz = <i32><i8><u8>((code >>> 8) & 0xff)
   return axisS1(qx) | (axisS1(qz) << 8) | (code & S1_BUTTON_MASK)

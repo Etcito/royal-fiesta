@@ -3,6 +3,7 @@ import {
   Character, CourseRes, EgeTransform, Seat, ShowControl, ShowHubOccupant, ShowHubState, ShowSeatIdentity,
 } from '../components.gen'
 import { characterColumn, placeSeat, seatColumn, transformOf } from '../lib/seats.as'
+import { s1OfEngine } from '../bots/brain.as'
 import { Mulberry } from './scheduler.as'
 
 // The hub script is the non-competitive lobby half of G7.2. It never writes a round result and
@@ -15,6 +16,8 @@ import { Mulberry } from './scheduler.as'
 const KIND_BOT: u32 = 1
 const HUB_WANDER_TICKS: i32 = 120
 const TAU: f64 = 6.283185307179586
+const HUB_ARRIVE_M: f64 = 0.5
+const HUB_NEUTRAL_S1: u32 = 32639
 
 function fail(message: string): void {
   abort(message, 'scripts/ege/show/hub.as.ts', 0, 0)
@@ -43,11 +46,32 @@ function recover(entity: u32, seat: Seat, ch: Character, now: i32): void {
   setComponent(entity, EgeTransform.ID, EgeTransform.SIZE, transform)
 }
 
-function seatForRound(seats: Column<Seat>, roundSeat: u32): Seat {
+function seatIndexForRound(seats: Column<Seat>, roundSeat: u32): i32 {
   for (let i: u32 = 0; i < seats.count; i++) {
-    if (<u32>seats.at(i).seat == roundSeat) return seats.at(i)
+    if (<u32>seats.at(i).seat == roundSeat) return <i32>i
   }
-  return seats.at(0)
+  return -1
+}
+
+/** One S1 axis byte: clamp(round(n*127), -127, 127) + 127. */
+function axisByte(n: f64): u32 {
+  const scaled = <i32>Math.round(n * 127.0)
+  const clamped = scaled < -127 ? -127 : (scaled > 127 ? 127 : scaled)
+  return <u32>(clamped + 127)
+}
+
+/** Steers a scripted lobby bot seat toward its wander target by writing its S1 show_control. */
+function steerBot(entity: u32, identities: Column<ShowSeatIdentity>, occupant: ShowHubOccupant): void {
+  const identityRow = identities.find(entity)
+  if (identityRow < 0 || identities.at(<u32>identityRow).input_slot >= 0) return
+  const control = getComponent<ShowControl>(entity, ShowControl.ID, ShowControl.SIZE)
+  if (isNull<ShowControl>(control)) return
+  const transform = transformOf(entity)
+  const dx = occupant.wander_x - <f64>transform.pos_0
+  const dz = occupant.wander_z - <f64>transform.pos_2
+  const d = Math.sqrt(dx * dx + dz * dz)
+  control.code = d <= HUB_ARRIVE_M ? HUB_NEUTRAL_S1 : axisByte(dx / d) | (axisByte(dz / d) << 8)
+  setComponent<ShowControl>(entity, ShowControl.ID, ShowControl.SIZE, control)
 }
 
 function stepWander(seat: Seat, occupant: ShowHubOccupant, now: i32): void {
@@ -85,7 +109,7 @@ export function rf_show_hub(): void {
     if (identityRow >= 0 && identities.at(<u32>identityRow).input_slot >= 0) {
       const control = getComponent<ShowControl>(entity, ShowControl.ID, ShowControl.SIZE)
       if (!isNull<ShowControl>(control)) {
-        control.code = inputCode(seat.player)
+        control.code = s1OfEngine(inputCode(seat.player))
         setComponent<ShowControl>(entity, ShowControl.ID, ShowControl.SIZE, control)
       }
     }
@@ -107,7 +131,11 @@ export function rf_show_hub(): void {
     occupantsActive++
     if (occupant.kind == KIND_BOT) {
       bots++
-      if (seats.count > 0) stepWander(seatForRound(seats, occupant.round_seat), occupant, now)
+      const index = seatIndexForRound(seats, occupant.round_seat)
+      if (index >= 0) {
+        stepWander(seats.at(<u32>index), occupant, now)
+        steerBot(seats.entity(<u32>index), identities, occupant)
+      }
     } else {
       humans++
     }

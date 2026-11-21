@@ -68,7 +68,7 @@ test('start wardrobe mounts all four bins and chosen tint on hub and round local
   const assets = new Map<string, PrimsAsset>()
   for (const c of courses) for (const o of c.obstacles) assets.set(o.asset, (await resolver.resolve(o.asset)).asset)
   const R = await initRapier()
-  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses))
+  const sim = createMatchSim(R, netSetup(5, 1, 'sprint', courses, 8))
   const scene = new SceneView({ port, viewport: 0, localPlayer: 0, bean, assets: id => assets.get(id)!, loadingPaint: false, look: () => look })
   try { for (let i = 0; i < 200; i++) { sim.step(Array.from({ length: 8 }, neutralInput)); scene.update(sim, null, 1, 1 / 60) } check() } finally { scene.dispose(); sim.free() }
   assert.equal(port.draws.size, 0)

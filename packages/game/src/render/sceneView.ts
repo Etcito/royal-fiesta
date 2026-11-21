@@ -7,9 +7,10 @@ import { courseFrame, roundReady } from './roundLoad.ts'
 import type { CorrectionSmoother } from '@gamesaloon/rollback'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { ColliderSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
-import type { CharacterView, MatchSim, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
-import { Phase } from '@royal-fiesta/sim/match/matchSim'
+import type { CharacterView, MatchViewState } from '@royal-fiesta/sim/match/matchSim'
+import { MatchSim, Phase } from '@royal-fiesta/sim/match/matchSim'
 import type { BodyRef } from '@royal-fiesta/sim/mechanismSpec'
+import { refuse } from '@royal-fiesta/sim/refusal'
 import { pose } from '@royal-fiesta/sim/vec'
 import { CHAR, CharMode } from '@royal-fiesta/sim/character/constants'
 import { CAPSULE } from '@royal-fiesta/sim/character/capsule'
@@ -21,8 +22,10 @@ import type { CourseDressing } from '../content.ts'
 import { followCamera } from './camera.ts'
 import { armClip } from './cameraOcclusion.ts'
 import type { ArmClip } from './cameraOcclusion.ts'
+import { attachLegacySceneTicks } from './legacySceneTicks.ts'
 import { PALETTE, seatTint } from './palette.ts'
 import type { CameraPose, QuatT, RenderPort, SkinnedAssetT, SkinRigT, Vec3T } from './port.ts'
+import type { SceneReadView } from './sceneReadView.ts'
 
 // Visual IK inputs, read from this tick's sim state only: the capsule's foot contact while grounded, the
 // grab reach point in front while grabbing, and a forward look target. Copies, so the sim is never shared.
@@ -84,26 +87,10 @@ const UNIT: readonly [number, number, number] = [1, 1, 1]
 // registerSkinned uploads the skinned meshes, so each port registers a skinned asset once for all its views.
 const skinnedHandles = new WeakMap<RenderPort, Map<string, number>>()
 
-// View-side tick flow: each sim's step is wrapped once, so every tick it runs (several may run before one
-// update()) reaches the views observing it right after it completes. Observers only read the sim view API.
-type StepObserver = (sim: MatchSim) => void
-const stepObservers = new WeakMap<MatchSim, Set<StepObserver>>()
-function observeSteps(sim: MatchSim, observer: StepObserver): () => void {
-  let observers = stepObservers.get(sim)
-  if (observers === undefined) {
-    const set = new Set<StepObserver>()
-    const step = sim.step.bind(sim)
-    sim.step = inputs => {
-      step(inputs)
-      for (const o of set) o(sim)
-    }
-    stepObservers.set(sim, set)
-    observers = set
-  }
-  const own = observers
-  own.add(observer)
-  return () => { own.delete(observer) }
-}
+// View-side tick flow: each MatchSim's step is wrapped once by legacySceneTicks, so every tick it runs
+// (several may run before one update()) reaches the views observing it right after it completes. A read
+// view that is not a MatchSim is observed explicitly through update()/observeTick(); its own step method
+// is never touched.
 // Pose layout in the obstacle buffers: t xyz then r xyzw.
 const OB = 7
 const NO_CLIP: ArmClip = (_from, _dir, maxLen) => maxLen
@@ -371,10 +358,12 @@ export class SceneView {
   // Per character: the pose last submitted to the port, so a frame never resubmits an unchanged tick.
   private posed: (CharacterPose | typeof REST_POSED | undefined)[] = []
   private readonly observed: CharacterObservation[] = []
-  // The sim whose steps feed the graphs, and how to stop observing it.
+  // The read view this scene presents; a different one is a new timeline.
+  private source: SceneReadView | null = null
+  // The MatchSim whose steps feed the graphs, and how to stop observing it (legacy attachment only).
   private stepSim: MatchSim | null = null
   private unobserve: (() => void) | null = null
-  private readonly onStep: StepObserver = sim => this.observeTick(sim)
+  private readonly onStep = (view: SceneReadView): void => this.observeTick(view)
 
   constructor(opts: SceneViewOptions) {
     this.opts = opts
@@ -449,32 +438,34 @@ export class SceneView {
     return this.ci
   }
 
-  update(sim: MatchSim, smoother: CorrectionSmoother | null, alpha: number, frameDtS: number): void {
+  update(view: SceneReadView, smoother: CorrectionSmoother | null, alpha: number, frameDtS: number): void {
     const port = this.port
-    this.ci = sim.phase(this.state).courseIndex
-    const course = sim.course()
+    const changed = this.adopt(view)
+    this.validateSeat(view, this.opts.localPlayer, 'SceneViewOptions.localPlayer')
+    if (this.opts.lookPlayer !== undefined) this.validateSeat(view, this.opts.lookPlayer, 'SceneViewOptions.lookPlayer')
+    this.ci = view.phase(this.state).courseIndex
+    const course = view.course()
     let reset = false
-    if (course !== this.course) {
+    if (course !== this.course || (changed && this.obstacles.length !== 0 && view.obstacleCount() !== this.obstacles.length)) {
       if (this.opts.loadingPaint !== false && !roundReady(port, course?.id ?? 'round')) return
-      courseFrame(sim, port, course?.id ?? 'round', () => {
-        this.loadObstacles(sim, course)
+      courseFrame(view, port, course?.id ?? 'round', () => {
+        this.loadObstacles(view, course)
         this.dress(course)
-        if (this.beans.length === 0) this.createBeans(sim.setup.playerCount)
+        if (this.beans.length === 0) this.createBeans(view.setup.playerCount)
       })
       reset = true
     }
-    const players = sim.setup.playerCount
+    const players = view.setup.playerCount
     if (this.beans.length === 0) this.createBeans(players)
-    if (this.skinned !== null && sim !== this.stepSim) this.follow(sim, this.skinned)
 
-    const tick = sim.tick
+    const tick = view.tick
     const advanced = tick !== this.tick
-    if (advanced || reset) {
-      this.readObstacles(sim, advanced && !reset)
-      this.readCharacters(sim, advanced && !reset, tick)
+    if (advanced || reset || changed) {
+      this.readObstacles(view, advanced && !reset && !changed)
+      this.readCharacters(view, advanced && !reset && !changed, tick)
       this.tick = tick
     }
-    if (this.opts.crowdAspect === undefined) this.observeTick(sim)
+    if (this.opts.crowdAspect === undefined) this.observeTick(view)
 
     const t: [number, number, number] = [0, 0, 0]
     const r: [number, number, number, number] = [0, 0, 0, 1]
@@ -510,7 +501,7 @@ export class SceneView {
     // Small rollback scenes retain their original camera and animation path.
     let crowdCamera = false
     if (this.opts.crowdAspect !== undefined && this.state.phase !== Phase.podium) {
-      sim.character(this.opts.localPlayer, this.view)
+      this.readCharacter(view, this.opts.localPlayer, this.view)
       if (!this.view.parked) {
         const b = this.opts.localPlayer * 3
         const focus = [0, 1, 2].map(k => this.chPrev[b + k] + (this.chCur[b + k] - this.chPrev[b + k]) * alpha)
@@ -521,7 +512,7 @@ export class SceneView {
         crowdCamera = true
       }
     }
-    if (this.opts.crowdAspect !== undefined) this.observeTick(sim)
+    if (this.opts.crowdAspect !== undefined) this.observeTick(view)
 
     const c = this.view
     const d = this.shown
@@ -533,7 +524,7 @@ export class SceneView {
     let camFacing = { x: 0, z: 1 }
     let onLocal = false
     for (let p = 0; p < players; p++) {
-      sim.character(p, c)
+      this.readCharacter(view, p, c)
       if (p === lookPlayer && this.opts.look !== undefined) {
         const look = this.opts.look()
         this.lookMounts ??= new WornMounts(port)
@@ -612,20 +603,84 @@ export class SceneView {
       player === this.opts.lookPlayer || inCrowdView(this.cam, pos, this.opts.crowdAspect())
   }
 
+  // A different read view is a new timeline: borrowed animation state never crosses it, and only a real
+  // MatchSim gets the legacy per-step observer. A changed seat count rebuilds the character set once.
+  private adopt(view: SceneReadView): boolean {
+    if (view === this.source) return false
+    const first = this.source === null
+    this.source = view
+    this.unobserve?.()
+    this.unobserve = null
+    this.stepSim = null
+    const players = view.setup.playerCount
+    if (!first && players !== this.beans.length) {
+      this.rebuildCharacters(players)
+    } else if (!first && this.skinned !== null) {
+      this.animGen++
+      this.anim?.dispose()
+      this.anim = null
+      this.animError = null
+      this.posed = []
+      this.loadAnim(this.skinned)
+    }
+    if (this.skinned !== null && view instanceof MatchSim) this.follow(view)
+    return true
+  }
+
+  private validateSeat(view: SceneReadView, player: number, path: string): void {
+    if (!Number.isInteger(player) || player < 0 || player >= view.setup.playerCount) {
+      refuse('scene', path, `${player} is outside 0..${view.setup.playerCount - 1}; pass a seat of the read view`)
+    }
+  }
+
+  private readCharacter(view: SceneReadView, player: number, out: CharacterView): CharacterView {
+    this.validateSeat(view, player, `character(${player})`)
+    return view.character(player, out)
+  }
+
+  private rebuildCharacters(players: number): void {
+    this.animGen++
+    this.anim?.dispose()
+    this.anim = null
+    this.animError = null
+    this.posed = []
+    this.observed.length = 0
+    for (const worn of this.worn) {
+      for (const slot of COSTUME_SLOTS) {
+        const w = worn[slot]
+        if (w !== undefined) this.port.destroyInstance(w.instance)
+      }
+    }
+    this.worn = []
+    this.lookColour = -1
+    for (let i = 0; i < this.beans.length; i++) this.port.destroyInstance(this.beans[i])
+    this.beans = []
+    this.beanShown = []
+    this.chPrev = new Float64Array(0)
+    this.chCur = new Float64Array(0)
+    this.facing = new Float64Array(0)
+    this.tick = -1
+    this.createBeans(players)
+  }
+
   /**
-   * Steps every character graph once with the sim's current tick. The view calls it after each step of
-   * the sim it updates from, and update() observes the latest tick itself; a tick already observed is
-   * ignored (rendering never steps), and ticks run before the graphs loaded are not replayed.
+   * Steps every character graph once with the read view's current tick. Engine hosts call it after each
+   * presented tick; update() observes the latest tick itself and a MatchSim's legacy step wrapper does
+   * too. A tick already observed is ignored (rendering never steps), and ticks run before the graphs
+   * loaded are not replayed.
    */
-  observeTick(sim: MatchSim): void {
+  observeTick(view: SceneReadView): void {
     const anim = this.anim
-    const tick = sim.tick
+    const tick = view.tick
     if (anim === null || tick <= anim.observedTick) return
     const c = this.view
     const out = this.observed
     out.length = 0
+    const players = Math.min(this.beans.length, view.setup.playerCount)
     for (let p = 0; p < this.beans.length; p++) {
-      sim.character(p, c)
+      // A seat this view does not have is parked, never asked for from the view.
+      if (p >= players) { this.show(p, false); continue }
+      this.readCharacter(view, p, c)
       // A parked character leaves: the driver frees its graph and a return starts a fresh one.
       if (c.parked || !this.crowdVisible(p, c.pos)) continue
       out.push(characterObservation(p, c))
@@ -641,6 +696,7 @@ export class SceneView {
     this.unobserve?.()
     this.unobserve = null
     this.stepSim = null
+    this.source = null
     this.animGen++
     this.anim?.dispose()
     this.anim = null
@@ -672,14 +728,14 @@ export class SceneView {
     return h
   }
 
-  private loadObstacles(sim: MatchSim, course: ResolvedCourse | null): void {
+  private loadObstacles(view: SceneReadView, course: ResolvedCourse | null): void {
     for (let i = 0; i < this.obstacles.length; i++) this.port.destroyInstance(this.obstacles[i])
     this.destroyMechanisms()
     this.obstacles = []
     this.course = course
-    const n = course === null ? 0 : sim.obstacleCount()
+    const n = course === null ? 0 : view.obstacleCount()
     for (let i = 0; i < n; i++) {
-      const spec = sim.obstacleSpec(i)
+      const spec = view.obstacleSpec(i)
       const asset = spec.sweep
         ? this.port.registerRoad?.(`road:${this.course!.id}:${spec.id}`, spec.sweep)
         : this.asset(spec.asset, this.opts.assets(spec.asset))
@@ -690,8 +746,8 @@ export class SceneView {
     this.obCur = new Float64Array(n * OB)
     this.obDrawn = new Float64Array(n * OB)
     const port = this.port as RenderPort & { setPartFilter?: (instance: number, parts: readonly string[] | null) => void }
-    for (let i = 0; i < sim.mechanismItemCount(); i++) {
-      const item = sim.mechanismItem(i)
+    for (let i = 0; i < view.mechanismItemCount(); i++) {
+      const item = view.mechanismItem(i)
       const asset = this.asset(item.asset, this.opts.assets(item.asset))
       for (let b = 0; b < item.bodies.length; b++) {
         const body = item.bodies[b]
@@ -767,21 +823,16 @@ export class SceneView {
     })
   }
 
-  // Observes every step of sim from now on. A different sim is a new timeline: its graphs start fresh.
-  private follow(sim: MatchSim, skinned: SkinnedCharacter): void {
-    if (this.stepSim !== null) {
-      this.anim?.dispose()
-      this.anim = null
-      this.posed = []
-      this.loadAnim(skinned)
-    }
+  // Observes every step of a legacy MatchSim from now on. Only this typed match has its step wrapped;
+  // a read adapter with its own step method keeps it untouched and is observed explicitly.
+  private follow(sim: MatchSim): void {
     this.unobserve?.()
-    this.unobserve = observeSteps(sim, this.onStep)
+    this.unobserve = attachLegacySceneTicks(sim, this.onStep)
     this.stepSim = sim
   }
 
-  // keep = false after a course change: prev = cur, so nothing is interpolated across the reset.
-  private readObstacles(sim: MatchSim, keep: boolean): void {
+  // keep = false after a course or view change: prev = cur, so nothing is interpolated across the reset.
+  private readObstacles(view: SceneReadView, keep: boolean): void {
     if (keep) {
       // The old cur becomes prev; the old prev buffer is reused for the new cur.
       const t = this.obPrev
@@ -793,7 +844,7 @@ export class SceneView {
     const q = this.pose
     for (let i = 0; i < this.obstacles.length; i++) {
       const b = i * OB
-      sim.obstaclePose(i, q)
+      view.obstaclePose(i, q)
       cur[b] = q.t.x
       cur[b + 1] = q.t.y
       cur[b + 2] = q.t.z
@@ -805,16 +856,17 @@ export class SceneView {
     }
     for (const body of this.mechanisms) {
       if (keep) [body.prev, body.cur] = [body.cur, body.prev]
-      if (sim.mechanismBodyPose(body.ref, q)) body.cur.set([q.t.x, q.t.y, q.t.z, q.r.x, q.r.y, q.r.z, q.r.w])
+      if (view.mechanismBodyPose(body.ref, q)) body.cur.set([q.t.x, q.t.y, q.t.z, q.r.x, q.r.y, q.r.z, q.r.w])
       else body.cur.set([body.restT[0], body.restT[1], body.restT[2], body.restR[0], body.restR[1], body.restR[2], body.restR[3]])
       if (!keep) body.prev.set(body.cur)
     }
   }
 
-  private readCharacters(sim: MatchSim, keep: boolean, tick: number): void {
+  private readCharacters(view: SceneReadView, keep: boolean, tick: number): void {
     const c = this.view
-    for (let p = 0; p < this.beans.length; p++) {
-      sim.character(p, c)
+    const players = Math.min(this.beans.length, view.setup.playerCount)
+    for (let p = 0; p < players; p++) {
+      this.readCharacter(view, p, c)
       const b = p * 3
       const fresh = !keep || c.teleportTick >= tick - 2
       if (!fresh) {

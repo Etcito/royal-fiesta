@@ -6,7 +6,6 @@ import { EgeError } from '@etcito/game-engine/abi'
 import { schemaLayout } from '@etcito/game-engine/script'
 import type { GroupTransport, Roster } from '@gamesaloon/rollback/zones'
 import { legacyLevel } from '@royal-fiesta/sim/course'
-import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { parseZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { ZonesFile } from '@royal-fiesta/sim/zones/zonesFile'
 import type { CourseV1, GameAssetResolver, ResolvedGameAsset } from '../src/courseV1.ts'
@@ -153,5 +152,48 @@ test('a human seat off the active roster is refused at the vote, a rostered one 
     }
   } finally {
     for (const runtime of runtimes) runtime.dispose()
+  }
+})
+
+test('seat 1 (joining late) eliminated before the podium vote casts no vote and the round reaches the end screen', async () => {
+  const net = new ZoneLoopback(2, { seed: 5, rttMs: 20, jitterMs: 0, loss: 0 })
+  const runtimes: (Runtime | undefined)[] = [await open(net, 0, [60, 12, 1])]
+  const voted: number[] = []
+  let offRosterVotes = 0
+  const refusals: unknown[] = []
+  // Mirrors the engine-show online scenario's voteHeadless (apps/web/src/engineShow/scenarios/online.ts): that module
+  // imports the browser page and cannot load in this headless test, so the same guard is applied here on the public
+  // runtime.snapshot()/runtime.vote() pair.
+  const guardedVote = (runtime: Runtime, seat: number): void => {
+    const snapshot = runtime.snapshot()
+    if (snapshot.screen !== 'vote' || snapshot.candidates.length === 0) return
+    if (!snapshot.seatOf.includes(seat)) { if (seat === 1) offRosterVotes++; return }
+    try {
+      runtime.vote(seat, Math.min(0, snapshot.candidates.length - 1))
+      if (seat === 1) voted.push(snapshot.round)
+    } catch (error) {
+      refusals.push(error)
+    }
+  }
+  try {
+    for (let frame = 0; frame < 60000; frame++) {
+      net.advance(1000 / 60)
+      if (runtimes[1] === undefined && net.now() >= 2000) runtimes[1] = await open(net, 1, [60, 12, 1])
+      for (let peer = 0; peer < 2; peer++) {
+        const runtime = runtimes[peer]
+        if (runtime === undefined) continue
+        guardedVote(runtime, peer)
+        runtime.frame(1 / 60, () => NEUTRAL)
+      }
+      if (runtimes.every(runtime => runtime?.snapshot().screen === 'done')) break
+    }
+    assert.deepEqual(refusals, [], 'no RefusalError (vote.roomSeat or vote.candidate) expected')
+    const state = runtimes[1]!.snapshot()
+    assert.equal(state.screen, 'done')
+    assert.ok(!state.seatOf.includes(1), 'seat 1 ended off the active roster')
+    assert.ok(offRosterVotes > 0, 'seat 1 met a vote screen while off the roster and skipped it')
+    assert.ok(voted.every(round => round === 0), 'seat 1 voted only before it was eliminated')
+  } finally {
+    for (const runtime of runtimes) runtime?.dispose()
   }
 })

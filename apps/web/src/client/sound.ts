@@ -5,7 +5,8 @@
 import { setMixFactory, type BrowserSound } from '@royal-fiesta/game/audio/context'
 import { newMatchSample, sampleMatch, type MatchSample } from '@royal-fiesta/game/audio/events'
 import { GameAudio } from '@royal-fiesta/game/audio/gameAudio'
-import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
+import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
+import type { SceneReadView } from '@royal-fiesta/game/render/sceneReadView'
 
 import { createMixGraph } from '../audio/mixGraph.ts'
 
@@ -96,13 +97,13 @@ export class ClientSound {
   }
 
   /** Once per rendered frame: the match's sound events play; no match (or no engine) stops the bed. */
-  frame(sim: MatchSim | null): void {
+  frame(view: SceneReadView | null): void {
     if (this.#game === null) return
-    if (sim === null) {
+    if (view === null) {
       this.#game.stop()
       return
     }
-    this.#game.observe(sampleMatch(sim, this.#sample, this.#scratch))
+    this.#game.observe(sampleMatch(view, this.#sample, this.#scratch))
   }
 
   get state(): string {

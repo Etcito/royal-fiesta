@@ -5,7 +5,8 @@ import { newMatchSample, sampleMatch, type MatchSample } from '@royal-fiesta/gam
 import { GameAudio, type CourseAudio } from '@royal-fiesta/game/audio/gameAudio'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { refuse } from '@royal-fiesta/sim/refusal'
-import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
+import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
+import type { SceneReadView } from '@royal-fiesta/game/render/sceneReadView'
 import { createCourseAudio } from './courseAudio.ts'
 import { AUDIO_SETTINGS_KEY, parseBusVolumes } from '@royal-fiesta/game/audio/mix/volumes'
 import type { SettingsStore } from '@royal-fiesta/game/screens/settings'
@@ -112,7 +113,7 @@ export class SoundDriver {
   }
 
   /** Once per rendered frame: update volumes, local listeners and the current screen's sounds. */
-  frame(sim: MatchSim | null, listener?: ListenerPose | readonly ListenerPose[]): void {
+  frame(sim: SceneReadView | null, listener?: ListenerPose | readonly ListenerPose[]): void {
     this.#updateVolumes()
     if (this.#game === null) return
     const listeners = this.#listenersOf(sim, listener)
@@ -189,7 +190,7 @@ export class SoundDriver {
   }
 
   // Both ports accept emitter poses; context/courseAudio own the mix-pose conversion.
-  #listenersOf(sim: MatchSim | null, listener?: ListenerPose | readonly ListenerPose[]): readonly ListenerPose[] {
+  #listenersOf(sim: SceneReadView | null, listener?: ListenerPose | readonly ListenerPose[]): readonly ListenerPose[] {
     const supplied = listener === undefined ? [] : Array.isArray(listener)
       ? listener as readonly ListenerPose[] : [listener as ListenerPose]
     if (supplied.length > 0) return supplied.slice(0, 4)

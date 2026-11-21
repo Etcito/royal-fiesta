@@ -18,6 +18,9 @@ import { matchCourses } from '@royal-fiesta/game/courseSet'
 import { netSetup } from '@royal-fiesta/game/net/tuning'
 import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
 import { createMatchSim, Phase } from '@royal-fiesta/sim/match/matchSim'
+import { CharMode } from '@royal-fiesta/sim/character/constants'
+import { PlayerStatus } from '@royal-fiesta/sim/match/roundSystem'
+import type { SceneReadView } from '@royal-fiesta/game/render/sceneReadView'
 import { RefusalError } from '@royal-fiesta/sim/refusal'
 import { createMixGraph } from '../src/audio/mixGraph.ts'
 import { audioManifestUrl, pageStore, SoundDriver } from '../src/play/sound.ts'
@@ -202,6 +205,41 @@ const fakeSim = {
   },
 } as unknown as MatchSim
 
+// A read view with no MatchSim behind it: the local character runs on the ground, then goes airborne.
+function fakeView(state: { mode: number; vel: { x: number; y: number; z: number } }): SceneReadView {
+  return {
+    tick: 0,
+    setup: { playerCount: 1 },
+    course: () => null,
+    obstacleCount: () => 0,
+    phase: () => ({ phase: Phase.intro, roundKind: 'race', final: false }),
+    character(_p: number, out: CharacterView) {
+      out.mode = state.mode
+      out.status = PlayerStatus.alive
+      Object.assign(out.pos, { x: 7, y: 8, z: 9 })
+      Object.assign(out.vel, state.vel)
+      Object.assign(out.facing, { x: -1, z: 0 })
+      return out
+    },
+  } as unknown as SceneReadView
+}
+
+test('SoundDriver.frame samples a SceneReadView: running then airborne plays the jump; null returns to the lobby', async (t) => {
+  const f = fixture(null)
+  f.target.dispatchEvent(new Event('pointerdown'))
+  await f.driver.open()
+  const state: { mode: number; vel: { x: number; y: number; z: number } } = { mode: CharMode.ground, vel: { x: 6, y: 0, z: 0 } }
+  f.driver.frame(fakeView(state))
+  assert.ok(f.started.includes('music.candy.race'), 'the view starts the round music')
+  state.mode = CharMode.air
+  state.vel = { x: 6, y: 7.5, z: 0 }
+  f.driver.frame(fakeView(state))
+  assert.ok([...f.played, ...f.started].includes('move.jump'), 'the airborne transition plays the jump')
+  f.driver.frame(null)
+  assert.equal(f.started.at(-1), 'music.candy.lobby')
+  await f.driver.close()
+})
+
 const poses: ListenerPose[] = Array.from({ length: 4 }, (_, i) => ({ x: i * 3, y: i, z: -i, fx: i % 2, fz: 1 - i % 2 }))
 
 test('cues play without a position only while audio is open and refuse malformed ids', async (t) => {
@@ -227,7 +265,7 @@ async function fixtureMatch(): Promise<MatchSim> {
     entries.push({ path, json: JSON.parse(await read(path)) as unknown })
   }
   const courses = await matchCourses(entries, fixtureResolver(read), 'sprint')
-  return createMatchSim(R, netSetup(8, 1, 'sprint', courses))
+  return createMatchSim(R, netSetup(8, 1, 'sprint', courses, 8))
 }
 
 test('the first pointer gesture boots the game page audio without console errors', async (t) => {

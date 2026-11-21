@@ -8,8 +8,9 @@ import { surfaceOf } from '@royal-fiesta/sim/course'
 import type { ColliderSpec, ResolvedCourse } from '@royal-fiesta/sim/course'
 import { CharMode } from '@royal-fiesta/sim/character/constants'
 import { CAPSULE } from '@royal-fiesta/sim/character/capsule'
-import type { CharacterView, MatchSim } from '@royal-fiesta/sim/match/matchSim'
+import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
 import { Phase } from '@royal-fiesta/sim/match/matchSim'
+import type { SceneReadView } from '../render/sceneReadView.ts'
 import { PlayerStatus } from '@royal-fiesta/sim/match/roundSystem'
 import type { RoundKind } from '@royal-fiesta/sim/season/kinds'
 import type { Pose } from '@royal-fiesta/sim/vec'
@@ -244,7 +245,7 @@ function underFeet(colliders: readonly ColliderSpec[], p: Pose, feet: Vec3): boo
 }
 
 // The surface an obstacle under the player's feet carries; ice and mud override the world.
-function surfaceUnder(sim: MatchSim, pos: Vec3): string {
+function surfaceUnder(sim: SceneReadView, pos: Vec3): string {
   const count = sim.obstacleCount()
   const feetY = pos.y - CAPSULE.stand
   const feet: Vec3 = { x: pos.x, y: feetY, z: pos.z }
@@ -288,7 +289,7 @@ export function copySample(from: MatchSample, out: MatchSample | null): MatchSam
 }
 
 /** Reads a MatchSample from the sim. Scratch objects are reused, so call it once per frame. */
-export function sampleMatch(sim: MatchSim, out: MatchSample, scratch: CharacterView): MatchSample {
+export function sampleMatch(sim: SceneReadView, out: MatchSample, scratch: CharacterView): MatchSample {
   const state = sim.phase(scratchPhase)
   out.phase = state.phase
   out.roundKind = state.roundKind

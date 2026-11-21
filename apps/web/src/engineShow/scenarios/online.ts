@@ -70,7 +70,9 @@ function startB(host: EngineShowHostApi, pair: Pair, overrides: EngineShowConfig
 
 /** Client B votes its own seat once per vote screen with candidate 0, like the presented client. */
 function voteHeadless(runtime: EngineShowRuntime): void {
-  if (runtime.snapshot().screen === 'vote') runtime.vote(1, 0)
+  const snapshot = runtime.snapshot()
+  if (snapshot.screen !== 'vote' || snapshot.candidates.length === 0 || !snapshot.seatOf.includes(1)) return
+  runtime.vote(1, Math.min(0, snapshot.candidates.length - 1))
 }
 
 /**

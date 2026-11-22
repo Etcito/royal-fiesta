@@ -17,6 +17,7 @@ import * as asyncPipelines from '../src/render/asyncPipelines.ts'
 import * as renderOptions from '../src/render/renderOptions.ts'
 import * as fieldAtlas from '../src/sdf/fieldAtlas.ts'
 import * as fieldShading from '../src/sdf/fieldShading.ts'
+import * as framePerf from '../src/perf/framePerf.ts'
 
 import type { CameraPose, RenderTarget, Viewport } from '@royal-fiesta/game/render/port'
 
@@ -36,6 +37,7 @@ interface Port {
   setTransform(id: number, t: readonly number[], r: readonly number[], s: readonly number[]): void
   render(): void
   setShading(mode: 'field' | 'vertex' | 'baked'): void
+  pendingTextureBakes: () => number
   addTextured(assetId: string, meshed: unknown): void
   releaseAsset(handle: number): void
   engine: unknown; target: unknown
@@ -85,6 +87,7 @@ const exports = {} as {
 const readiness = new WeakMap<object, (key: string) => asyncPipelines.PipelineReadiness>()
 const warnings: string[] = []
 const errors: string[] = []
+let shadingOverlay = () => ''
 runInNewContext(compiled, {
   console: { ...console, warn: (...args: unknown[]) => { warnings.push(args.join(' ')) }, error: (...args: unknown[]) => { errors.push(args.join(' ')) } },
   HTMLCanvasElement: FakeCanvas, exports, Float32Array, Float64Array, Uint32Array, performance, setTimeout, clearTimeout, URLSearchParams,
@@ -95,6 +98,8 @@ runInNewContext(compiled, {
     if (id === '../render/asyncPipelines.ts') return { ...asyncPipelines, fieldReadiness: (device: object | undefined, key: string) =>
       (device === undefined ? undefined : readiness.get(device))?.(key) ?? asyncPipelines.fieldReadiness(device, key) }
     if (id === '../render/renderOptions.ts') return renderOptions
+    if (id === '../perf/framePerf.ts') return { ...framePerf, perfEnabled: true,
+      perfLine: (_: string, line: () => string) => { shadingOverlay = line } }
     if (id === '@royal-fiesta/game/render/nullPort') return { checkPose, checkSkin }
     if (id === './materialProgram.ts') return { materialProgram }
     if (id === './fieldAtlas.ts') return fieldAtlas
@@ -639,6 +644,8 @@ test('game render options: settings, then the page address on top; a bad value k
   assert.equal(url.shading, 'vertex')
   assert.equal(url.bakeTexelDensity, 128)
   assert.equal(exports.gameRenderOptions(CONTRACT, undefined, '?normals=vertex').shading, 'vertex')
+  assert.equal(exports.gameRenderOptions(CONTRACT, { shading: 'vertex' }, '?normals=field').shading, 'field')
+  assert.equal(exports.gameRenderOptions(CONTRACT, { shading: 'vertex' }, '?normals=pixel').shading, 'field')
   const before = warnings.length
   assert.equal(exports.gameRenderOptions(CONTRACT, undefined, '?shading=raytrace').shading, 'field')
   assert.ok(warnings.slice(before).some(w => w.includes('render-options:shading')))
@@ -1008,12 +1015,15 @@ function portWithBaked(id: string, body: Record<string, unknown>) {
 test('baked texture: addTextured adds a textured member per part; baked mode shows it and leaving hides it', () => {
   const id = 'test.baked'
   const body = { ...part('body', 'skin'), fieldProgram: fieldProgram(), baked: bakedData() }
-  const { port, calls, meshed, handle } = portWithBaked(id, body)
+  const { port, calls, meshed, state, handle } = portWithBaked(id, body)
+  state.current = { status: 'pending' }
   const h = handle()
   const first = calls.nextInstance
   port.createInstance(h, [0.2, 0.4, 0.8])
   assert.equal(calls.instances, 2, 'the field/vertex pair')
   assert.equal(calls.textures.length, 0, 'nothing is baked before addTextured')
+  port.render()
+  assert.equal(shadingOverlay(), `shading field field=0 textured=0 vertex=1 | preparing 1 (${id}#g/body)`)
   port.addTextured(id, meshed.get(id))
   assert.equal(calls.instances, 3, 'a third member per part')
   const textured = first + 2
@@ -1022,6 +1032,7 @@ test('baked texture: addTextured adds a textured member per part; baked mode sho
   assert.equal(calls.textures.length, 3, 'baseColor, normal and orm')
   assert.ok(calls.functionSources.has('rf.textured'), 'the one textured material function is registered')
   assert.equal(calls.visibility.get(textured), false, 'hidden while the field draws')
+  state.current = { status: 'ready' }
   port.render()
   assert.equal(calls.visibility.get(first), true)
   assert.equal(calls.visibility.get(first + 1), false)
@@ -1033,10 +1044,12 @@ test('baked texture: addTextured adds a textured member per part; baked mode sho
   assert.equal(report.texture, 1)
   assert.equal(report.field, 0)
   assert.equal(report.pending, 0)
+  assert.equal(shadingOverlay(), 'shading baked field=0 textured=1 vertex=0')
   port.setShading('field')
   assert.equal(calls.visibility.get(first), true)
   assert.equal(calls.visibility.get(textured), false)
   assert.equal(port.shadingReport().texture, 0)
+  assert.equal(shadingOverlay(), 'shading field field=1 textured=0 vertex=0')
   port.releaseAsset(h)
   assert.equal(calls.removedMeshes.length, 3, 'the field, vertex and textured meshes are freed')
   assert.deepEqual([...calls.removedTextures].sort(), [101, 102, 103], 'the three baked textures are freed')
@@ -1063,6 +1076,8 @@ test('baked texture: texture.atlas_full keeps the field pair and names the error
   port.setShading('baked')
   assert.equal(calls.visibility.get(first), true, 'the part keeps the field rule')
   assert.equal(calls.visibility.get(first + 1), false)
+  port.pendingTextureBakes = () => 2
+  assert.match(shadingOverlay(), /shading baked field=1 textured=0 vertex=0 \| texture bakes pending=2.*texture\.atlas_full/)
 })
 
 test('baked texture: a bakedRefusal part stays on its field pair with the reason named', () => {
@@ -1095,6 +1110,102 @@ test('baked texture: a skinned textured member receives the same pose', () => {
   assert.deepEqual(Array.from(calls.skinPoses[0].ids), [first, first + 1, first + 2], 'the textured member gets a skin slot')
   port.setShading('baked')
   assert.equal(calls.visibility.get(first + 2), true)
+})
+
+test('baked texture: the player-color graph keeps its field draw when no tint mask was baked', () => {
+  const id = 'test.player-baked'
+  const body = { ...part('body', 'skin'), fieldProgram: fieldProgram(), baked: bakedData() }
+  const mesh = { assetId: id, data: { materials: [material('skin', PLAYER)], groups: [{ group: 'g', parts: [body] }] } }
+  const { engine } = fakeEngine()
+  const port = exports.make(new Map([[id, mesh]]))
+  port.engine = engine
+  port.target = {}
+  const h = port.registerAsset(id, { id })
+  port.createInstance(h, [0.2, 0.4, 0.8])
+  port.addTextured(id, mesh)
+  assert.ok(port.shadingReport().errors.includes(`${id}#g/body: baked textures lack a player-color mask`))
+  port.setShading('baked')
+  assert.equal(port.shadingReport().texture, 0)
+})
+
+test('round shading uses the provider for the far mesh, live options and worker bakes', async () => {
+  const location = { search: '' }
+  const target = {} as RenderTarget
+  const id = 'test.round'
+  const mesh = { assetId: id, data: {} }
+  const queued: string[] = []
+  const installed: string[] = []
+  const ports: { shadingMode: string; pendingTextureBakes: () => number; dispose: () => void }[] = []
+  const provider = {} as { SdfContent: new () => { load: () => Promise<void> } }
+  const zone = {} as { zoneContent: () => Promise<{ createPort: (target: RenderTarget) => Promise<unknown> }> }
+  const run = (file: string, exports: object, mocks: Record<string, object>) => {
+    const source = readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8')
+    const { outputText } = transpileModule(source, { compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 } })
+    runInNewContext(outputText, { exports, location, performance, require: (id: string) => mocks[id] ?? {} })
+  }
+  let uploaded: string[] = []
+  run('content/providers/sdf.ts', provider, {
+    '../../render/renderOptions.ts': renderOptions,
+    '../../sdf/sdfPort.ts': {
+      gameRenderOptions: exports.gameRenderOptions,
+      createSdfPort: async (_: RenderTarget, meshed: Map<string, unknown>, _failed: unknown, _progress: unknown,
+        _timing: unknown, _given: unknown, overrides: { shading?: string }) => {
+        uploaded = [...meshed.keys()]
+        const { shading } = exports.gameRenderOptions(location.search, { ...renderOptions.renderOptions(), ...overrides })
+        const port = {
+          shadingMode: shading, pendingTextureBakes: () => 0,
+          setShading(mode: string) { this.shadingMode = mode },
+          addTextured(id: string) { installed.push(id) },
+          dispose() {},
+        }
+        ports.push(port)
+        return port
+      },
+    },
+    '../sdfLoad.ts': { bakeTextures: async (asset: typeof mesh) => { queued.push(asset.assetId); return asset } },
+    '../v1Data.ts': { v1Dressing: () => ({}), browserGameAssets: () => ({ resolve: async () => ({ asset: mesh }) }) },
+    '../shadingStatus.ts': { mountShadingStatus: () => () => {} },
+    '@royal-fiesta/game/render/roundLoad': { attachRoundReport() {} },
+  })
+  provider.SdfContent.prototype.load = async function () {
+    Object.assign(this, { loaded: {
+      standIns: new Map([[id, { id }], ['penguin.body', { id: 'penguin.body' }]]),
+      meshed: new Map([[id, mesh]]), failed: new Map(), courses: [], report: {}, skinned: null,
+    } })
+  }
+  run('zone/zoneContent.ts', zone, {
+    '../content/providers/sdf.ts': provider,
+    '@royal-fiesta/game/render/farRender': { farFigureMesh: () => ({ groups: [{ parts: [{ meshes: [{ indices: [0, 1, 2] }] }] }] }) },
+  })
+  renderOptions.setRenderOptions({ shading: 'vertex' })
+  const round = await zone.zoneContent()
+  try {
+    await round.createPort(target)
+    assert.deepEqual(uploaded, [id, 'zone.far-bean'])
+    assert.equal(ports[0].shadingMode, 'vertex')
+    renderOptions.setRenderOptions({ shading: 'baked' })
+    assert.equal(ports[0].shadingMode, 'baked')
+    assert.equal(ports[0].pendingTextureBakes(), 1)
+    await new Promise<void>(resolve => setImmediate(resolve))
+    assert.deepEqual(queued, [id])
+    assert.deepEqual(installed, [id])
+    assert.equal(ports[0].pendingTextureBakes(), 0)
+    ports[0].dispose()
+    location.search = '?normals=field'
+    await round.createPort(target)
+    assert.equal(ports[1].shadingMode, 'field')
+    renderOptions.setRenderOptions({ shading: 'vertex' })
+    assert.equal(ports[0].shadingMode, 'baked', 'disposed port unsubscribed')
+    assert.equal(ports[1].shadingMode, 'field', 'URL choice stays active on menu changes')
+    location.search = '?shading=baked'
+    await round.createPort(target)
+    assert.equal(ports[2].shadingMode, 'baked')
+    assert.deepEqual(installed, [id, id], 'a new baked port installs the cached result')
+    assert.deepEqual(queued, [id], 'cached bakes do not run again')
+  } finally {
+    for (const port of ports) port.dispose()
+    renderOptions.setRenderOptions({})
+  }
 })
 
 

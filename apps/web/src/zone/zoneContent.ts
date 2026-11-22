@@ -4,7 +4,6 @@ import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { RenderTarget } from '@royal-fiesta/game/render/port'
 import { farFigureMesh } from '@royal-fiesta/game/render/farRender'
 import { SdfContent, skinnedCharacterOf } from '../content/providers/sdf.ts'
-import { createSdfPort } from '../sdf/sdfPort.ts'
 
 // Cache each course independently; a round never joins a pending full lobby load.
 const loads = new Map<string, ReturnType<typeof loadZoneContent>>()
@@ -42,11 +41,6 @@ function zoneContentOf(content: SdfContent, loaded: ReturnType<SdfContent['meshD
   return {
     assets: (name: string) => content.assets(name),
     character: content.character(), bean, skinned: skinnedCharacterOf(content), dressing: content.dressing(),
-    // The same cosmetic skins as SdfContent.createPort: without them a show round's worn cosmetics draw rigid, at rest.
-    createPort: async (target: RenderTarget) => {
-      const port = await createSdfPort(target, loaded.meshed, loaded.failed)
-      await content.registerCosmetics(port, loaded.meshed)
-      return port
-    },
+    createPort: (target: RenderTarget) => content.createPort(target),
   }
 }

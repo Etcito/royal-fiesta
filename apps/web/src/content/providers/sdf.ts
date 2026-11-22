@@ -15,7 +15,7 @@ import { createSdfPort, gameRenderOptions } from '../../sdf/sdfPort.ts'
 import type { GameRenderOptions, ResizablePort, ShadingMode, ShadingReport } from '../../sdf/sdfPort.ts'
 import { loadGraphicsContract, GraphicsSettings } from '../../game/graphicsSettings.ts'
 import type { SettingsStore } from '@royal-fiesta/game/screens/settings'
-import { renderOptions } from '../../render/renderOptions.ts'
+import { onRenderOptions, renderOptions } from '../../render/renderOptions.ts'
 import { bakeTextures, loadSdfContent } from '../sdfLoad.ts'
 import { mountShadingStatus } from '../shadingStatus.ts'
 import { browserGameAssets, standInFrom, v1Dressing } from '../v1Data.ts'
@@ -73,15 +73,6 @@ async function storedShading(): Promise<ShadingMode | undefined> {
   }
 }
 
-// The effective port options: the live Graphics choice (or the saved one before the page attaches) plus the address.
-async function effectiveOptions(): Promise<Partial<GameRenderOptions> | undefined> {
-  const live = renderOptions().shading
-  const shading = isShading(live) ? live : await storedShading()
-  if (shading === undefined) return undefined
-  const search = typeof location === 'undefined' ? '' : location.search
-  return gameRenderOptions(search, { shading })
-}
-
 function byIdOrder(a: { id: string }, b: { id: string }): number {
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 }
@@ -95,11 +86,11 @@ export class SdfContent implements GameContent {
   readonly id = 'sdf' as const
   private loaded: Loaded | null = null
   private onProgress: (p: LoadProgress) => void = () => {}
-  // One content can feed several ports (one per seat); every live port gets the same shading choice and baked textures.
-  private readonly ports: ResizablePort[] = []
+  // One content can feed several ports (one per seat); share bakes for the assets each port uploaded.
+  private readonly ports = new Map<ResizablePort, ReadonlyMap<string, MeshedAsset>>()
   private removeStatus: (() => void) | null = null
-  private shading: ShadingMode = 'field'
   private readonly baked = new Map<string, MeshedAsset>()
+  private readonly bakeErrors = new Map<string, string>()
   private readonly bakeQueue: string[] = []
   private readonly baking = new Set<string>()
 
@@ -225,59 +216,80 @@ export class SdfContent implements GameContent {
     return this.assets(CHARACTER_ID)
   }
 
-  async createPort(target: RenderTarget, overrides?: Partial<GameRenderOptions>, assetIds?: readonly string[]): Promise<RenderPort> {
+  async createPort(target: RenderTarget, overrides?: Partial<GameRenderOptions>, assetIds?: readonly string[]): Promise<ResizablePort> {
     const loaded = this.need('port')
     const start = performance.now()
-    const options = { ...await effectiveOptions(), ...overrides }
+    const saved = isShading(renderOptions().shading) ? undefined : await storedShading()
+    let choice = renderOptions().shading
+    const options = { ...(isShading(choice) ? {} : { shading: saved }), ...overrides }
     const meshed = assetIds === undefined ? loaded.meshed : new Map([...loaded.meshed].filter(([id]) => assetIds.includes(id)))
     const port = await createSdfPort(target, meshed, loaded.failed, this.onProgress, span => {
       const history = loaded.report.bootTimeline
       loaded.report.bootTimeline = [...(Array.isArray(history) ? history : []), JSON.stringify(span)]
     }, undefined, options)
-    this.ports.push(port)
-    if (options?.shading !== undefined) this.shading = options.shading
-    if (this.shading !== 'field') port.setShading(this.shading)
-    for (const [id, meshed] of this.baked) port.addTextured(id, meshed)
-    this.removeStatus ??= mountShadingStatus({
-      report: () => this.ports[0]?.shadingReport() ?? { pending: 0, failed: 0, vertex: 0, errors: [] },
-      bakesLeft: () => this.bakesLeft(),
-      mode: () => this.shading,
-    })
-    if (this.shading === 'baked') this.requestTextures()
-    await this.registerCosmetics(port, meshed)
-    attachRoundReport(port, loaded.report as Record<string, number | string | readonly string[]>)
-    const end = performance.now()
-    const history = loaded.report.bootTimeline
-    loaded.report.bootTimeline = [...(Array.isArray(history) ? history : []), JSON.stringify({ step: 'RAA init / upload / shader warmup', start, end, ms: end - start })]
+    try {
+      await this.registerCosmetics(port, meshed)
+    } catch (e) {
+      port.dispose()
+      throw e
+    }
+    this.ports.set(port, meshed)
+    port.pendingTextureBakes = () => this.bakesLeft()
+    const prepareTextures = () => {
+      if (port.shadingMode !== 'baked') return
+      for (const [id, baked] of this.baked) if (meshed.has(id)) this.installTextures(port, id, baked)
+      for (const [id, reason] of this.bakeErrors) if (meshed.has(id)) port.textureBakeFailed(id, reason)
+      this.requestTextures(meshed)
+    }
+    const applyShading = (next: unknown) => {
+      if (next === choice || !isShading(next)) return false
+      choice = next
+      const search = typeof location === 'undefined' ? '' : location.search
+      const { shading } = gameRenderOptions(search, { shading: next })
+      if (shading === port.shadingMode) return false
+      port.setShading(shading)
+      return true
+    }
     const dispose = port.dispose.bind(port)
+    const off = onRenderOptions(options => {
+      if (applyShading(options.shading)) prepareTextures()
+    })
     port.dispose = () => {
-      const at = this.ports.indexOf(port)
-      if (at >= 0) this.ports.splice(at, 1)
-      if (this.ports.length === 0) {
+      off()
+      this.ports.delete(port)
+      if (this.ports.size === 0) {
         this.removeStatus?.()
         this.removeStatus = null
       }
       dispose()
     }
+    try {
+      applyShading(renderOptions().shading)
+      prepareTextures()
+    } catch (e) {
+      port.dispose()
+      throw e
+    }
+    this.removeStatus ??= mountShadingStatus({
+      report: () => this.ports.keys().next().value?.shadingReport() ?? { pending: 0, failed: 0, vertex: 0, errors: [] },
+      bakesLeft: () => this.bakesLeft(),
+      mode: () => this.ports.keys().next().value?.shadingMode ?? 'field',
+    })
+    attachRoundReport(port, loaded.report as Record<string, number | string | readonly string[]>)
+    const end = performance.now()
+    const history = loaded.report.bootTimeline
+    loaded.report.bootTimeline = [...(Array.isArray(history) ? history : []), JSON.stringify({ step: 'RAA init / upload / shader warmup', start, end, ms: end - start })]
     return port
-  }
-
-  /** The Graphics shading choice, applied live: 'baked' first asks the workers for the baked textures of every asset. */
-  setShading(mode: ShadingMode): void {
-    this.shading = mode
-    if (mode === 'baked') this.requestTextures()
-    for (const port of this.ports) port.setShading(mode)
   }
 
   private bakesLeft(): number {
     return this.bakeQueue.length + this.baking.size
   }
 
-  private requestTextures(): void {
-    const loaded = this.loaded
-    if (loaded === null) return
-    for (const id of [...loaded.meshed.keys()].sort()) {
-      if (this.baked.has(id) || this.baking.has(id) || this.bakeQueue.includes(id)) continue
+  private requestTextures(meshed: ReadonlyMap<string, MeshedAsset>): void {
+    const { standIns } = this.need('textures')
+    for (const id of [...meshed.keys()].sort()) {
+      if (!standIns.has(id) || this.baked.has(id) || this.baking.has(id) || this.bakeQueue.includes(id)) continue
       this.bakeQueue.push(id)
     }
     this.pumpBakes()
@@ -293,14 +305,28 @@ export class SdfContent implements GameContent {
           const asset = (await browserGameAssets().resolve(id)).asset
           const meshed = await bakeTextures(asset)
           this.baked.set(id, meshed)
-          for (const port of this.ports) port.addTextured(id, meshed)
+          this.bakeErrors.delete(id)
+          for (const [port, assets] of this.ports) if (port.shadingMode === 'baked' && assets.has(id)) this.installTextures(port, id, meshed)
         } catch (e) {
-          console.warn(`[content] baked textures for ${id} are not drawn: ${e instanceof Error ? e.message : String(e)}`)
+          const reason = e instanceof Error ? e.message : String(e)
+          this.bakeErrors.set(id, reason)
+          for (const [port, assets] of this.ports) if (assets.has(id)) port.textureBakeFailed(id, reason)
+          console.warn(`[content] baked textures for ${id} are not drawn: ${reason}`)
         } finally {
           this.baking.delete(id)
           this.pumpBakes()
         }
       })()
+    }
+  }
+
+  private installTextures(port: ResizablePort, id: string, meshed: MeshedAsset): void {
+    try {
+      const character = this.loaded?.skinned
+      if (character?.assetId === id) port.registerSkinned(id, character.skin)
+      port.addTextured(id, meshed)
+    } catch (e) {
+      port.textureBakeFailed(id, e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -319,7 +345,7 @@ export class SdfContent implements GameContent {
 
   report(): Record<string, number | string | readonly string[]> {
     const loaded = this.need('report')
-    const port = this.ports[0]
+    const port = this.ports.keys().next().value
     if (port !== undefined) loaded.report.normals = port.shadingReport()
     return loaded.report as Record<string, number | string | readonly string[]>
   }

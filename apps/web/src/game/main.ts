@@ -1826,8 +1826,6 @@ class App {
   // The Graphics page and options (MAMA's render-options contract) and the FPS counter they show.
   private readonly graphics: GraphicsSettings
   private readonly fps: FpsCounter
-  // The shading mode already pushed to the loaded SDF content (the page address applied on top).
-  private liveShading: ShadingMode | null = null
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
   private mode: Mode | null = null
@@ -1958,7 +1956,6 @@ class App {
     this.graphics = new GraphicsSettings(env.store, options => {
       setRenderOptions(options)
       this.fps.setVisible(options.showFps === true)
-      this.applyShading(options.shading)
     })
     void loadGraphicsContract().then(contract => { if (!this.disposed) this.graphics.attach(contract) })
     // A coarse pointer or ?touch=1 mounts the virtual joystick and buttons over #views; seat 0 is touch.
@@ -3456,18 +3453,6 @@ class App {
         this.graphics.reset()
       } else this.apply(cycle(this.settings, row))
     }
-  }
-
-  // The Graphics shading row applies to the SDF content already on screen, without reloading it; `?normals=vertex`
-  // still wins for the session. Before the first load the provider reads the same options for its new port.
-  private applyShading(value: unknown): void {
-    const content = this.loaded?.content
-    const chosen: ShadingMode | null = value === 'field' || value === 'vertex' || value === 'baked' ? value : null
-    if (!(content instanceof SdfContent) || chosen === null) return
-    const { shading } = gameRenderOptions(this.search, { shading: chosen })
-    if (shading === this.liveShading) return
-    this.liveShading = shading
-    content.setShading(shading)
   }
 
   private apply(next: Settings): void {

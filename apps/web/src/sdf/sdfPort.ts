@@ -35,7 +35,10 @@ export interface ResizablePort extends SkinnedRenderPort {
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
   setPartFilter(instance: number, parts: readonly string[] | null): void
   shadingReport(): ShadingReport
+  readonly shadingMode: ShadingMode
   setShading(mode: ShadingMode): void
+  pendingTextureBakes: () => number
+  textureBakeFailed(assetId: string, reason: string): void
   addTextured(assetId: string, meshed: MeshedAsset): void
   /**
    * Handoff: Engine round page: load, scene view, render bridge, composite and live mode takes this:
@@ -100,7 +103,7 @@ export interface GameRenderOptions { shading: ShadingMode; normalsDebug: boolean
  */
 export type NormalsMode = 'pixel' | 'vertex'
 export function normalsMode(search: string = typeof location === 'undefined' ? '' : location.search): NormalsMode {
-  return new URLSearchParams(search).get('normals') === 'vertex' ? 'vertex' : preferredNormals()
+  return (urlShading(new URLSearchParams(search)) ?? preferredNormals()) === 'vertex' ? 'vertex' : 'pixel'
 }
 
 /** MAMA's game render-options contract as the port uses it (virtual:rf-mama GAME_RENDER_OPTIONS). */
@@ -116,13 +119,16 @@ const PORT_OPTIONS = ['shading', 'bakeTexelDensity', 'bakeMaxSize'] as const
 function shadingModeOf(value: unknown): ShadingMode | null {
   return value === 'field' || value === 'vertex' || value === 'baked' ? value : null
 }
-// The landed MAMA option names this port applies ('field' is the per-pixel SDF, 'baked' the texture shading).
-function shadingToContract(mode: ShadingMode): RfGameRenderOptions['shading'] {
-  return mode
+function urlShading(params: URLSearchParams): ShadingMode | null {
+  const shading = shadingModeOf(params.get('shading'))
+  if (shading !== null) return shading
+  const normals = params.get('normals')
+  if (normals === 'pixel' || normals === 'field') return 'field'
+  return normals === 'vertex' ? 'vertex' : null
 }
 
 /**
- * The chosen port options first, then the page address: `?normals=vertex` forces 'vertex' and `?normalsDebug`
+ * The chosen port options first, then the page address. `?normals=field|vertex` selects shading and `?normalsDebug`
  * turns on the normal look. The default is 'field' (the part's field program evaluated per fragment).
  */
 export function gameRenderOptions(search?: string, chosen?: Partial<GameRenderOptions>): GameRenderOptions
@@ -138,8 +144,7 @@ export function gameRenderOptions(a: RenderContract | string | null = '', b?: un
   if (typeof a === 'string') {
     const params = new URLSearchParams(a)
     const chosen = isRecord(b) ? b as Partial<GameRenderOptions> : {}
-    let shading = shadingModeOf(chosen.shading) ?? 'field'
-    if (params.get('normals') === 'vertex') shading = 'vertex'
+    const shading = urlShading(params) ?? shadingModeOf(chosen.shading) ?? 'field'
     return { shading, normalsDebug: params.has('normalsDebug') || chosen.normalsDebug === true }
   }
   const search = c ?? (typeof location === 'undefined' ? '' : location.search)
@@ -148,7 +153,8 @@ export function gameRenderOptions(a: RenderContract | string | null = '', b?: un
   const record = isRecord(b) ? b : {}
   const merged: Record<string, unknown> = {}
   for (const key of PORT_OPTIONS) if (record[key] !== undefined) merged[key] = record[key]
-  if (params.get('normals') === 'vertex') merged.shading = 'vertex'
+  const shading = urlShading(params)
+  if (shading !== null) merged.shading = shading
   for (const spec of a.specs) {
     const v = params.get(spec.key)
     if (v === null || !(PORT_OPTIONS as readonly string[]).includes(spec.key)) continue
@@ -307,7 +313,7 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   const mama = await mamaShading()
   // The chosen port options first, then the player's Graphics settings and the page address.
   const search = typeof location === 'undefined' ? '' : location.search
-  const chosen = typeof options?.shading === 'string' ? { ...(isRecord(given) ? given : {}), shading: shadingToContract(options.shading) } : given
+  const chosen = typeof options?.shading === 'string' ? { ...(isRecord(given) ? given : {}), shading: options.shading } : given
   const render = gameRenderOptions(mama.render, chosen, search)
   const debug = normalsDebug(search) || options?.normalsDebug === true
   const port = new SdfRenderPort(meshed, failed, mama.field, render, mama.render, options?.atlasBytes, debug)
@@ -317,9 +323,6 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   onTiming({ step: 'RAA engine init', start, end, ms: end - start })
   try {
     await checkAwait('RAA mesh/material uploads', () => port.prepare(onProgress, onTiming))
-    const line = (): string => { const r = port.shadingReport(); return `shading ${render.shading}: field-shaded parts=${r.field} vertex=${r.vertex} texture=${r.texture} of ${r.parts}` }
-    perfLine('shading', line)
-    if (perfEnabled) console.log(`[shading] ${line()}`)
     return port
   } catch (e) {
     port.dispose()
@@ -783,9 +786,8 @@ class SdfRenderPort implements ResizablePort {
     return this.recordShadingMaterial(id, key, part, materials, graphMode)
   }
 
-  // The field program path (contract 'mama.field-program'): six central taps for the normal, the mesh normal only
-  // where the field is undefined, and the labels' looks mixed per pixel. The grid texture is added to RAA's atlas; an
-  // atlas_full error demotes this part to vertex and is never thrown.
+  // The field program path (contract 'mama.field-program'): one sample gives the normal and the mixed label looks.
+  // The grid texture is added to RAA's atlas; an atlas_full error demotes this part to vertex.
   private fieldProgramMaterial(key: string, part: PayloadPart, materialsByName: ReadonlyMap<string, SdfmCompiledMaterial>,
     graphMode: boolean): ShadedMaterial | null {
     const check = checkFieldPart(part)
@@ -1017,22 +1019,27 @@ class SdfRenderPort implements ResizablePort {
     }
     this.addFunction(TEXTURED_FUNCTION, TEXTURED_MATERIAL_WGSL)
     const payload = payloadOf(assetId, meshed)
+    this.textureErrors.delete(assetId)
     for (const group of payload.groups) {
       for (const part of group.parts) {
         if (part.meshes.length === 0) continue
         const key = fieldKey(assetId, group.group, part.partId)
         const target = uploaded.parts.find(entry => entry.reportKey === key)
         if (target === undefined) continue
-        if (part.bakedRefusal !== undefined) {
-          this.textureErrors.set(key, part.bakedRefusal)
+        const refusal = part.bakedRefusal ?? (target.tint === 'graph' ? 'baked textures lack a player-color mask' : undefined)
+        if (refusal !== undefined || part.baked === undefined) {
+          this.textureErrors.set(key, refusal ?? 'worker returned no baked textures')
           continue
         }
         const baked = part.baked
-        if (baked === undefined) continue
+        if (target.joints !== undefined && baked.joints === undefined) {
+          this.textureErrors.set(key, 'baked mesh has no joint streams')
+          continue
+        }
         if (target.textured === undefined) {
           const textures: number[] = []
           try {
-            textures.push(engine.addTexture(baked.baseColor), engine.addTexture(baked.normal), engine.addTexture(baked.orm))
+            for (const image of [baked.baseColor, baked.normal, baked.orm]) textures.push(engine.addTexture(image))
           } catch (e) {
             for (const texture of textures) engine.removeTexture(texture)
             if (raaCode(e) !== 'texture.atlas_full') throw e
@@ -1124,6 +1131,12 @@ class SdfRenderPort implements ResizablePort {
     return [...pending].sort()
   }
 
+  get shadingMode(): ShadingMode { return this.shading }
+  pendingTextureBakes = (): number => 0
+  textureBakeFailed(assetId: string, reason: string): void {
+    this.textureErrors.set(assetId, reason)
+  }
+
   setShading(mode: ShadingMode): void {
     // The choice stays visible and named: a release without the textured route keeps the current mode.
     if (mode === 'baked') {
@@ -1134,6 +1147,7 @@ class SdfRenderPort implements ResizablePort {
         return
       }
     }
+    if (this.shading === mode) return
     this.shading = mode
     this.swapFallbacks(true)
   }
@@ -1277,6 +1291,31 @@ class SdfRenderPort implements ResizablePort {
       })
     }
     return drawn
+  }
+
+  // The perf line follows the last port that rendered and counts visible instances, including their resident fallbacks.
+  private readonly shadingLine = (): string => {
+    if (this.engine === null) return ''
+    const counts = { field: 0, baked: 0, vertex: 0 }
+    let refusal: string | undefined
+    let bakeRefusal = this.texturedMissing ? 'RAA has no textured surface material' : undefined
+    for (const part of this.drawnParts()) {
+      counts[part.mode]++
+      if (part.reason !== undefined && part.reason !== 'vertex mode' && part.reason !== 'field pipeline pending') {
+        refusal ??= `${part.key}: ${part.reason}`
+      }
+      const bakeError = this.textureErrors.get(part.key) ?? this.textureErrors.get(part.key.split('#', 1)[0])
+      if (part.mode !== 'baked' && bakeError !== undefined) bakeRefusal ??= `${part.key}: ${bakeError}`
+    }
+    const pending = this.pendingKeys()
+    const bakes = this.pendingTextureBakes()
+    const details = [
+      pending.length > 0 ? `preparing ${pending.length} (${pending[0]})` : undefined,
+      this.shading === 'baked' && bakes > 0 ? `texture bakes pending=${bakes}` : undefined,
+      this.shading === 'baked' ? bakeRefusal : undefined,
+      refusal,
+    ].filter(s => s !== undefined)
+    return [`shading ${this.shading} field=${counts.field} textured=${counts.baked} vertex=${counts.vertex}`, ...details].join(' | ')
   }
 
   // Capture-time only: use the same part frames and skin matrices as the draw.
@@ -1459,6 +1498,7 @@ class SdfRenderPort implements ResizablePort {
     this.swapFallbacks()
     this.flushPoses(engine)
     renderFrame(this, () => timed('raa Engine.render (CPU encode)', () => engine.render(t0)))
+    if (perfEnabled) perfLine('shading', this.shadingLine)
     const frameMs = performance.now() - t0
     const stats = engine.stats()
     count('draw calls', stats.drawCalls)

@@ -1,4 +1,5 @@
-import { DPR_CAP } from '@royal-fiesta/game/client/splitLayout'
+import { DPR_CAP, pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
+import { renderScale } from '../perf/renderScale.ts'
 import { timed } from '../perf/framePerf.ts'
 import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
@@ -78,6 +79,11 @@ export class ShowMode {
   private disposed = false
   private error: string | null = null
   private readonly canvas: HTMLCanvasElement
+  /** The backing size the show draws at (the lobby canvas cap, times ?scale). */
+  private readonly drawSize: { width: number; height: number }
+  /** The canvas size the current scene's port was created at. */
+  private sceneBacking = { width: 1, height: 1 }
+  private sceneSeats = 1
   private readonly stages: { canvas: HTMLCanvasElement; display: string }[]
   private readonly memories: ReturnType<typeof newModeBotMemory>[]
   private sampleTick = 0
@@ -110,9 +116,11 @@ export class ShowMode {
     this.memories = []
     this.stages = Array.from(options.views.querySelectorAll('canvas'), canvas => ({ canvas, display: canvas.style.display }))
     this.canvas = options.views.ownerDocument.createElement('canvas')
-    const dpr = Math.min(options.views.ownerDocument.defaultView?.devicePixelRatio ?? 1, DPR_CAP) // the same cap as the lobby canvas (pixelViewports)
-    this.canvas.width = Math.max(1, Math.round(options.views.clientWidth * dpr))
-    this.canvas.height = Math.max(1, Math.round(options.views.clientHeight * dpr))
+    this.drawSize = ShowMode.fullSize(options.views)
+    // A show prepared behind the start screen never draws until Play adopts it: its canvas (and the raa targets sized from
+    // it) stays 1x1 until then, instead of a full-size swapchain, depth, MSAA and G-buffers nobody sees.
+    this.canvas.width = this.background ? 1 : this.drawSize.width
+    this.canvas.height = this.background ? 1 : this.drawSize.height
     this.canvas.dataset.show = 'true'
     this.canvas.style.display = 'none'
     options.views.appendChild(this.canvas)
@@ -178,7 +186,7 @@ export class ShowMode {
       show.readView.refresh(1)
       show.presenter = new EngineSeatPresenter()
       show.effects = new EngineShowEffects(runtime, engineEffectSinks(() => ({ play: cue => { show.sounds.push(cue) } }), show.grants))
-      show.unsubscribe = runtime.onPresentation(observation => show.observeEngine(observation))
+      show.unsubscribe = runtime.onPresentation(observation => timed('observe: ShowMode.observeEngine (all)', () => show.observeEngine(observation)))
       show.current = show.director.step(null, 0)
     } catch (error) {
       show.fail(error)
@@ -211,15 +219,36 @@ export class ShowMode {
 
   /** True while this show was sized for `views` as it is now (a preloaded show is discarded when the page resized). */
   fits(views: HTMLElement): boolean {
-    const dpr = Math.min(views.ownerDocument.defaultView?.devicePixelRatio ?? 1, DPR_CAP)
-    return this.canvas.width === Math.max(1, Math.round(views.clientWidth * dpr))
-      && this.canvas.height === Math.max(1, Math.round(views.clientHeight * dpr))
+    const full = ShowMode.fullSize(views)
+    return this.drawSize.width === full.width && this.drawSize.height === full.height
+  }
+
+  private static fullSize(views: HTMLElement): { width: number; height: number } {
+    const dpr = Math.min(views.ownerDocument.defaultView?.devicePixelRatio ?? 1, DPR_CAP) * renderScale
+    return { width: Math.max(1, Math.round(views.clientWidth * dpr)), height: Math.max(1, Math.round(views.clientHeight * dpr)) }
+  }
+
+  /** Gives the canvas, and the port created while it was 1x1, the size the show draws at. Idempotent. */
+  private grow(): void {
+    if (this.background || this.disposed) return
+    const { width, height } = this.drawSize
+    if (this.scene === null) {
+      this.canvas.width = width
+      this.canvas.height = height
+      return
+    }
+    if (this.sceneBacking.width === width && this.sceneBacking.height === height) return
+    const port = this.scene.port as { resize?: (w: number, h: number, dpr: number, viewports: ReturnType<typeof pixelViewports>) => void }
+    if (typeof port.resize !== 'function') return
+    port.resize(width, height, 1, pixelViewports(splitLayout(this.sceneSeats, false), width, height, 1))
+    this.sceneBacking = { width, height }
   }
 
   /** Play takes the show prepared behind the start screen: the worn look of that moment, the rest warmed at once. */
   adopt(look: WornLook | null): this {
     this.look = look
     this.background = false
+    this.grow()
     return this
   }
 
@@ -350,9 +379,10 @@ export class ShowMode {
       this.presenter.observe(observation, new Set())
       return
     }
-    view.refresh(1)
-    this.scene?.observe(view)
-    this.presenter.observe(observation, view.nearSeats())
+    timed('observe: EngineShowView.refresh', () => view.refresh(1))
+    timed('observe: ZoneNetScene.observe', () => this.scene?.observe(view))
+    const presenter = this.presenter
+    timed('observe: EngineSeatPresenter.observe', () => presenter.observe(observation, view.nearSeats()))
   }
 
   /** A new round or course: the scene is rebuilt on the presented course; the director's worldReady follows its load. */
@@ -379,6 +409,8 @@ export class ShowMode {
       const content = await checkAwait(`round ${round}: content ${course.id}`, () => zoneContent('sprint', course.id))
       const seats = runtime.snapshot().seatOf
       const local = Math.max(0, seats.indexOf(this.localSeat))
+      this.sceneSeats = 1
+      const backing = { width: this.canvas.width, height: this.canvas.height }
       const prepared = await checkAwait(`round ${round}: render port`, () => prepareZoneNetScene({
         canvas: this.canvas, crowdCull: seats.length > 8, followSeats: [local], orbit: this.options.orbit, course,
         createPort: content.createPort, assets: content.assets, bean: content.bean, character: content.character,
@@ -387,6 +419,8 @@ export class ShowMode {
       if (!live()) { prepared.dispose(); return }
       const scene = prepared.attach(seats.length, local)
       this.scene = scene
+      this.sceneBacking = backing
+      this.grow()
       this.bridge = farPenguinBridge(scene.port, content.bean)
       if (this.readView !== null) scene.present(this.readView, 1, 0)
       await checkAwait(`round ${round}: scene paint and animation`, () => scene.ready())
@@ -433,6 +467,8 @@ export class ShowMode {
     const index = round.plan.index
     try {
       const content = await checkAwait(`round ${index}: content ${round.plan.course.id}`, () => zoneContent('sprint', round.plan.course.id))
+      this.sceneSeats = Math.max(1, Math.min(4, this.humanCount))
+      const backing = { width: this.canvas.width, height: this.canvas.height }
       const prepared = await checkAwait(`round ${index}: render port`, () => prepareZoneNetScene({
         canvas: this.canvas, crowdCull: round.seatOf.length > 8,
         followSeats: Array.from({ length: this.humanCount }, (_, k) => {
@@ -447,6 +483,8 @@ export class ShowMode {
       const local = round.seatOf.indexOf(this.localSeat)
       const scene = prepared.attach(round.seatOf.length, local >= 0 ? local : (round.localSeats[0] ?? 0))
       this.scene = scene
+      this.sceneBacking = backing
+      this.grow()
       // Mount the near scene before waiting for its animation assets.
       scene.update(round.match, 1, 0)
       await checkAwait(`round ${index}: scene paint and animation`, () => scene.ready())

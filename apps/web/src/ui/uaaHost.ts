@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import { renderScale } from '../perf/renderScale.ts'
 import { checkAwait, checkPhase } from '../game/checkProgress.ts'
 // The game's uaa UI layer: a transparent premultiplied WebGPU canvas stacked above the RAA canvas.
 // It loads every ui/*.ui.json, ui/screens.ui-doc.json and the ui/fonts.json fonts, then drives a
@@ -185,8 +186,9 @@ async function requestDevice(): Promise<GpuDeviceLike> {
 }
 
 function sizeCanvas(canvas: HTMLCanvasElement, width: number, height: number, dpr: number): void {
-  canvas.width = Math.max(1, Math.round(width * dpr))
-  canvas.height = Math.max(1, Math.round(height * dpr))
+  // ?scale (perf/renderScale.ts) shrinks the backing store only; input keeps the real ratio (the pointer arrives in real backing px).
+  canvas.width = Math.max(1, Math.round(width * dpr * renderScale))
+  canvas.height = Math.max(1, Math.round(height * dpr * renderScale))
 }
 
 // Creates the uaa layer on the canvas. Rejects with the UaaError of the first GPU, asset, document
@@ -215,7 +217,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     }
     const fonts = createFontRegistry(fontEntries(uiFontsText(), document.baseURI))
     await checkAwait('UI fonts', () => fonts.loadAll())
-    const viewport: Viewport = { width: o.width, height: o.height, pixelRatio: o.dpr, safeArea: o.safeArea ?? deviceSafeArea() }
+    const viewport: Viewport = { width: o.width, height: o.height, pixelRatio: o.dpr * renderScale, safeArea: o.safeArea ?? deviceSafeArea() }
     ui = createUi({ doc, assets, fonts, renderer, viewport, nowMs: performance.now() })
   } catch (e) {
     renderer?.destroy()
@@ -269,7 +271,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     resize(width, height, ratio) {
       dpr = ratio
       sizeCanvas(canvas, width, height, ratio)
-      ui.resize({ width, height, pixelRatio: ratio, safeArea: o.safeArea ?? deviceSafeArea() })
+      ui.resize({ width, height, pixelRatio: ratio * renderScale, safeArea: o.safeArea ?? deviceSafeArea() })
     },
     widgetRect: (id) => ui.rectOf(id),
     currentScreen: () => ui.screen(),

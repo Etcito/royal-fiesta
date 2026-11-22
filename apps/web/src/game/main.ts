@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
-import { end, frameBegin, span, frameTimings } from '../perf/framePerf.ts'
+import { count, end, frameBegin, perfEnabled, span, frameTimings } from '../perf/framePerf.ts'
+import { setStepProbe } from '@royal-fiesta/game/ege/showRuntime'
+if (perfEnabled) setStepProbe({ begin: span, end, count })
+import { renderScale } from '../perf/renderScale.ts'
 import { browserZones } from '../client/sources.ts'
 import { localPlayerCount } from './localPlayers.ts'
 import { localBotCount } from './localBots.ts'
@@ -2403,7 +2406,7 @@ class App {
   private viewsSize(): { cssW: number; cssH: number; dpr: number; key: string } {
     const cssW = Math.max(1, this.views.clientWidth)
     const cssH = Math.max(1, this.views.clientHeight)
-    const dpr = window.devicePixelRatio || 1
+    const dpr = (window.devicePixelRatio || 1) * renderScale
     return { cssW, cssH, dpr, key: `${cssW}x${cssH}@${dpr}` }
   }
 
@@ -2419,7 +2422,7 @@ class App {
   // resize, in backing pixels. A port without resize (non-sdf content) keeps its initial size.
   private resizeViews(): void {
     const loaded = this.loaded
-    if (loaded === null || loaded.canvases.length !== 1 || this.cells.length === 0) return
+    if (loaded === null || loaded.canvases.length !== 1 || this.cells.length === 0 || this.lobbyParked) return
     const size = this.viewsSize()
     if (size.key === this.viewsSizeKey) return
     this.viewsSizeKey = size.key
@@ -2621,6 +2624,9 @@ class App {
   private preloadShow(): void {
     const loaded = this.loaded
     const q = this.query
+    // The engine backend's Play builds its own show (startEngineShow): a legacy show prepared behind the menu would never be adopted,
+    // only hold a second raa device, its textures and its pipeline compiles.
+    if (this.backend === 'engine') return
     if (!this.startSceneReady || this.showAhead !== null || this.disposed || loaded === null || q === null || this.startView === null) return
     // Only when Play starts the in-page show (LocalMode.startsShow, no build default relay).
     if (q.server !== null || q.clients !== 1 || (q.course !== null && q.bots === null) || this.nav.onlineOnly) return
@@ -2792,7 +2798,18 @@ class App {
 
   // Unmount the start view and free every asset the lobby registered, stop its sound and let the show
   // start from a clean stage port. The start view and hub rebuild on return (draw / startMode).
+  // While a show is on screen the lobby canvas is hidden (display none) but its raa engine keeps G-buffers, depth and MSAA
+  // targets at the page size: park it at 1x1 until the menu comes back (stopMode).
+  private lobbyParked = false
+  private parkLobby(): void {
+    const port = this.loaded?.ports[0] as { resize?: (w: number, h: number, dpr: number, viewports: Viewport[]) => void } | undefined
+    if (this.lobbyParked || port === undefined || typeof port.resize !== 'function') return
+    this.lobbyParked = true
+    port.resize(1, 1, 1, [{ x: 0, y: 0, width: 1, height: 1 }])
+  }
+
   private releaseLobby(): void {
+    this.parkLobby()
     this.startView?.unmount()
     this.startView = null
     this.preparedLocal?.dispose()
@@ -2809,6 +2826,7 @@ class App {
   }
 
   private stopMode(): void {
+    if (this.lobbyParked) { this.lobbyParked = false; this.viewsSizeKey = ''; this.resizeViews() }
     this.showLoad++
     this.unmountShowView()
     this.roundLoading = null
@@ -3188,7 +3206,7 @@ class App {
     this.resizeViews()
     const w = Math.max(1, this.screens.clientWidth)
     const h = Math.max(1, this.screens.clientHeight)
-    const dpr = window.devicePixelRatio || 1
+    const dpr = window.devicePixelRatio || 1 // the real ratio: the uaa host scales its canvas by ?scale itself
     const key = `${w}x${h}@${dpr}`
     if (key === this.size) return
     this.size = key

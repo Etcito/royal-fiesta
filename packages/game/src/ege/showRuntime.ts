@@ -20,6 +20,11 @@ import type {
   EngineWorldRef,
 } from './showTypes.ts'
 
+/** Sub-step timing hook of one tick: the page sets it under ?perf=1 (apps/web perf/framePerf.ts); null costs one check per step. */
+export interface StepProbe { begin(): number; end(name: string, token: number): void; count(name: string, value: number): void }
+let probe: StepProbe | null = null
+export function setStepProbe(next: StepProbe | null): void { probe = next }
+
 const TICK_RATE = 60
 const MAX_TICKS_PER_FRAME = 8
 const S1_NEUTRAL = 32639
@@ -314,6 +319,7 @@ class ShowRuntime implements EngineShowRuntime {
     const whole = Math.floor(this.accumulator + 1e-9)
     if (whole < 1) return
     const count = Math.min(MAX_TICKS_PER_FRAME, whole)
+    probe?.count('sim ticks this frame', count)
     for (let i = 0; i < count; i++) {
       // Consume the tick before executing it: a listener or effect failure after the tick ran must
       // never leave the accumulator asking for that same executed tick again.
@@ -362,9 +368,12 @@ class ShowRuntime implements EngineShowRuntime {
 
   /** One executed tick: sample first, then step the rules world and the live physics world. */
   private step(sample: (roomSeat: number) => number): void {
+    let t = probe?.begin() ?? 0
     const before = this.snapshot()
+    probe?.end('tick: rules snapshot', t)
     if (before.screen === 'done') return
     const batch = new Map<number, number>()
+    t = probe?.begin() ?? 0
     for (const roomSeat of before.seatOf) {
       const slot = this.slots[roomSeat]
       if (slot === undefined) fail('frame.seatOf', `room seat ${roomSeat} has no configured input slot`)
@@ -375,6 +384,8 @@ class ShowRuntime implements EngineShowRuntime {
       }
       batch.set(roomSeat, engineCodeOfS1(raw))
     }
+    probe?.end('tick: input sample', t)
+    t = probe?.begin() ?? 0
     const now = this.engine.tick(this.global.world)
     const created = before.screen === 'loading' && this.physics?.round !== before.round
     if (created) {
@@ -388,21 +399,30 @@ class ShowRuntime implements EngineShowRuntime {
       this.applyLifecycle(this.acknowledgedRound, now)
       this.confirmedResult = before.round
     }
+    probe?.end('tick: round open / lifecycle', t)
     const physics = this.physics
     if (!physics) {
       this.global.step([], NO_SHADOW)
       this.notify('post-tick')
       return
     }
+    t = probe?.begin() ?? 0
     this.global.step([], this.shadowOf(physics))
+    probe?.end('tick: rules world step (show scripts)', t)
+    t = probe?.begin() ?? 0
     if (created || PLAY_SCREENS.includes(before.screen)) {
       this.factory.worldRef(physics.sim).binding.stepCodes(this.codesOf(physics, batch))
     }
+    probe?.end('tick: physics world stepCodes', t)
+    t = probe?.begin() ?? 0
     const after = this.snapshot()
+    probe?.end('tick: rules snapshot', t)
     const released = after.screen === 'results' || after.screen === 'podium' || after.screen === 'done'
+    t = probe?.begin() ?? 0
     try {
       this.notify('post-tick', after)
     } finally {
+      probe?.end('tick: notify (presentation listeners)', t)
       if (released) this.releasePhysics()
     }
   }
@@ -410,16 +430,21 @@ class ShowRuntime implements EngineShowRuntime {
   /** Delivers one observation synchronously; listener failures surface after every listener ran. */
   private notify(kind: ObservationKind, snapshot: EngineShowSnapshot = this.snapshot()): void {
     if (this.listeners.length === 0) return
+    const tb = probe?.begin() ?? 0
     const observation: EngineShowObservation = {
       kind, tick: this.engine.tick(this.global.world), snapshot, presentation: this.presentation(),
     }
+    probe?.end('notify: build presentation', tb)
     let failure: unknown
+    let index = 0
     for (const listener of [...this.listeners]) {
+      const t = probe?.begin() ?? 0
       try {
         listener(observation)
       } catch (error) {
         if (failure === undefined) failure = error
       }
+      probe?.end(`notify listener #${index++}`, t)
     }
     if (failure !== undefined) throw failure
   }

@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { decodeMesh } from '../src/sdf/meshWire.ts'
 import test from 'node:test'
 import {
-  PMF_INTERPRETER_WGSL, PMF_PRUNED_INTERPRETER_WGSL, fieldPruningEnabled, fieldProgramWords, type FieldGridOperandLike, type FieldProgramLike, type FieldTreeNodeLike,
+  PMF_INTERPRETER_WGSL, PMF_PRUNED_INTERPRETER_WGSL, PMF_PAIRED_INTERPRETER_WGSL, PMF_PRUNED_PAIRED_INTERPRETER_WGSL,
+  fieldPruningEnabled, fieldGridPairsEnabled, fieldGridTexture, fieldProgramWords, type FieldGridOperandLike, type FieldProgramLike, type FieldTreeNodeLike,
 } from '../src/sdf/fieldShading.ts'
 
 // Use the package's ESM build for CPU execution of the generated WGSL.
@@ -57,7 +58,7 @@ fn raa_material_f32(i: u32) -> f32 { return words[i]; }
 fn pmf_grid(x: i32, y: i32) -> vec4f {
   grid_reads += 1u;
   let texel = atlas[1u + u32(y) * atlas[0] + u32(x)];
-  return vec4f(f32(texel >> 8u), f32(texel & 255u), 0.0, 0.0) / 255.0;
+  return vec4f(f32((texel >> 24u) & 255u), f32((texel >> 16u) & 255u), f32((texel >> 8u) & 255u), f32(texel & 255u)) / 255.0;
 }
 ${PMF_INTERPRETER_WGSL}
 
@@ -81,18 +82,23 @@ ${PMF_INTERPRETER_WGSL}
 function instrument(source: string) {
   return WgslParser.Parse(source.replace('sd[top] = pmf_operand', 'operand_visits += 1u; sd[top] = pmf_operand'))
 }
-const ast = instrument(kernel)
-const prunedAst = instrument(kernel.replace(PMF_INTERPRETER_WGSL, PMF_PRUNED_INTERPRETER_WGSL))
+const shaders = [
+  [PMF_INTERPRETER_WGSL, PMF_PRUNED_INTERPRETER_WGSL],
+  [PMF_PAIRED_INTERPRETER_WGSL, PMF_PRUNED_PAIRED_INTERPRETER_WGSL],
+].map(modes => modes.map(mode => instrument(kernel.replace(PMF_INTERPRETER_WGSL, mode))))
 
-function sample(program: FieldProgramLike, points: Point[], prune = false) {
+function sample(program: FieldProgramLike, points: Point[], prune = false, pairGrid = false) {
   const data = fieldProgramWords(program, prune)
   assert.ok(data.ok)
-  const { width, height, texels } = program.grid ?? { width: 0, height: 0, texels: new Uint8Array(0) }
+  const { width, height, data: texels } = fieldGridTexture(program, pairGrid) ?? { width: 0, height: 0, data: new Uint8Array(0) }
   const atlas = new Uint32Array(1 + width * height)
   atlas[0] = width
-  for (let i = 0; i < width * height; i++) atlas[i + 1] = texels[4 * i] * 256 + texels[4 * i + 1]
+  for (let i = 0; i < width * height; i++) {
+    const at = 4 * i
+    atlas[i + 1] = texels[at] * 2 ** 24 + texels[at + 1] * 2 ** 16 + texels[at + 2] * 256 + texels[at + 3]
+  }
   const output = new Float32Array(14 * points.length).fill(NaN)
-  new WgslExec(prune ? prunedAst : ast).dispatchWorkgroups('sample_field', points.length, {
+  new WgslExec(shaders[Number(pairGrid)][Number(prune)]).dispatchWorkgroups('sample_field', points.length, {
     0: { 0: new Float32Array(data.words.buffer), 1: atlas, 2: Float32Array.from(points.flat()), 3: output },
   })
   return points.map((_, i) => {
@@ -233,5 +239,33 @@ test('bounded field traversal matches the full distance, gradient, seams and lab
     const p = { ...program, tree: [leaf(0), leaf(1), leaf(2), union, union] }
     const full = sample(p, points)
     sample(p, points, true).forEach((value, i) => compareSamples(value, full[i], `${mode} sample ${i}`))
+  }
+})
+
+
+test('paired grid texels halve atlas reads with identical field outputs and untouched source bytes', t => {
+  assert.equal(fieldGridPairsEnabled('?normals=field'), true)
+  assert.equal(fieldGridPairsEnabled('?normals=field&fieldGridPairs=0'), false)
+  const assets = [
+    savedSurface('assets/common/penguin.body.mesh'),
+    savedSurface('assets/candy/candy.floor-tile.mesh'),
+    { program: fixture(), points: [[0, 0, 0], [-0.68, 0.9, -0.73], [0.68, -0.15, 0.22], [0, -0.15, 0.22]] as Point[] },
+  ]
+  for (const [index, { program, points }] of assets.entries()) {
+    const original = program.grid!.texels.slice()
+    for (const prune of [false, true]) {
+      const full = sample(program, points, prune)
+      const paired = sample(program, points, prune, true)
+      paired.forEach((value, i) => {
+        compareSamples(value, full[i], `fixture ${index} sample ${i}`)
+        assert.equal(value.visits, full[i].visits)
+        assert.equal(value.reads * 2, full[i].reads)
+      })
+      if (prune) {
+        const avg = paired.reduce((sum, value) => sum + value.reads, 0) / points.length
+        t.diagnostic(`fixture ${index} with pruning and packing: ${avg.toFixed(2)} atlas samples per traversal`)
+      }
+    }
+    assert.deepEqual(program.grid!.texels, original)
   }
 })

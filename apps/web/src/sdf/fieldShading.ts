@@ -398,7 +398,7 @@ export function fieldProgramWords(program: FieldProgramLike, prune = false): { o
  * The fixed evaluator of a field program in material data at word `db` (fieldProgramWords): MAMA fieldProgramWgsl's
  * operand distances, blends and label weights, run as a stack machine over the tree instead of emitted per part.
  */
-function pmfInterpreter(analytic: boolean, prune = false): string {
+function pmfInterpreter(analytic: boolean, prune = false, pairGrid = false): string {
   const result = analytic ? 'PmfFieldSample' : 'f32'
   return /* wgsl */ `
 ${analytic ? `struct PmfFieldSample {
@@ -411,10 +411,13 @@ fn pmf_f(i: u32) -> f32 { return raa_material_f32(i); }
 fn pmf_u(i: u32) -> u32 { return u32(raa_material_f32(i) + 0.5); }
 fn pmf_v3(i: u32) -> vec3f { return vec3f(raa_material_f32(i), raa_material_f32(i + 1u), raa_material_f32(i + 2u)); }
 
-fn pmf_texel(x: i32, y: i32, range: f32) -> f32 {
+${pairGrid ? `fn pmf_texel(x: i32, y: i32, range: f32) -> vec2f {
+  let t = pmf_grid(x, y);
+  return ((t.rb * 255.0 * 256.0 + t.ga * 255.0) / 65535.0 * 2.0 - 1.0) * range;
+}` : `fn pmf_texel(x: i32, y: i32, range: f32) -> f32 {
   let t = pmf_grid(x, y);
   return ((t.r * 255.0 * 256.0 + t.g * 255.0) / 65535.0 * 2.0 - 1.0) * range;
-}
+}`}
 
 // The operand record at word r at point p of the part frame.
 fn pmf_operand(r: u32, p: vec3f) -> ${result} {
@@ -454,12 +457,23 @@ fn pmf_operand(r: u32, p: vec3f) -> ${result} {
     let sx = i32(size.x);
     // The eight trilinear corners in one loop: a single pmf_texel (raa_texture) call site, since the shader compiler
     // inlines every call and eight sites per operand made the field pipelines minutes long to compile.
-    var trilinear = 0.0;
+    var trilinear = 0.0;${pairGrid ? `
+    // The upper-Z corners ride in the same four texels. Accumulate in the original
+    // order, since tiny changes in distance can select a different CSG label at a tie.
+    var upper_z: vec4f;` : ''}
     for (var k = 0u; k < 8u; k = k + 1u) {
       let o = vec3<u32>(k & 1u, (k >> 1u) & 1u, k >> 2u);
       let corner = select(vec3f(1.0) - t, t, o == vec3<u32>(1u));
-      let x = ax + (i.z + i32(o.z)) * sx + i.x + i32(o.x);
-      let value = pmf_texel(x, ay + i.y + i32(o.y), range);
+${pairGrid ? `      var value: f32;
+      if (k < 4u) {
+        let x = ax + i.z * sx + i.x + i32(o.x);
+        let pair = pmf_texel(x, ay + i.y + i32(o.y), range);
+        upper_z[k] = pair.y;
+        value = pair.x;
+      } else {
+        value = upper_z[k - 4u];
+      }` : `      let x = ax + (i.z + i32(o.z)) * sx + i.x + i32(o.x);
+      let value = pmf_texel(x, ay + i.y + i32(o.y), range);`}
       trilinear = trilinear + value * corner.x * corner.y * corner.z;${analytic ? `
       // MAMA sampledValue: differentiate the corner weight along each axis and reuse its distance.
       let slope = select(vec3f(-1.0), vec3f(1.0), o == vec3<u32>(1u));
@@ -572,12 +586,30 @@ fn pmf_run(db: u32, p: vec3f, w: ptr<function, array<f32, 8>>) -> ${result} {
 
 export const PMF_INTERPRETER_WGSL = pmfInterpreter(true)
 export const PMF_PRUNED_INTERPRETER_WGSL = pmfInterpreter(true, true)
+export const PMF_PAIRED_INTERPRETER_WGSL = pmfInterpreter(true, false, true)
+export const PMF_PRUNED_PAIRED_INTERPRETER_WGSL = pmfInterpreter(true, true, true)
 const PMF_TAPS_INTERPRETER_WGSL = pmfInterpreter(false)
 
 /** The field grid as an Engine.addTexture argument, or null when the program has no grid. */
-export function fieldGridTexture(program: FieldProgramLike): { width: number; height: number; data: Uint8Array } | null {
+export function fieldGridTexture(program: FieldProgramLike, pairGrid = false): { width: number; height: number; data: Uint8Array } | null {
   if (program.grid === null) return null
-  return { width: program.grid.width, height: program.grid.height, data: program.grid.texels }
+  const { width, height, texels } = program.grid
+  if (!pairGrid) return { width, height, data: texels }
+  const data = texels.slice()
+  for (const o of program.operands) {
+    if (o.kind !== 'grid') continue
+    const [ax, ay] = o.at
+    const [nx, ny, nz] = o.size
+    for (let y = 0; y < ny; y++) {
+      const row = 4 * ((ay + y) * width + ax)
+      const stride = 4 * nx
+      for (let dst = row; dst < row + stride * (nz - 1); dst += 4) {
+        data[dst + 2] = texels[dst + stride]
+        data[dst + 3] = texels[dst + stride + 1]
+      }
+    }
+  }
+  return { width, height, data }
 }
 
 /**
@@ -765,6 +797,10 @@ export function fieldPruningEnabled(search = typeof location === 'undefined' ? '
   return new URLSearchParams(search).get('fieldPrune') !== '0'
 }
 
+export function fieldGridPairsEnabled(search = typeof location === 'undefined' ? '' : location.search): boolean {
+  return new URLSearchParams(search).get('fieldGridPairs') !== '0'
+}
+
 export function fieldNormalsMode(search = typeof location === 'undefined' ? '' : location.search): FieldNormals {
   return new URLSearchParams(search).get('fieldnormals') === 'taps' ? 'taps' : 'gradient'
 }
@@ -783,6 +819,7 @@ export function fieldMaterialWgsl(src: {
   debug: boolean
   normals?: FieldNormals
   prune?: boolean
+  pairGrid?: boolean
 }): { functionName: string; wgsl: string } {
   const { program, debug } = src
   const labels = program.labels.slice(0, MAX_LABELS)
@@ -795,6 +832,9 @@ export function fieldMaterialWgsl(src: {
     ? '\n  // ?normalsDebug: the normal lighting receives, 0.5 + n / 2.\n  o.base_color = n * 0.5 + vec3f(0.5);\n  o.metallic = 0.0;\n  o.roughness = 1.0;'
     : ''
   const taps = (src.normals ?? fieldNormalsMode()) === 'taps'
+  const interpreter = taps ? PMF_TAPS_INTERPRETER_WGSL
+    : src.pairGrid ? (src.prune ? PMF_PRUNED_PAIRED_INTERPRETER_WGSL : PMF_PAIRED_INTERPRETER_WGSL)
+    : src.prune ? PMF_PRUNED_INTERPRETER_WGSL : PMF_INTERPRETER_WGSL
   const tapsFunction = taps ? `
 // The centre run (distance and label weights in w) and six central taps at p +- h * e_i,
 // with h from voxel / 2 to one voxel (fieldStep), in ONE loop: pmf_run has a single call site. The shader compiler inlines every call, and the seven call sites
@@ -840,7 +880,7 @@ fn pmf_field(db: u32, p: vec3f, h: f32, scale: f32, w: ptr<function, array<f32, 
   let g = field.g;`
   const wgsl = `// field material (mama.field-program v${VERSION}, the program in material data)
 ${PMF_GRID_HOST_WGSL}
-${taps ? PMF_TAPS_INTERPRETER_WGSL : src.prune ? PMF_PRUNED_INTERPRETER_WGSL : PMF_INTERPRETER_WGSL}
+${interpreter}
 ${POSED_NORMAL_WGSL}
 ${tapsFunction}
 ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {

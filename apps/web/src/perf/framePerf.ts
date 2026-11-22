@@ -29,6 +29,7 @@ export interface FrameTimings {
 
 const WINDOW_MS = 2000
 import { renderScale } from './renderScale.ts'
+import { raaReportLines } from './raaOverrides.ts'
 export const perfEnabled = typeof location !== 'undefined' && new URLSearchParams(location.search).get('perf') === '1'
 
 interface Sample { at: number; ms: number; calls: number }
@@ -136,7 +137,7 @@ function report(now: number): void {
     document.body.appendChild(overlay)
   }
   const head = `${last.fps.toFixed(1)} fps  frame avg ${f(last.frameMs.avg)} p95 ${f(last.frameMs.p95)} max ${f(last.frameMs.max)} ms  dpr ${last.devicePixelRatio}\n` +
-    `scale ${last.renderScale}  presented ${(last.pixelsPerSec / 1e6).toFixed(1)} Mpx/s\n` +
+    `scale ${last.renderScale}  presented ${(last.pixelsPerSec / 1e6).toFixed(1)} Mpx/s\n` + raaReportLines().map(l => l + '\n').join('') +
     last.canvas.map((c, i) => `canvas ${i} ${c.label}: ${c.width}x${c.height} (css ${c.cssWidth}x${c.cssHeight}) rendered ${c.renderedPerSec.toFixed(1)}/s`).join('\n') + '\n' +
     Object.entries(last.counters).map(([k, v]) => `${k} ${v}`).join('  ') + '\nmodule                                   avg    p95    max  calls/f\n'
   const gpuHead = last.gpu.supported === false ? 'GPU pass times: unavailable (the adapter has no timestamp-query)\n'

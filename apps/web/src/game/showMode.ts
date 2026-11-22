@@ -347,6 +347,7 @@ export class ShowMode {
       if (!this.driven) timed('EngineShowRuntime.frame', () => runtime.frame(dt, roomSeat => this.engineCode(roomSeat, human)))
       this.current = timed('ShowDirector.step', () => this.director!.step(action, dt * 1000))
       this.sounds.push(...this.current.sounds)
+      timed('observe: flush (once per frame)', () => this.flushObservation())
       timed('ShowMode.loadEngine', () => this.loadEngine(runtime))
       timed('EngineShowEffects.pump', () => this.effects?.pump())
       const visible = ['countdown', 'round', 'spectate'].includes(this.screen())
@@ -372,16 +373,30 @@ export class ShowMode {
   }
 
   /** Post-tick: refresh the read view, observe the scene once for this tick, feed the far figures. Before-release only invalidates. */
+  // The presented seats are read once per frame, from the last tick's observation: the far view keeps only the latest
+  // snapshot of each domain and the scene is drawn once per frame, so decoding every seat on each of up to 8 catch-up
+  // ticks was most of EngineShowRuntime.frame (measured: ~10 ms per tick with 60 seats). The events lane (EngineShowEffects)
+  // still sees every tick. A release drops the pending observation (its worlds are going away) and applies at once.
+  private pendingObservation: EngineShowObservation | null = null
+
   private observeEngine(observation: EngineShowObservation): void {
-    const view = this.readView
-    if (this.disposed || view === null || this.presenter === null) return
+    if (this.disposed || this.readView === null || this.presenter === null) return
     if (observation.kind === 'before-release') {
+      this.pendingObservation = null
       this.presenter.observe(observation, new Set())
       return
     }
+    this.pendingObservation = observation
+  }
+
+  private flushObservation(): void {
+    const observation = this.pendingObservation
+    this.pendingObservation = null
+    const view = this.readView
+    if (observation === null || this.disposed || view === null || this.presenter === null) return
+    const presenter = this.presenter
     timed('observe: EngineShowView.refresh', () => view.refresh(1))
     timed('observe: ZoneNetScene.observe', () => this.scene?.observe(view))
-    const presenter = this.presenter
     timed('observe: EngineSeatPresenter.observe', () => presenter.observe(observation, view.nearSeats()))
   }
 

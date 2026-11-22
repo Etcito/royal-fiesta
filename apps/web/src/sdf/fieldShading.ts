@@ -4,6 +4,7 @@
 // same way a normal-volume normal was. This module validates the payload structurally and never imports
 // MAMA (the upstream field-shading entry point takes a numeric PartShading record instead).
 
+import { fieldUnionGuards } from './fieldBounds.ts'
 import { wgslReservedNames } from './wgslReserved.ts'
 
 export interface FieldLabelLike {
@@ -295,6 +296,9 @@ fn sdfm_posed_normal(in: MaterialInput, g0: vec3f, a: mat3x3f) -> vec3f {
 //     box: half xyz, radius; grid: origin xyz, voxel, size xyz, at xy, range
 //   tree nodes, 4 floats each: op (0 leaf, 1 union, 2 subtract, 3 intersect), operand index or mode (0 hard, 1 round,
 //     2 smooth, 3 chamfer), radius, colour (1: colorBlend 'hard', the dominant side's label; 0: weights follow the blend)
+//   optional guards: op 4, jump index, box data offset, union radius (negative for round)
+//   guard box data: min xyz, gain, max xyz, offset, outside offset
+const PMF_GUARD_FLOATS = 9
 const PMF_LABELS_AT = 12
 const PMF_OPERAND_FLOATS = 32
 const PMF_OPERANDS_AT = PMF_LABELS_AT + 8 * MAX_LABELS
@@ -319,14 +323,18 @@ function treeDepth(program: FieldProgramLike): number | string {
  * The material data words of a field part (layout above), or the reason the fixed evaluator cannot draw it: an
  * unknown blend mode or a tree deeper than PMF_STACK.
  */
-export function fieldProgramWords(program: FieldProgramLike): { ok: true; words: Uint32Array } | { ok: false; reason: string } {
+export function fieldProgramWords(program: FieldProgramLike, prune = false): { ok: true; words: Uint32Array; pruned: boolean } | { ok: false; reason: string } {
   const depth = treeDepth(program)
   if (typeof depth === 'string') return { ok: false, reason: depth }
   if (depth > PMF_STACK) return { ok: false, reason: `field tree needs a stack of ${depth}, more than ${PMF_STACK}` }
   const treeAt = PMF_OPERANDS_AT + PMF_OPERAND_FLOATS * program.operands.length
-  const floats = new Float32Array(treeAt + 4 * program.tree.length)
+  const guards = prune ? fieldUnionGuards(program) : null
+  const guardCount = guards?.size ?? 0
+  const count = program.tree.length + guardCount
+  const boundsAt = treeAt + 4 * count
+  const floats = new Float32Array(boundsAt + PMF_GUARD_FLOATS * guardCount)
   floats[0] = VERSION
-  floats[1] = program.tree.length
+  floats[1] = count
   floats[2] = PMF_OPERANDS_AT
   floats[3] = treeAt
   floats.set(program.bounds.min, 4)
@@ -356,8 +364,22 @@ export function fieldProgramWords(program: FieldProgramLike): { ok: true; words:
       floats[at + 29] = o.range
     }
   })
+  // A jump to the next original node must still execute a guard inserted before that node.
+  const instruction = [0]
+  for (let i = 0; i < program.tree.length; i++) {
+    instruction.push(instruction[i] + (guards?.has(i) ? 2 : 1))
+  }
+  let guardAt = boundsAt
   for (const [k, node] of program.tree.entries()) {
-    const at = treeAt + 4 * k
+    let at = treeAt + 4 * instruction[k]
+    const guard = guards?.get(k)
+    if (guard) {
+      floats.set([4, instruction[guard.target], guardAt, guard.round ? -guard.radius : guard.radius], at)
+      const { min, max, gain, offset, outsideOffset } = guard.bound
+      floats.set([...min, gain, ...max, offset, outsideOffset], guardAt)
+      at += 4
+      guardAt += PMF_GUARD_FLOATS
+    }
     floats[at] = TREE_OPS[node.op]
     if (node.op === 'leaf') {
       floats[at + 1] = node.operand
@@ -369,14 +391,14 @@ export function fieldProgramWords(program: FieldProgramLike): { ok: true; words:
     floats[at + 2] = node.radius
     floats[at + 3] = node.colour === 'hard' ? 1 : 0
   }
-  return { ok: true, words: new Uint32Array(floats.buffer) }
+  return { ok: true, words: new Uint32Array(floats.buffer), pruned: guardCount > 0 }
 }
 
 /**
  * The fixed evaluator of a field program in material data at word `db` (fieldProgramWords): MAMA fieldProgramWgsl's
  * operand distances, blends and label weights, run as a stack machine over the tree instead of emitted per part.
  */
-function pmfInterpreter(analytic: boolean): string {
+function pmfInterpreter(analytic: boolean, prune = false): string {
   const result = analytic ? 'PmfFieldSample' : 'f32'
   return /* wgsl */ `
 ${analytic ? `struct PmfFieldSample {
@@ -464,7 +486,27 @@ fn pmf_run(db: u32, p: vec3f, w: ptr<function, array<f32, 8>>) -> ${result} {
   let tree = db + pmf_u(db + 3u);
   for (var k = 0u; k < count; k = k + 1u) {
     let node = tree + 4u * k;
-    let op = pmf_u(node);
+    let op = pmf_u(node);${prune ? `
+    if (op == 4u) {
+      let box = db + pmf_u(node + 2u);
+      let low = pmf_v3(box);
+      let high = pmf_v3(box + 4u);
+      let outside = max(max(low - p, p - high), vec3f(0.0));
+      let excess = max(outside.x, max(outside.y, outside.z));
+      let gain = pmf_f(box + 3u);
+      let magnitude = max(abs(p), max(abs(low), abs(high)));
+      let position_band = 1e-5 * (1.0 + max(magnitude.x, max(magnitude.y, magnitude.z)));
+      let offset = pmf_f(box + select(7u, 8u, excess > position_band));
+      let lower = gain * excess + offset;
+      let left = sd[top - 1u].d;
+      let radius = pmf_f(node + 3u);
+      // Round unions can round points deep inside the left child whenever the right is within r.
+      let cut = select(left + radius, max(left, -radius), radius < 0.0);
+      // Keep equality and the rounding band, where the losing branch can still supply labels.
+      let tolerance = 1e-5 * (1.0 + abs(cut) + abs(offset)) + gain * position_band;
+      if (lower > cut + tolerance) { k = pmf_u(node + 1u) - 1u; }
+      continue;
+    }` : ''}
     if (op == 0u) {
       if (top >= ${PMF_STACK}u) { break; }
       let r = operands + ${PMF_OPERAND_FLOATS}u * pmf_u(node + 1u);
@@ -529,6 +571,7 @@ fn pmf_run(db: u32, p: vec3f, w: ptr<function, array<f32, 8>>) -> ${result} {
 }
 
 export const PMF_INTERPRETER_WGSL = pmfInterpreter(true)
+export const PMF_PRUNED_INTERPRETER_WGSL = pmfInterpreter(true, true)
 const PMF_TAPS_INTERPRETER_WGSL = pmfInterpreter(false)
 
 /** The field grid as an Engine.addTexture argument, or null when the program has no grid. */
@@ -718,6 +761,10 @@ export const MATERIAL_FUNCTION_MAX_BYTES = 65536
 
 type FieldNormals = 'gradient' | 'taps'
 
+export function fieldPruningEnabled(search = typeof location === 'undefined' ? '' : location.search): boolean {
+  return new URLSearchParams(search).get('fieldPrune') !== '0'
+}
+
 export function fieldNormalsMode(search = typeof location === 'undefined' ? '' : location.search): FieldNormals {
   return new URLSearchParams(search).get('fieldnormals') === 'taps' ? 'taps' : 'gradient'
 }
@@ -735,6 +782,7 @@ export function fieldMaterialWgsl(src: {
   labelGraphs: readonly (FieldLabelGraphLike | null)[]
   debug: boolean
   normals?: FieldNormals
+  prune?: boolean
 }): { functionName: string; wgsl: string } {
   const { program, debug } = src
   const labels = program.labels.slice(0, MAX_LABELS)
@@ -792,7 +840,7 @@ fn pmf_field(db: u32, p: vec3f, h: f32, scale: f32, w: ptr<function, array<f32, 
   let g = field.g;`
   const wgsl = `// field material (mama.field-program v${VERSION}, the program in material data)
 ${PMF_GRID_HOST_WGSL}
-${taps ? PMF_TAPS_INTERPRETER_WGSL : PMF_INTERPRETER_WGSL}
+${taps ? PMF_TAPS_INTERPRETER_WGSL : src.prune ? PMF_PRUNED_INTERPRETER_WGSL : PMF_INTERPRETER_WGSL}
 ${POSED_NORMAL_WGSL}
 ${tapsFunction}
 ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {

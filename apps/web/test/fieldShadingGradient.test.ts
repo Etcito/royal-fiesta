@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { decodeMesh } from '../src/sdf/meshWire.ts'
 import test from 'node:test'
 import {
-  PMF_INTERPRETER_WGSL, fieldProgramWords, type FieldGridOperandLike, type FieldProgramLike, type FieldTreeNodeLike,
+  PMF_INTERPRETER_WGSL, PMF_PRUNED_INTERPRETER_WGSL, fieldPruningEnabled, fieldProgramWords, type FieldGridOperandLike, type FieldProgramLike, type FieldTreeNodeLike,
 } from '../src/sdf/fieldShading.ts'
 
 // Use the package's ESM build for CPU execution of the generated WGSL.
@@ -49,8 +51,11 @@ const kernel = `
 @group(0) @binding(2) var<storage, read> points: array<f32>;
 @group(0) @binding(3) var<storage, read_write> output: array<f32>;
 
+var<private> grid_reads: u32;
+var<private> operand_visits: u32;
 fn raa_material_f32(i: u32) -> f32 { return words[i]; }
 fn pmf_grid(x: i32, y: i32) -> vec4f {
+  grid_reads += 1u;
   let texel = atlas[1u + u32(y) * atlas[0] + u32(x)];
   return vec4f(f32(texel >> 8u), f32(texel & 255u), 0.0, 0.0) / 255.0;
 }
@@ -58,35 +63,43 @@ ${PMF_INTERPRETER_WGSL}
 
 @compute @workgroup_size(1) fn sample_field(@builtin(global_invocation_id) id: vec3u) {
   let i = 3u * id.x;
-  let j = 7u * id.x;
+  let j = 14u * id.x;
   let p = vec3f(points[i], points[i + 1u], points[i + 2u]);
   var weights: array<f32, 8>;
+  grid_reads = 0u;
+  operand_visits = 0u;
   let s = pmf_run(0u, p, &weights);
   output[j] = s.d;
   output[j + 1u] = s.g.x;
   output[j + 2u] = s.g.y;
   output[j + 3u] = s.g.z;
   output[j + 4u] = f32(s.seam);
-  output[j + 5u] = weights[0];
-  output[j + 6u] = weights[1];
+  for (var i = 0u; i < 8u; i++) { output[j + 5u + i] = weights[i]; }
+  output[j + 13u] = f32(grid_reads * 1024u + operand_visits);
 }
 `
-const ast = WgslParser.Parse(kernel)
+function instrument(source: string) {
+  return WgslParser.Parse(source.replace('sd[top] = pmf_operand', 'operand_visits += 1u; sd[top] = pmf_operand'))
+}
+const ast = instrument(kernel)
+const prunedAst = instrument(kernel.replace(PMF_INTERPRETER_WGSL, PMF_PRUNED_INTERPRETER_WGSL))
 
-function sample(program: FieldProgramLike, points: Point[]) {
-  const data = fieldProgramWords(program)
+function sample(program: FieldProgramLike, points: Point[], prune = false) {
+  const data = fieldProgramWords(program, prune)
   assert.ok(data.ok)
-  const { width, height, texels } = program.grid!
+  const { width, height, texels } = program.grid ?? { width: 0, height: 0, texels: new Uint8Array(0) }
   const atlas = new Uint32Array(1 + width * height)
   atlas[0] = width
   for (let i = 0; i < width * height; i++) atlas[i + 1] = texels[4 * i] * 256 + texels[4 * i + 1]
-  const output = new Float32Array(7 * points.length).fill(NaN)
-  new WgslExec(ast).dispatchWorkgroups('sample_field', points.length, {
+  const output = new Float32Array(14 * points.length).fill(NaN)
+  new WgslExec(prune ? prunedAst : ast).dispatchWorkgroups('sample_field', points.length, {
     0: { 0: new Float32Array(data.words.buffer), 1: atlas, 2: Float32Array.from(points.flat()), 3: output },
   })
   return points.map((_, i) => {
-    const [d, x, y, z, seam, wa, wb] = output.subarray(7 * i, 7 * i + 7)
-    return { d, gradient: [x, y, z], seam: seam === 1, weights: [wa, wb] }
+    const [d, x, y, z, seam, ...tail] = output.subarray(14 * i, 14 * i + 14)
+    const counts = tail[8]
+    return { d, gradient: [x, y, z], seam: seam === 1, weights: tail.slice(0, program.labels.length),
+      reads: Math.floor(counts / 1024), visits: counts % 1024 }
   })
 }
 
@@ -168,5 +181,57 @@ test('only contributing grid seams propagate through the tree', () => {
     ['intersect', 'smooth', true]] as const) {
     const [result] = sample({ ...program, tree: [leaf(0), leaf(1), { op, mode, radius: 0.4 }] }, [p])
     assert.equal(result.seam, expected, `${op} ${mode}`)
+  }
+})
+
+
+function compareSamples(actual: ReturnType<typeof sample>[number], old: ReturnType<typeof sample>[number], message: string) {
+  close(actual.d, old.d, message, 1e-5)
+  actual.gradient.forEach((value, i) => close(value, old.gradient[i], message, 1e-5))
+  assert.equal(actual.seam, old.seam, message)
+  actual.weights.forEach((value, i) => close(value, old.weights[i], message, 1e-5))
+}
+
+function savedSurface(path: string) {
+  const mesh = decodeMesh(new Uint8Array(readFileSync(path))) as unknown as {
+    data: { groups: { parts: { fieldProgram: FieldProgramLike; meshes: { positions: Float32Array; indices: Uint32Array }[] }[] }[] }
+  }
+  const part = mesh.data.groups[0].parts.find(p => p.fieldProgram)!
+  const points = part.meshes.flatMap(mesh => {
+    const points: Point[] = []
+    const step = Math.ceil(mesh.indices.length / 3 / 12)
+    for (let t = 0; 3 * t < mesh.indices.length; t += step) {
+      const offset = [...mesh.indices.subarray(3 * t, 3 * t + 3)].map(i => 3 * i)
+      points.push([0, 1, 2].map(k => offset.reduce((sum, i) => sum + mesh.positions[i + k], 0) / 3) as Point)
+    }
+    return points
+  })
+  return { program: part.fieldProgram, points }
+}
+
+test('bounded field traversal matches the full distance, gradient, seams and labels on saved surfaces and near CSG ties', t => {
+  assert.equal(fieldPruningEnabled('?normals=field'), true)
+  assert.equal(fieldPruningEnabled('?normals=field&fieldPrune=0'), false)
+  for (const path of ['assets/common/penguin.body.mesh', 'assets/candy/candy.floor-tile.mesh', 'assets/candy/candy.floor-disc.mesh']) {
+    const { program, points } = savedSurface(path)
+    const full = sample(program, points)
+    const pruned = sample(program, points, true)
+    pruned.forEach((value, i) => compareSamples(value, full[i], `${path} sample ${i}`))
+    const mean = (all: typeof full, key: 'reads' | 'visits') => (all.reduce((sum, s) => sum + s[key], 0) / all.length).toFixed(2)
+    t.diagnostic(`${path} (${points.length} centroids), grid reads ${mean(full, 'reads')} → ${mean(pruned, 'reads')}; operands ${mean(full, 'visits')} → ${mean(pruned, 'visits')}`)
+    assert.ok(pruned.some((value, i) => value.reads < full[i].reads))
+  }
+
+  const program = fixture()
+  const first = program.operands[0] as FieldGridOperandLike
+  program.operands = [first, { ...first, label: 1 }, {
+    ...first, label: 1, inv: [...identity.slice(0, 12), -10, 0, 0, 1],
+  }]
+  const points: Point[] = [[0, 0, 0], [0.12, -0.15, 0.22], [-0.4, 0.1, -0.38], [5, 0, 0], [10, 0, 0]]
+  for (const mode of ['hard', 'smooth', 'round', 'chamfer']) {
+    const union = { op: 'union', mode, radius: 0.5 } as const
+    const p = { ...program, tree: [leaf(0), leaf(1), leaf(2), union, union] }
+    const full = sample(p, points)
+    sample(p, points, true).forEach((value, i) => compareSamples(value, full[i], `${mode} sample ${i}`))
   }
 })

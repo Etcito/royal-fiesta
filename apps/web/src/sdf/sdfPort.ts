@@ -25,7 +25,7 @@ import { installShaderCache } from '../render/shaderCache.ts'
 import { createPreparationQueue, deviceOfCanvas, fieldReadiness, materialKey } from '../render/asyncPipelines.ts'
 import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
 import { FIELD_ATLAS_BYTES, partDiag, planFieldAtlas, planFieldPrograms, type FieldAtlasPlan, type PartFieldProgram } from './fieldAtlas.ts'
-import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, fieldStretch, uniformFieldFrameScale, withFieldStretch } from './fieldShading.ts'
+import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, fieldNormalsMode, fieldPruningEnabled, fieldStretch, uniformFieldFrameScale, withFieldStretch } from './fieldShading.ts'
 
 export interface PartWorldBounds { key: string; min: number[]; max: number[]; surface?: number[][] }
 
@@ -833,11 +833,22 @@ class SdfRenderPort implements ResizablePort {
     if (missing) warnOnce(`${key}:missing`, 'a field label names a material not in the saved mesh; its shapes wear the label colour')
     // One fixed evaluator reads the program from the part's material data (program.wgsl, per-part code up to over 1 MB,
     // is never registered: RAA refuses a material function over 64 KB); parts with the same label graphs share the text.
-    const words = fieldProgramWords(program)
+    const normals = fieldNormalsMode()
+    const prune = normals === 'gradient' && fieldPruningEnabled()
+    let words = fieldProgramWords(program, prune)
     let material: { functionName: string; wgsl: string }
     try {
       if (!words.ok) throw new Error(words.reason)
-      material = fieldMaterialWgsl({ program, labelGraphs, debug: this.debugNormals })
+      const source = { program, labelGraphs, debug: this.debugNormals, normals }
+      try {
+        material = fieldMaterialWgsl({ ...source, prune: words.pruned })
+      } catch (e) {
+        if (!words.pruned) throw e
+        // A label graph near RAA's source limit can still use the full field evaluator.
+        material = fieldMaterialWgsl(source)
+        words = fieldProgramWords(program)
+        if (!words.ok) throw new Error(words.reason)
+      }
     } catch (e) {
       if (texture !== null) engine.removeTexture(texture)
       warnOnce(key, `vertex normals (${messageOf(e)})`)

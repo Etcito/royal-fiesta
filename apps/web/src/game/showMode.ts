@@ -1,3 +1,5 @@
+import { DPR_CAP } from '@royal-fiesta/game/client/splitLayout'
+import { timed } from '../perf/framePerf.ts'
 import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { checkAwait } from './checkProgress.ts'
@@ -108,7 +110,7 @@ export class ShowMode {
     this.memories = []
     this.stages = Array.from(options.views.querySelectorAll('canvas'), canvas => ({ canvas, display: canvas.style.display }))
     this.canvas = options.views.ownerDocument.createElement('canvas')
-    const dpr = options.views.ownerDocument.defaultView?.devicePixelRatio ?? 1
+    const dpr = Math.min(options.views.ownerDocument.defaultView?.devicePixelRatio ?? 1, DPR_CAP) // the same cap as the lobby canvas (pixelViewports)
     this.canvas.width = Math.max(1, Math.round(options.views.clientWidth * dpr))
     this.canvas.height = Math.max(1, Math.round(options.views.clientHeight * dpr))
     this.canvas.dataset.show = 'true'
@@ -209,7 +211,7 @@ export class ShowMode {
 
   /** True while this show was sized for `views` as it is now (a preloaded show is discarded when the page resized). */
   fits(views: HTMLElement): boolean {
-    const dpr = views.ownerDocument.defaultView?.devicePixelRatio ?? 1
+    const dpr = Math.min(views.ownerDocument.defaultView?.devicePixelRatio ?? 1, DPR_CAP)
     return this.canvas.width === Math.max(1, Math.round(views.clientWidth * dpr))
       && this.canvas.height === Math.max(1, Math.round(views.clientHeight * dpr))
   }
@@ -313,19 +315,20 @@ export class ShowMode {
     if (this.disposed || this.error !== null || this.director === null || runtime === null) return
     const dt = Number.isFinite(dtS) ? Math.max(0, dtS) : 0
     try {
-      if (!this.driven) runtime.frame(dt, roomSeat => this.engineCode(roomSeat, human))
-      this.current = this.director.step(action, dt * 1000)
+      if (!this.driven) timed('EngineShowRuntime.frame', () => runtime.frame(dt, roomSeat => this.engineCode(roomSeat, human)))
+      this.current = timed('ShowDirector.step', () => this.director!.step(action, dt * 1000))
       this.sounds.push(...this.current.sounds)
-      this.loadEngine(runtime)
-      this.effects?.pump()
+      timed('ShowMode.loadEngine', () => this.loadEngine(runtime))
+      timed('EngineShowEffects.pump', () => this.effects?.pump())
       const visible = ['countdown', 'round', 'spectate'].includes(this.screen())
       this.canvas.style.display = visible ? '' : 'none'
       for (const stage of this.stages) stage.canvas.style.display = visible ? 'none' : stage.display
       if (visible && this.scene !== null && this.readView !== null && this.presenter !== null) {
-        this.presenter.refill(runtime.presentation(), runtime.snapshot(), this.readView.nearSeats())
-        this.bridge?.sync(this.presenter.submission().view)
-        this.scene.present(this.readView, 1, dt)
-        this.scene.render()
+        const presenter = this.presenter, view = this.readView, scene = this.scene
+        timed('EngineSeatPresenter.refill', () => presenter.refill(runtime.presentation(), runtime.snapshot(), view.nearSeats()))
+        timed('RenderBridge.sync', () => this.bridge?.sync(presenter.submission().view))
+        timed('ZoneNetScene.present', () => scene.present(view, 1, dt))
+        timed('ZoneNetScene.render', () => scene.render())
       }
     } catch (error) {
       this.fail(error)

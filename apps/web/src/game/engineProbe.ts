@@ -38,6 +38,8 @@ export interface EngineShellHandle {
   state(): EngineShellState
   signals(): readonly string[]
   play(): boolean
+  /** ?perf=1: the per-module frame timings as JSON-able data. */
+  frameTimings?(): unknown
 }
 
 const EMPTY_FRAME: EngineProbeFrame = {

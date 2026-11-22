@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import { end, frameBegin, span, frameTimings } from '../perf/framePerf.ts'
 import { browserZones } from '../client/sources.ts'
 import { localPlayerCount } from './localPlayers.ts'
 import { localBotCount } from './localBots.ts'
@@ -341,6 +342,7 @@ function loop(frame: (dtS: number) => void, interval: () => number = () => 0): (
   const tick = (now: number) => {
     id = requestAnimationFrame(tick)
     if (!pacer.shouldRender(now)) return
+    frameBegin()
     const dt = Math.min(0.1, Math.max(0, now - last) / 1000)
     last = now
     frame(dt)
@@ -1991,7 +1993,7 @@ class App {
       const probe = new EngineShellProbe()
       this.probe = probe
       this.uninstallProbe = installEngineProbe(window as Window & { rfEngine?: EngineShellHandle }, {
-        state: () => probe.state(), signals: () => probe.signals(), play: () => this.enginePlay(),
+        state: () => probe.state(), signals: () => probe.signals(), play: () => this.enginePlay(), frameTimings,
       })
     }
   }
@@ -2826,6 +2828,7 @@ class App {
   private frame(dt: number): void {
     const nav = this.nav
     this.uiNowMs += this.env.fieldGameplay ? 1000 : Math.max(0, dt) * 1000
+    const tInput = span()
     const events = this.input.takeEvents()
     // The remap screen reads the keys itself: they must not also move the uaa settings menu.
     if (this.remap === null) {
@@ -2850,7 +2853,10 @@ class App {
     if (nav.screen !== 'settings') this.rebinding = null
     // One poll per device: keyboard, every connected pad, then touch.
     this.devices.bindings = this.settings
+    end('App.input events', tInput)
+    const tPoll = span()
     const deviceCount = this.devices.poll(this.devicePolls)
+    end('InputDevices.poll', tPoll)
     // Pads drive the remap while it is open; their join edges must not reach the local seat table.
     if (this.remap !== null) for (let i = 0; i < deviceCount; i++) this.devicePolls[i].joinPressed = false
     const mode = this.mode
@@ -2892,9 +2898,11 @@ class App {
     if (mode instanceof LocalMode) mode.setVisible(!wardrobe)
     if (mode !== null && nav.live && nav.screen !== 'start') {
       const paused = nav.screen === 'pause' || nav.screen === 'settings'
+      const tMode = span()
       const screen = mode.frame({
         dt, paused, world: this.world, emote: playing ? this.emote : 0, devices: this.devicePolls, deviceCount,
       })
+      end(`Mode.frame ${mode.constructor.name}`, tMode)
       if (mode.failure !== null) return this.fail(mode.failure)
       this.roundGate.frame(screen, mode.roundStage())
       this.run(nav.dispatch({ kind: 'game', screen }))
@@ -2910,9 +2918,15 @@ class App {
     }
     this.emote = 0
     // The show has no MatchSim; skip SoundDriver.frame so it cannot restart the lobby music it stopped.
+    const tSound = span()
     if (!this.lobbySoundOff) this.sound.frame(this.mode?.sim() ?? null, this.mode?.listener?.() ?? undefined)
+    end('SoundDriver.frame', tSound)
+    const tObs = span()
     this.observeEngine()
+    end('App.observeEngine', tObs)
+    const tDraw = span()
     this.draw()
+    end('App.draw (total)', tDraw)
   }
 
   // Persists the wardrobe after a wear or colour change.
@@ -3089,11 +3103,17 @@ class App {
         this.screens.style.pointerEvents = 'auto'
         this.startView.setVisible(true)
         this.startView.update(this.startModel, null)
+        const tR = span()
         this.resize()
+        end('App.resize', tR)
         // The mode rendered its camera before draw() updated the wardrobe scene.
         // Submit the start camera and newly worn instances before presenting the UI.
+        const tP = span()
         this.loaded?.ports[0]?.render()
+        end('SdfRenderPort.render (start scene)', tP)
+        const tH = span()
         this.host.frame(this.uiNowMs)
+        end('UaaHost.frame', tH)
         this.preloadShow()
         return
       }
@@ -3110,9 +3130,16 @@ class App {
       this.host.frame(this.uiNowMs)
       return
     }
-    if (this.drawShow()) {
+    const tShow = span()
+    const showDrawn = this.drawShow()
+    end('App.drawShow', tShow)
+    if (showDrawn) {
+      const tR = span()
       this.resize()
+      end('App.resize', tR)
+      const tH = span()
       this.host.frame(this.uiNowMs)
+      end('UaaHost.frame', tH)
       if ((this.mode instanceof ShowAdapter || this.mode instanceof OnlineMode) && this.mode.show.models !== null) this.showLoading(this.mode.show.models)
       return
     }
@@ -3136,7 +3163,9 @@ class App {
     // Overlays leave the pointer to the views (pointer lock on the game canvas); menus take clicks.
     this.screens.style.pointerEvents = model.overlay ? 'none' : 'auto'
     this.resize()
+    const tPresent = span()
     this.host.present({ ...model, lines: fitLines(model.lines, lineSlots(model.screen)) })
+    end('UaaHost.present', tPresent)
     if (model.screen === 'settings') this.host.setHud(settingsWidgetProps(page, items, this.host.focused(), nav.settingsFrom))
     if (hud !== null && values !== null) this.host.setHud(hudWidgets(values, hud.view))
     // Submit the wardrobe scene's last camera and instances before the panel, so the backdrop is current.

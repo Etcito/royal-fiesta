@@ -1,4 +1,5 @@
 /// <reference path="../types-mama.d.ts" />
+import { count, timed } from '../perf/framePerf.ts'
 import { roadMesh, type RoadData } from '@royal-fiesta/sim/road'
 import { checkAwait } from '../game/checkProgress.ts'
 // SDF render port: a RenderPort on the @etcito/raa release engine, fed with the upload payload the
@@ -1454,9 +1455,11 @@ class SdfRenderPort implements ResizablePort {
     const t0 = performance.now()
     this.swapFallbacks()
     this.flushPoses(engine)
-    renderFrame(this, () => engine.render(t0))
+    renderFrame(this, () => timed('raa Engine.render (CPU encode)', () => engine.render(t0)))
     const frameMs = performance.now() - t0
     const stats = engine.stats()
+    count('draw calls', stats.drawCalls)
+    count('triangles', stats.triangles)
     let visible = 0
     for (const live of this.live) if (live !== null && live.visible) visible++
     this.lastStats = { frameMs, drawCalls: stats.drawCalls, triangles: stats.triangles, instances: stats.instances, visible }

@@ -1020,11 +1020,11 @@ export async function loadEnginePublication(): Promise<PublishedEngine> {
 
 /** Loads the authored show content the page and the game shell start shows from. */
 export async function loadEngineAuthoredShow(): Promise<AuthoredShow> {
-  const [{ loadShowContent }, { zoneContent }] = await Promise.all([
+  const [{ loadShowContent, seasonCourseIds }, { zoneContent }] = await Promise.all([
     import('../game/showContent.ts'),
     import('../zone/zoneContent.ts'),
   ])
-  const [show, zone] = await Promise.all([loadShowContent('sprint'), zoneContent('sprint')])
+  const [show, zone] = await Promise.all([loadShowContent('sprint'), zoneContent('sprint', undefined, seasonCourseIds())])
   const loaded = await loadV1Courses(() => {}, undefined, [...show.courses.map(course => course.id), PODIUM_COURSE, HUB_PLAZA])
   const byId = new Map(loaded.courses.map(course => [course.id, course]))
   const plaza = byId.get(HUB_PLAZA)

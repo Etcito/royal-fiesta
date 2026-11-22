@@ -112,7 +112,7 @@ import { mountCountdown } from '../screens/countdown.ts'
 import { mountElimShow } from '../screens/elimShow.ts'
 import { mountEndScreen } from '../screens/endScreen.ts'
 import { ShowMode } from './showMode.ts'
-import { loadShowContent } from './showContent.ts'
+import { loadShowContent, seasonCourseIds } from './showContent.ts'
 import type { ShowContent } from './showContent.ts'
 import type { ShowModeOptions } from './showMode.ts'
 import type { ShowFrame } from './showDirector.ts'
@@ -2250,19 +2250,27 @@ class App {
       }
       this.query = q
       const content = pickContent(new URLSearchParams(this.search))
+      if (this.backend === 'engine' && content instanceof SdfContent) content.limitRaceCourses(seasonCourseIds())
       boot.enter('physics (Rapier wasm)')
       wavedashProgress(0.03)
-      const R = await checkAwait('Rapier initialization', () => initRapier())
+      // Independent boot work starts together: Rapier wasm, the show content and the engine preparation need nothing
+      // from the content load or the renderer. Only the dependencies stay in order: ports need the loaded content,
+      // the hub needs the ports, the start scene heats after the hub exists.
+      const needsShow = q.server !== null || this.nav.onlineOnly || this.backend === 'engine'
+      const rapierP = phase('physics (Rapier wasm)', () => initRapier())
+      const showP = needsShow ? phase('show content', () => loadShowContent('sprint')) : Promise.resolve(null)
+      const engineP = this.backend === 'engine' ? phase('engine backend', () => this.prepareEngine(q)) : Promise.resolve()
+      for (const p of [rapierP, showP, engineP]) p.catch(() => undefined)
       boot.enter('content')
-      let phase = ''
-      await checkAwait('boot content', () => content.load('sprint', progress => {
+      let lastPhase = ''
+      await phase('content', () => checkAwait('boot content', () => content.load('sprint', progress => {
         if (this.disposed) return
-        if (progress.phase !== phase) boot.enter(`content: ${phase = progress.phase}`)
+        if (progress.phase !== lastPhase) boot.enter(`content: ${lastPhase = progress.phase}`)
         wavedashProgress(0.1 + 0.75 * Math.min(1, progress.done / Math.max(1, progress.total)))
         this.loadingOverlay.show(progress.label, progress.done, progress.total)
         loading.update(progress)
         this.run(this.nav.dispatch({ kind: 'progress', progress }))
-      }))
+      })))
       if (this.env.fieldGameplay && content instanceof SdfContent && content.meshData().failed.size) throw new Error(`fieldShading: failed assets: ${[...content.meshData().failed.keys()].join(', ')}`)
       // ?course=<hub> opens the hub itself: the hub is the lobby, not a round (courseSetup refuses hubs).
       const picked = q.course === null ? null : content.course(q.course)
@@ -2270,7 +2278,7 @@ class App {
       this.loadingOverlay.show('Creating renderer')
       boot.enter('renderer')
       wavedashProgress(0.9)
-      const { ports, canvases } = await checkAwait('boot render ports', () => this.mountPorts(content, q))
+      const { ports, canvases } = await phase('renderer ports', () => checkAwait('boot render ports', () => this.mountPorts(content, q)))
       if (this.disposed) {
         // An op took the page during the load: its ports are not ours to keep.
         for (const port of ports) port.dispose()
@@ -2280,7 +2288,7 @@ class App {
       this.stopRoundLoad?.()
       this.stopRoundLoad = observeRoundLoad(label => this.onRoundLoad(label), content.report())
       // The online show plays the in-page show's season maps and zone sidecars.
-      const show = q.server !== null || this.nav.onlineOnly || this.backend === 'engine' ? await checkAwait('online show content', () => loadShowContent('sprint')) : null
+      const [R, show] = await Promise.all([checkAwait('Rapier initialization', () => rapierP), checkAwait('online show content', () => showP)])
       this.loaded = { R, content, ports, canvases, course, show }
       if (ports[0] !== undefined) ports[0] = trackLobbyAssets(ports[0], this.lobbyAssets)
       if (ports[0] !== undefined) {
@@ -2302,7 +2310,7 @@ class App {
       if (this.backend === 'engine') {
         this.loadingOverlay.show('Preparing engine')
         this.host.setLoading(0, 'Preparing engine')
-        await checkAwait('engine backend', () => this.prepareEngine(q))
+        await checkAwait('engine backend', () => engineP)
         this.loadingOverlay.hide()
       }
       // Lands on the start screen (nav's root), or in the hub for ?course= / ?community=.
@@ -2697,7 +2705,11 @@ class App {
     const hub = this.engineHub
     if (hub === null) throw new Error(refusal('engine', 'hub', 'the engine hub is not prepared; retry the load'))
     if (this.engineShown) hub.respawn(hub.spawn)
-    return new EngineHubMode(c, hub)
+    const mode = new EngineHubMode(c, hub)
+    // Parity with the in-page show (LocalMode.startsShow): the first Play leads straight into the show, no pad walking.
+    // A show that ended returns to the hub, where the pad and Enter start the next one.
+    mode.showRequested = !this.engineShown && c.q.server === null && c.q.clients === 1 && (c.q.course === null || c.q.bots !== null)
+    return mode
   }
 
   // Play starts the engine show: an offline runtime over the prepared engine, presented by ShowMode.engine.
@@ -3495,6 +3507,12 @@ function pageStorage(): Storage | null {
 function memoryStore(): SettingsStore {
   const saved = new Map<string, string>()
   return { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) }
+}
+
+// One console line per boot phase: start and end (ms since the page began), phases overlapping where independent.
+async function phase<T>(name: string, run: () => Promise<T>): Promise<T> {
+  const t0 = Math.round(performance.now())
+  try { return await run() } finally { console.log(`[boot] ${name}: ${t0} ms -> ${Math.round(performance.now())} ms`) }
 }
 
 // Started by the page's own boot only (an ops page has no boot to watch).

@@ -89,6 +89,9 @@ function byIdOrder(a: { id: string }, b: { id: string }): number {
 export class SdfContent implements GameContent {
   private readonly courseId?: string
   constructor(courseId?: string) { this.courseId = courseId }
+  private raceFilter: ReadonlySet<string> | null = null
+  /** The engine show plays the season's maps only: other race courses' assets are neither fetched nor meshed. */
+  limitRaceCourses(ids: ReadonlySet<string>): void { this.raceFilter = ids }
   readonly id = 'sdf' as const
   private loaded: Loaded | null = null
   private onProgress: (p: LoadProgress) => void = () => {}
@@ -103,7 +106,7 @@ export class SdfContent implements GameContent {
   // A missing MAMA refuses from loadSdfContent before any fetch; it never falls back to v1.
   async load(profile: ProfileName, onProgress: (p: LoadProgress) => void): Promise<void> {
     this.onProgress = onProgress
-    const content = await loadSdfContent(profile, onProgress, this.courseId)
+    const content = await loadSdfContent(profile, onProgress, this.courseId, this.raceFilter)
     const { all: courses, byId } = content.courses
     const playlist: ResolvedCourse[] = []
     for (const c of courses) {

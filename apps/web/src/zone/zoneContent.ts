@@ -9,19 +9,21 @@ import { createSdfPort } from '../sdf/sdfPort.ts'
 // Cache each course independently; a round never joins a pending full lobby load.
 const loads = new Map<string, ReturnType<typeof loadZoneContent>>()
 
-async function loadZoneContent(profile: ProfileName, courseId?: string) {
+async function loadZoneContent(profile: ProfileName, courseId?: string, seasonOnly?: ReadonlySet<string>) {
   const content = new SdfContent(courseId)
+  if (seasonOnly !== undefined) content.limitRaceCourses(seasonOnly)
   await content.load(profile, () => {})
   // Reuse the exact mesh set already loaded by this content instance.
   const loaded = content.meshData()
   return { content, loaded }
 }
 
-export function zoneContent(profile: ProfileName, courseId?: string) {
-  const key = `${profile}:${courseId ?? '*'}`
+/** seasonOnly: the engine show's content, whose assets are the season's maps only (other race courses never load). */
+export function zoneContent(profile: ProfileName, courseId?: string, seasonOnly?: ReadonlySet<string>) {
+  const key = `${profile}:${courseId ?? '*'}${seasonOnly === undefined ? '' : ':season'}`
   let load = loads.get(key)
   if (load === undefined) {
-    load = loadZoneContent(profile, courseId)
+    load = loadZoneContent(profile, courseId, seasonOnly)
     loads.set(key, load)
     // A failed load is not cached: the next lobby retries it.
     load.catch(() => { if (loads.get(key) === load) loads.delete(key) })

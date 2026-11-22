@@ -91,7 +91,7 @@ function playlistIds(courses: readonly CourseV1[], profile: ProfileName): string
     .sort()
 }
 
-export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadProgress) => void, courseId?: string): Promise<SdfContent> {
+export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadProgress) => void, courseId?: string, onlyRaceCourses: ReadonlySet<string> | null = null): Promise<SdfContent> {
   // First, so a missing MAMA refuses before any fetch.
   const timeline: string[] = []
   let previous = performance.now()
@@ -107,14 +107,17 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
 
   mark('Course and referenced asset load')
   const costumes = (await browserContentIndex()).assets.filter(e => e.category === 'cosmetic' || e.id.startsWith('costume.')).map(e => e.id)
-  const ids = courseId === undefined ? assetSet(courses, byId, profile, costumes)
+  const ids = courseId === undefined ? assetSet(courses, byId, profile, costumes, onlyRaceCourses)
     : [...new Set([...courseAssetSet(courses, courseId), ...costumes])]
   const resolver = browserGameAssets()
-  const assets: GameAsset[] = []
-  for (let i = 0; i < ids.length; i++) {
-    assets.push((await checkAwait(`content: asset ${ids[i]}`, () => resolver.resolve(ids[i]))).asset)
-    onProgress({ phase: 'assets', done: i + 1, total: ids.length, label: ids[i] })
-  }
+  // Every asset resolves concurrently (independent fetches); the progress counts finished ones.
+  let resolved = 0
+  const assets: GameAsset[] = await Promise.all(ids.map(async id => {
+    const asset = (await checkAwait(`content: asset ${id}`, () => resolver.resolve(id))).asset
+    onProgress({ phase: 'assets', done: ++resolved, total: ids.length, label: id })
+    return asset
+  }))
+  console.log(`[boot] assets (${courseId ?? "all"}, ${onlyRaceCourses === null ? "unfiltered" : "season only"}): ${ids.length} ids (${ids.join(', ')})`)
 
   mark('Playlist assets')
   const root = browserContentRoot().replace(/\/?$/, '/')
@@ -137,7 +140,8 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
     onProgress({ phase: 'meshing', done, total: assets.length, label: next.done === true ? id : `Meshing ${next.value} (${pending.size} left)` })
   }
   const misses: Promise<void>[] = []
-  for (const a of assets) {
+  // The cache check of each asset (key, cache read) runs concurrently; a miss then loads on its own.
+  await Promise.all(assets.map(async a => {
     const key = await checkAwait(`content: mesh key ${a.id}`, () => meshCacheKey(a, facade.meshCompatibility, sha256Hex))
     const request = meshRequestOf(a)
     const hit = await checkAwait(`content: cache read ${a.id}`, () => c.get(key))
@@ -145,7 +149,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       meshed.set(a.id, hit.value)
       source.set(a.id, hit.from)
       step(a.id)
-      continue
+      return
     }
     const meshPath = meshPaths.get(a.id)
     const load = async (): Promise<{ value: MeshedAsset; from: 'file' | 'server' | 'miss' }> => {
@@ -182,7 +186,7 @@ export async function loadSdfContent(profile: ProfileName, onProgress: (p: LoadP
       step(a.id)
     })
     misses.push(miss)
-  }
+  }))
   await Promise.all(misses)
   mark('MAMA meshing / cache')
   onProgress({ phase: 'done', done: assets.length, total: assets.length, label: 'done' })

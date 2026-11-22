@@ -149,9 +149,9 @@ function planAllocations(parts: readonly Allocation[], budget: number): FieldAtl
 export interface PartFieldProgram { key: string; diag: number; program: FieldProgramLike }
 
 // Shelf placement is independent of texel contents, so bisection never allocates images.
-function packOperands(operands: readonly FieldOperandLike[]) {
+function packOperands(operands: readonly FieldOperandLike[], gradientRows: boolean) {
   const slabs = operands.flatMap((o, index) => o.kind === 'grid'
-    ? [{ index, width: o.size[0] * o.size[2], height: o.size[1] }] : [])
+    ? [{ index, width: o.size[0] * o.size[2], height: o.size[1] * (gradientRows ? 2 : 1) }] : [])
     .sort((a, b) => b.height - a.height || b.width - a.width || a.index - b.index)
   const at = new Map<number, readonly [number, number]>()
   let x = 0, y = 0, row = 0, width = 0
@@ -203,14 +203,14 @@ function scaledOperands(program: FieldProgramLike, diag: number, factor: number)
 const repackedPrograms = new WeakMap<FieldProgramLike, Map<string, FieldProgramLike>>()
 
 /** A fresh runtime program; the saved program and its bytes remain untouched. */
-export function repackFieldProgram(program: FieldProgramLike, diag = 0, factor = 1): FieldProgramLike {
+export function repackFieldProgram(program: FieldProgramLike, diag = 0, factor = 1, gradientRows = false): FieldProgramLike {
   if (program.grid === null) return program
-  const cacheKey = `${program.functionName}:${diag}:${factor}`
+  const cacheKey = `${program.functionName}:${diag}:${factor}:${gradientRows}`
   const cache = repackedPrograms.get(program) ?? new Map<string, FieldProgramLike>()
   const cached = cache.get(cacheKey)
   if (cached) return cached
   const operands = scaledOperands(program, diag, factor)
-  const packed = packOperands(operands)
+  const packed = packOperands(operands, gradientRows)
   if (packed.width === 0) return { ...program, grid: null }
   const texels = new Uint8Array(packed.width * packed.height * 4)
   const rewritten = operands.map((o, index) => {
@@ -242,9 +242,9 @@ export function repackFieldProgram(program: FieldProgramLike, diag = 0, factor =
   return result
 }
 
-export function planFieldPrograms(parts: readonly PartFieldProgram[], budget = FIELD_ATLAS_BYTES) {
+export function planFieldPrograms(parts: readonly PartFieldProgram[], budget = FIELD_ATLAS_BYTES, gradientRows = false) {
   const costsAt = (factor: number) => parts.map(p => {
-    const packed = packOperands(scaledOperands(p.program, p.diag, factor))
+    const packed = packOperands(scaledOperands(p.program, p.diag, factor), gradientRows)
     return { key: p.key, diag: p.diag, bytes: fieldGridBytes(packed), width: packed.width, height: packed.height }
   })
   const total = (factor: number) => [...new Map(costsAt(factor).map(p => [p.key, p.bytes])).values()]
@@ -265,7 +265,7 @@ export function planFieldPrograms(parts: readonly PartFieldProgram[], budget = F
     }
     factor = hi
   }
-  const programs = new Map(parts.map(p => [p.key, repackFieldProgram(p.program, p.diag, factor)]))
+  const programs = new Map(parts.map(p => [p.key, repackFieldProgram(p.program, p.diag, factor, gradientRows)]))
   const resampledParts = parts.filter(p => programs.get(p.key)!.operands.some((o, i) =>
     o.kind === 'grid' && o.voxel !== (p.program.operands[i] as FieldGridOperandLike).voxel)).length
   return { plan: planAllocations(costsAt(factor), budget), programs, fieldGridScale: factor, resampledParts, repackedBytes }

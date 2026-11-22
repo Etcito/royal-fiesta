@@ -241,10 +241,29 @@ function textHash(text: string): string {
  * RAA's texture atlas, clamped to the image, as rgba in 0..1. The instance params carry the handle and
  * the image size (fieldInstanceParams); material_main copies them here because pmf_grid has no input.
  */
-export const PMF_GRID_HOST_WGSL = /* wgsl */ `
+const PMF_GRID_VARS = /* wgsl */ `
 var<private> pmf_grid_texture: u32 = 0u;
 var<private> pmf_grid_size: vec2<u32> = vec2<u32>(0u, 0u);
+`
 
+const PMF_FILTERED_GRID_HOST_WGSL = /* wgsl */ `${PMF_GRID_VARS}
+fn pmf_grid_uv(texel: vec2f) -> vec4f {
+  if (pmf_grid_texture == 0u || pmf_grid_size.x == 0u || pmf_grid_size.y == 0u) { return vec4f(0.0); }
+  return raa_texture(pmf_grid_texture, (texel + vec2f(0.5)) / vec2f(pmf_grid_size));
+}
+`
+
+const PMF_NORMAL_BLEND_WGSL = /* wgsl */ `
+fn pmf_normal_blend(mesh_normal: vec3f, field_normal: vec3f, magnitude: f32) -> vec3f {
+  let confidence = smoothstep(0.05, 0.25, magnitude);
+  let blended = mix(mesh_normal, field_normal, confidence);
+  // Exactly opposing normals can cancel at half confidence.
+  if (dot(blended, blended) <= 1e-12) { return mesh_normal; }
+  return normalize(blended);
+}
+`
+
+export const PMF_GRID_HOST_WGSL = /* wgsl */ `${PMF_GRID_VARS}
 fn pmf_grid(x: i32, y: i32) -> vec4f {
   if (pmf_grid_texture == 0u || pmf_grid_size.x == 0u || pmf_grid_size.y == 0u) { return vec4f(0.0); }
   let xi = clamp(x, 0, i32(pmf_grid_size.x) - 1);
@@ -293,7 +312,7 @@ fn sdfm_posed_normal(in: MaterialInput, g0: vec3f, a: mat3x3f) -> vec3f {
 //   [0] version, [1] tree node count, [2] operand table offset, [3] tree offset, [4..6] bounds.min, [7] normal tap
 //   half-step, [8..10] bounds.max, [11] label count, [12 + 8i] label i: colour xyz, roughness, metallic
 //   operand records (PMF_OPERAND_FLOATS each): kind (0 box, 1 grid), label, scale, 0, inv[16] (column-major),
-//     box: half xyz, radius; grid: origin xyz, voxel, size xyz, at xy, range
+//     box: half xyz, radius; grid: origin xyz, voxel, size xyz, at xy, range, gradient range
 //   tree nodes, 4 floats each: op (0 leaf, 1 union, 2 subtract, 3 intersect), operand index or mode (0 hard, 1 round,
 //     2 smooth, 3 chamfer), radius, colour (1: colorBlend 'hard', the dominant side's label; 0: weights follow the blend)
 //   optional guards: op 4, jump index, box data offset, union radius (negative for round)
@@ -323,7 +342,7 @@ function treeDepth(program: FieldProgramLike): number | string {
  * The material data words of a field part (layout above), or the reason the fixed evaluator cannot draw it: an
  * unknown blend mode or a tree deeper than PMF_STACK.
  */
-export function fieldProgramWords(program: FieldProgramLike, prune = false): { ok: true; words: Uint32Array; pruned: boolean } | { ok: false; reason: string } {
+export function fieldProgramWords(program: FieldProgramLike, prune = false, gradientRanges?: readonly number[]): { ok: true; words: Uint32Array; pruned: boolean } | { ok: false; reason: string } {
   const depth = treeDepth(program)
   if (typeof depth === 'string') return { ok: false, reason: depth }
   if (depth > PMF_STACK) return { ok: false, reason: `field tree needs a stack of ${depth}, more than ${PMF_STACK}` }
@@ -362,6 +381,7 @@ export function fieldProgramWords(program: FieldProgramLike, prune = false): { o
       floats.set(o.size, at + 24)
       floats.set(o.at, at + 27)
       floats[at + 29] = o.range
+      floats[at + 30] = gradientRanges?.[i] ?? 0
     }
   })
   // A jump to the next original node must still execute a guard inserted before that node.
@@ -398,9 +418,9 @@ export function fieldProgramWords(program: FieldProgramLike, prune = false): { o
  * The fixed evaluator of a field program in material data at word `db` (fieldProgramWords): MAMA fieldProgramWgsl's
  * operand distances, blends and label weights, run as a stack machine over the tree instead of emitted per part.
  */
-type FieldInterpreterOptions = { prune?: boolean; pairGrid?: boolean; vectorWeights?: boolean }
+type FieldInterpreterOptions = { prune?: boolean; pairGrid?: boolean; vectorWeights?: boolean; smoothGrid?: boolean }
 
-function pmfInterpreter(analytic: boolean, { prune, pairGrid, vectorWeights }: FieldInterpreterOptions = {}): string {
+function pmfInterpreter(analytic: boolean, { prune, pairGrid, vectorWeights, smoothGrid }: FieldInterpreterOptions = {}): string {
   const result = analytic ? 'PmfFieldSample' : 'f32'
   return /* wgsl */ `
 ${analytic ? `struct PmfFieldSample {
@@ -413,7 +433,7 @@ fn pmf_f(i: u32) -> f32 { return raa_material_f32(i); }
 fn pmf_u(i: u32) -> u32 { return u32(raa_material_f32(i) + 0.5); }
 fn pmf_v3(i: u32) -> vec3f { return vec3f(raa_material_f32(i), raa_material_f32(i + 1u), raa_material_f32(i + 2u)); }
 
-${pairGrid ? `fn pmf_texel(x: i32, y: i32, range: f32) -> vec2f {
+${smoothGrid ? '' : pairGrid ? `fn pmf_texel(x: i32, y: i32, range: f32) -> vec2f {
   let t = pmf_grid(x, y);
   return ((t.rb * 255.0 * 256.0 + t.ga * 255.0) / 65535.0 * 2.0 - 1.0) * range;
 }` : `fn pmf_texel(x: i32, y: i32, range: f32) -> f32 {
@@ -427,8 +447,7 @@ fn pmf_operand(r: u32, p: vec3f) -> ${result} {
   let local = inv * p + pmf_v3(r + 16u);
   let scale = pmf_f(r + 2u);
   var d = 0.0;${analytic ? `
-  var grad = vec3f(0.0);
-  var seam = false;` : ''}
+  var grad = vec3f(0.0);${smoothGrid ? '' : '\n  var seam = false;'}` : ''}
   if (pmf_u(r) == 0u) {
     let radius = pmf_f(r + 23u);
     let q = abs(local) - (pmf_v3(r + 20u) - vec3f(radius));
@@ -455,7 +474,22 @@ fn pmf_operand(r: u32, p: vec3f) -> ${result} {
     let g = (local - pmf_v3(r + 20u)) / voxel - vec3f(0.5);
     let c = clamp(g, vec3f(0.0), size - vec3f(1.0));
     let i = vec3i(clamp(floor(c), vec3f(0.0), size - vec3f(2.0)));
-    let t = c - vec3f(i);
+    let t = c - vec3f(i);${smoothGrid ? `
+    // RAA's level-zero linear sampler blends each slice in XY. The paired distance texel carries
+    // both Z slices in RG/BA. A second band in each slab stores the shared corner gradients.
+    let texel = vec2f(f32(ax) + f32(i.z) * size.x + c.x, f32(ay) + c.y);
+    var filtered: array<vec4f, ${pairGrid ? 3 : 4}>;
+    for (var k = 0u; k < ${pairGrid ? 3 : 4}u; k++) {
+      let row = ${pairGrid ? 'select(k, k + 1u, k > 0u)' : 'k'};
+      let offset = vec2f(f32(row & 1u) * size.x, select(0.0, size.y, row >= 2u));
+      filtered[k] = pmf_grid_uv(texel + offset);
+    }
+    let low = filtered[0].rg;
+    let high = ${pairGrid ? 'filtered[0].ba' : 'filtered[1].rg'};
+    let encoded = mix(low, high, t.z);
+    let trilinear = (dot(encoded, vec2f(65280.0, 255.0)) / 65535.0 * 2.0 - 1.0) * range;
+    let stored = mix(filtered[${pairGrid ? 1 : 2}].rgb, filtered[${pairGrid ? 2 : 3}].rgb, t.z);
+    grad = (stored * 255.0 - vec3f(128.0)) * (pmf_f(r + 30u) / 127.0);` : `
     let sx = i32(size.x);
     // The eight trilinear corners in one loop: a single pmf_texel (raa_texture) call site, since the shader compiler
     // inlines every call and eight sites per operand made the field pipelines minutes long to compile.
@@ -480,16 +514,19 @@ ${pairGrid ? `      var value: f32;
       // MAMA sampledValue: differentiate the corner weight along each axis and reuse its distance.
       let slope = select(vec3f(-1.0), vec3f(1.0), o == vec3<u32>(1u));
       grad += value * slope * corner.yzx * corner.zxy;` : ''}
-    }
+    }`}
     let delta = (g - c) * voxel;
     let outside = length(delta);
-    d = trilinear + outside;${analytic ? `
+    d = trilinear + outside;${smoothGrid ? `
+    // Extend the clamped gradient continuously, reaching the outward direction one voxel out.
+    let reach = max(voxel, outside);
+    grad = grad * (1.0 - outside / reach) + delta / reach;` : analytic ? `
     grad = select(vec3f(0.0), grad / voxel, g == c);
     if (outside > 0.0) { grad += delta / outside; }
     // The derivative can jump at lattice planes. Mark a band of 1% of a voxel on each side.
     seam = any(abs(g - round(c)) <= vec3f(0.01));` : ''}
   }
-  ${analytic ? 'return PmfFieldSample(d * scale, scale * (transpose(inv) * grad), select(0u, 1u, seam));' : 'return d * scale;'}
+  ${analytic ? `return PmfFieldSample(d * scale, scale * (transpose(inv) * grad), ${smoothGrid ? '0u' : 'select(0u, 1u, seam)'});` : 'return d * scale;'}
 }
 
 // The field program at word db, at point p, with the label weights in w.
@@ -582,9 +619,10 @@ ${vectorWeights ? `      if (h == 1.0) {
     let left = sd[top - 2u];
     let right = sd[top - 1u];
     let signedB = select(slopes.y, -slopes.y, op == 2u);
-    let g = slopes.x * left.g + signedB * right.g;
+    let g = slopes.x * left.g + signedB * right.g;${smoothGrid ? `
+    sd[top - 2u] = PmfFieldSample(d, g, 0u);` : `
     let seam = (slopes.x > 0.0 && left.seam != 0u) || (slopes.y > 0.0 && right.seam != 0u);
-    sd[top - 2u] = PmfFieldSample(d, g, select(0u, 1u, seam));` : `
+    sd[top - 2u] = PmfFieldSample(d, g, select(0u, 1u, seam));`}` : `
     sd[top - 2u] = d;`}
     top = top - 1u;
   }
@@ -624,6 +662,47 @@ export function fieldGridTexture(program: FieldProgramLike, pairGrid = false): {
     }
   }
   return { width, height, data }
+}
+
+/** Fill the extra rows reserved by repackFieldProgram with signed, linearly filterable gradients.
+ * The integer differences use two-voxel central steps, or a one-voxel step at the outer lattice faces.
+ * A per-operand range preserves precision without clipping steep components. */
+export function smoothFieldGridTexture(program: FieldProgramLike, pairGrid: boolean) {
+  const grid = fieldGridTexture(program, pairGrid)
+  const gradientRanges: number[] = []
+  if (grid === null) return { grid, gradientRanges }
+  const { width, height } = grid
+  const data = pairGrid ? grid.data : grid.data.slice()
+  for (const [index, op] of program.operands.entries()) {
+    if (op.kind !== 'grid') continue
+    const [nx, ny, nz] = op.size
+    const [ax, ay] = op.at
+    const offset = (x: number, y: number, z: number) => 4 * ((ay + y) * width + ax + z * nx + x)
+    const read = (x: number, y: number, z: number) => {
+      const at = offset(x, y, z)
+      return 256 * data[at] + data[at + 1]
+    }
+    const deltas = new Int32Array(3 * nx * ny * nz)
+    let max = 1
+    let i = 0
+    for (let y = 0; y < ny; y++) for (let z = 0; z < nz; z++) for (let x = 0; x < nx; x++) {
+      const dx = (read(Math.min(nx - 1, x + 1), y, z) - read(Math.max(0, x - 1), y, z)) * (x === 0 || x === nx - 1 ? 2 : 1)
+      const dy = (read(x, Math.min(ny - 1, y + 1), z) - read(x, Math.max(0, y - 1), z)) * (y === 0 || y === ny - 1 ? 2 : 1)
+      const dz = (read(x, y, Math.min(nz - 1, z + 1)) - read(x, y, Math.max(0, z - 1))) * (z === 0 || z === nz - 1 ? 2 : 1)
+      deltas[i++] = dx
+      deltas[i++] = dy
+      deltas[i++] = dz
+      max = Math.max(max, Math.abs(dx), Math.abs(dy), Math.abs(dz))
+    }
+    gradientRanges[index] = (max / 65535) * (op.range / op.voxel)
+    i = 0
+    for (let y = 0; y < ny; y++) for (let z = 0; z < nz; z++) for (let x = 0; x < nx; x++) {
+      const at = offset(x, y + ny, z)
+      for (let axis = 0; axis < 3; axis++) data[at + axis] = Math.round(127 * deltas[i++] / max) + 128
+      data[at + 3] = 255
+    }
+  }
+  return { grid: { width, height, data }, gradientRanges }
 }
 
 /**
@@ -805,7 +884,7 @@ const GRAPH_BLEND = `  // The four heaviest labels, renormalised, so a material 
 /** RAA's largest material function source in bytes (raa-shader USER_FN_MAX_BYTES). */
 export const MATERIAL_FUNCTION_MAX_BYTES = 65536
 
-type FieldNormals = 'gradient' | 'taps'
+type FieldNormals = 'smooth' | 'gradient' | 'taps'
 
 export function fieldPruningEnabled(search = typeof location === 'undefined' ? '' : location.search): boolean {
   return new URLSearchParams(search).get('fieldPrune') !== '0'
@@ -820,14 +899,15 @@ export function fieldVectorWeightsEnabled(search = typeof location === 'undefine
 }
 
 export function fieldNormalsMode(search = typeof location === 'undefined' ? '' : location.search): FieldNormals {
-  return new URLSearchParams(search).get('fieldnormals') === 'taps' ? 'taps' : 'gradient'
+  const mode = new URLSearchParams(search).get('fieldnormals')
+  return mode === 'taps' || mode === 'gradient' ? mode : 'smooth'
 }
 
 /**
  * The RAA material function of field parts: the fixed evaluator (PMF_INTERPRETER_WGSL) reads the part's program from
  * its material data block (fieldProgramWords). One traversal supplies a normal and the per-pixel label blend. The
- * mesh normal covers degenerate gradients, voxel seams and points outside the program bounds. The label graphs,
- * normal mode and debug flag key the function so parts can share it.
+ * smooth mode interpolates corner gradients and blends to the mesh normal where the field gradient is weak.
+ * The label graphs, normal mode and debug flag key the function so parts can share it.
  * @throws when the text exceeds MATERIAL_FUNCTION_MAX_BYTES (label graphs too large to embed) or names a WGSL
  *   reserved word (RAA's parser refuses it: material.fn_invalid)
  */
@@ -847,8 +927,10 @@ export function fieldMaterialWgsl(src: {
   const debugText = debug
     ? '\n  // ?normalsDebug: the normal lighting receives, 0.5 + n / 2.\n  o.base_color = n * 0.5 + vec3f(0.5);\n  o.metallic = 0.0;\n  o.roughness = 1.0;'
     : ''
-  const taps = (src.normals ?? fieldNormalsMode()) === 'taps'
-  const interpreter = taps ? PMF_TAPS_INTERPRETER_WGSL : fieldInterpreterWgsl(src)
+  const normals = src.normals ?? fieldNormalsMode()
+  const taps = normals === 'taps'
+  const smooth = normals === 'smooth'
+  const interpreter = taps ? PMF_TAPS_INTERPRETER_WGSL : fieldInterpreterWgsl({ ...src, smoothGrid: smooth })
   const tapsFunction = taps ? `
 // The centre run (distance and label weights in w) and six central taps at p +- h * e_i,
 // with h from voxel / 2 to one voxel (fieldStep), in ONE loop: pmf_run has a single call site. The shader compiler inlines every call, and the seven call sites
@@ -874,7 +956,8 @@ fn pmf_field(db: u32, p: vec3f, h: f32, scale: f32, w: ptr<function, array<f32, 
 }
 ` : ''
   // Traversals per fragment per pass (prepass and forward):
-  // gradient = 1 at the raster rest position, penguin = 1 × 15 grids × 8 atlas samples = 120.
+  // smooth and gradient = 1 at the raster rest position. Each visited grid takes 3/4 paired reads
+  // respectively (4/8 unpaired); analytic operands take none.
   // taps = 2 × (1 centre + 6 taps) = 14, penguin = 14 × 15 grids × 8 atlas samples = 1680.
   const sample = taps ? `  let h = pmf_f(db + 7u) * scale;
   var taps = vec4f(0.0);
@@ -893,10 +976,11 @@ fn pmf_field(db: u32, p: vec3f, h: f32, scale: f32, w: ptr<function, array<f32, 
   let g = taps.xyz;` : `  let field = pmf_run(db, p / scale, &w);
   let g = field.g;`
   const wgsl = `// field material (mama.field-program v${VERSION}, the program in material data)
-${PMF_GRID_HOST_WGSL}
+${smooth ? PMF_FILTERED_GRID_HOST_WGSL : PMF_GRID_HOST_WGSL}
 ${interpreter}
 ${POSED_NORMAL_WGSL}
 ${tapsFunction}
+${smooth ? PMF_NORMAL_BLEND_WGSL : ''}
 ${declarations}fn material_main(in: MaterialInput) -> MaterialOutput {
   var o = raa_default_output(in);
   o.opacity = 1.0;
@@ -910,10 +994,12 @@ ${sample}
   let inside = all(p / scale >= pmf_v3(db + 4u)) && all(p / scale <= pmf_v3(db + 8u));
   let glen = length(g);
   var n = normalize(in.normal);
-  // The mesh normal only where the field is undefined: local to these fragments.
   let ip = in.instance_params;
   let stretch = mat3x3f(vec3f(ip[1].x, ip[2].z, ip[2].w), vec3f(ip[2].z, ip[1].y, ip[3].y), vec3f(ip[2].w, ip[3].y, ip[1].z));
-  if (inside && glen > 1e-6${taps ? '' : ' && glen < 3e38 && field.seam == 0u'}) { n = sdfm_posed_normal(in, g / glen, stretch); }
+  ${smooth ? `if (inside && glen > 0.05 && glen < 3e38) {
+    let field_normal = sdfm_posed_normal(in, g / glen, stretch);
+    n = pmf_normal_blend(n, field_normal, glen);
+  }` : `if (inside && glen > 1e-6${taps ? '' : ' && glen < 3e38 && field.seam == 0u'}) { n = sdfm_posed_normal(in, g / glen, stretch); }`}
   o.normal = n;
 ${colour}${debugText}
   return o;

@@ -25,7 +25,7 @@ import { installShaderCache } from '../render/shaderCache.ts'
 import { createPreparationQueue, deviceOfCanvas, fieldReadiness, materialKey } from '../render/asyncPipelines.ts'
 import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
 import { FIELD_ATLAS_BYTES, partDiag, planFieldAtlas, planFieldPrograms, type FieldAtlasPlan, type PartFieldProgram } from './fieldAtlas.ts'
-import { checkFieldPart, fieldGridPairsEnabled, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, fieldNormalsMode, fieldPruningEnabled, fieldStretch, fieldVectorWeightsEnabled, uniformFieldFrameScale, withFieldStretch } from './fieldShading.ts'
+import { checkFieldPart, fieldGridPairsEnabled, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, fieldNormalsMode, fieldPruningEnabled, fieldStretch, fieldVectorWeightsEnabled, smoothFieldGridTexture, uniformFieldFrameScale, withFieldStretch } from './fieldShading.ts'
 
 export interface PartWorldBounds { key: string; min: number[]; max: number[]; surface?: number[][] }
 
@@ -397,6 +397,7 @@ class SdfRenderPort implements ResizablePort {
   private shading: ShadingMode
   private readonly contract: RenderContract | null
   private readonly debugNormals: boolean
+  private readonly fieldNormals = fieldNormalsMode()
   // The whole-world field plan (fieldAtlas) computed once before any upload, and the budget it was planned with.
   private atlasPlan: FieldAtlasPlan | null = null
   private fieldGridDetails = new Map<string, { resampled: boolean; gridVoxels: number[] }>()
@@ -612,7 +613,7 @@ class SdfRenderPort implements ResizablePort {
   private planAtlas(): FieldAtlasPlan {
     if (this.atlasPlan !== null) return this.atlasPlan
     const costs = this.atlasCandidates()
-    this.gridPlan = planFieldPrograms(costs, this.atlasBytes)
+    this.gridPlan = planFieldPrograms(costs, this.atlasBytes, this.fieldNormals === 'smooth')
     this.atlasPlan = this.gridPlan.plan
     for (const part of costs) {
       const program = this.gridPlan.programs.get(part.key)!
@@ -820,11 +821,12 @@ class SdfRenderPort implements ResizablePort {
     if (missing) warnOnce(`${key}:missing`, 'a field label names a material not in the saved mesh; its shapes wear the label colour')
     // One fixed evaluator reads the program from the part's material data (program.wgsl, per-part code up to over 1 MB,
     // is never registered: RAA refuses a material function over 64 KB); parts with the same label graphs share the text.
-    const normals = fieldNormalsMode()
-    const prune = normals === 'gradient' && fieldPruningEnabled()
-    const vectorWeights = normals === 'gradient' && fieldVectorWeightsEnabled()
-    let pairGrid = normals === 'gradient' && program.grid !== null && fieldGridPairsEnabled()
-    let words = fieldProgramWords(program, prune)
+    const normals = this.fieldNormals
+    const prune = normals !== 'taps' && fieldPruningEnabled()
+    const vectorWeights = normals !== 'taps' && fieldVectorWeightsEnabled()
+    let pairGrid = normals !== 'taps' && program.grid !== null && fieldGridPairsEnabled()
+    const smooth = normals === 'smooth' ? smoothFieldGridTexture(program, pairGrid) : null
+    let words = fieldProgramWords(program, prune, smooth?.gradientRanges)
     let material: { functionName: string; wgsl: string }
     try {
       if (!words.ok) throw new Error(words.reason)
@@ -836,7 +838,7 @@ class SdfRenderPort implements ResizablePort {
         pairGrid = false
         // A label graph near RAA's source limit can still use the full field evaluator.
         material = fieldMaterialWgsl(source)
-        words = fieldProgramWords(program)
+        words = fieldProgramWords(program, false, smooth?.gradientRanges)
         if (!words.ok) throw new Error(words.reason)
       }
     } catch (e) {
@@ -844,7 +846,8 @@ class SdfRenderPort implements ResizablePort {
       this.recordPart(key, 'vertex', messageOf(e))
       return null
     }
-    const grid = fieldGridTexture(program, pairGrid)
+    // The unpaired smooth shader can read the same texture if the function size limit disabled pairing.
+    const grid = smooth === null ? fieldGridTexture(program, pairGrid) : smooth.grid
     let texture: number | null = null
     if (grid !== null) {
       try {

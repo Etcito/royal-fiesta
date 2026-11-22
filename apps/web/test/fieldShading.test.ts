@@ -99,7 +99,7 @@ test('runtime atlas fallback retains every drawable part and stays stable during
     frame: new Float64Array(IDENTITY), normalVolume: {}, normalScheme: 'stale', meshes: [{ material: null,
       positions: new Float32Array([0, 0, 0, i === 0 ? 10 : 1, 0, 0, 0, 1, 0]), normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]),
       indices: new Uint32Array([0, 1, 2]), uvs: null }] }))
-  for (const budget of [768, 512, 0]) {
+  for (const budget of [1536, 1024, 0]) {
     const port = api.make(new Map([['world', { assetId: 'world', data: { materials: [], groups: [{ group: 'g', parts }] } }]]), budget)
     let next = 0, textures = 0
     const visible = new Map<number, boolean>()
@@ -115,13 +115,13 @@ test('runtime atlas fallback retains every drawable part and stays stable during
     const instances = [port.createInstance(handle, null), port.createInstance(handle, null)]
     const report = port.shadingReport()
     assert.equal(report.atlasFull, 0)
-    assert.equal(report.field, budget === 768 ? 2 : budget === 512 ? 1 : 0)
+    assert.equal(report.field, budget === 1536 ? 2 : budget === 1024 ? 1 : 0)
     assert.equal(report.bytes, budget)
     assert.equal(textures, report.field, 'instances share their uploaded textures')
     assert.equal(port.drawnParts().length, parts.length * 2)
     assert.equal([...visible.values()].filter(Boolean).length, parts.length * 2)
     const before = port.drawnParts()
-    if (budget === 512) assert.deepEqual(Array.from(before.slice(0, 2), p => p.mode), ['vertex', 'field'])
+    if (budget === 1024) assert.deepEqual(Array.from(before.slice(0, 2), p => p.mode), ['vertex', 'field'])
     port.setCamera(0, { eye: [10, 20, 30], target: [0, 0, 0], fovYDeg: 60, near: 0.1, far: 500 })
     port.setTransform(instances[0], [5, 0, 0], [0, 0, 0, 1], [1, 1, 1])
     port.render()
@@ -178,7 +178,7 @@ test('checkFieldPart reports every refusal reason', () => {
 
 test('fieldMaterialWgsl runs the one fixed evaluator over material data, never the program text', () => {
   const p = program()
-  const out = fieldMaterialWgsl({ program: p, labelGraphs: [null, null], debug: false })
+  const out = fieldMaterialWgsl({ program: p, labelGraphs: [null, null], debug: false, normals: 'gradient' })
   assert.ok(!out.wgsl.includes(FUNCTION), 'the per-part program text is not embedded')
   assert.ok(out.wgsl.includes(PMF_INTERPRETER_WGSL))
   assert.match(out.wgsl, /let db = raa_material_data_base\(in\.record\);/)
@@ -626,10 +626,16 @@ test('normal taps respect operand scale, never fall inside one grid voxel, and s
   assert.ok(Math.abs(step(resampled) - 0.3) < 1e-6, 'never below half a voxel, even across a narrower blend')
   const fine = { ...p, operands: [{ ...grid, voxel: 0.01 }] }
   assert.ok(Math.abs(step(fine) - 0.01) < 1e-8, 'one voxel when the blends are wider')
-  assert.equal(fieldNormalsMode(''), 'gradient')
+  assert.equal(fieldNormalsMode(''), 'smooth')
+  assert.equal(fieldNormalsMode('?normals=field&fieldnormals=gradient'), 'gradient')
+  assert.equal(fieldNormalsMode('?normals=field&fieldnormals=smooth'), 'smooth')
   const normals = fieldNormalsMode('?normals=field&fieldnormals=taps')
   assert.equal(normals, 'taps')
   const source = { program: resampled, labelGraphs: [], debug: false }
+  const smooth = fieldMaterialWgsl({ ...source, pairGrid: true }).wgsl
+  assert.match(smooth, /k < 3u/)
+  assert.match(smooth, /smoothstep\(0.05, 0.25, magnitude\)/)
+  assert.doesNotMatch(smooth, /field\.seam == 0u/)
   const old = fieldMaterialWgsl({ ...source, normals })
   const wgsl = old.wgsl
   assert.notEqual(old.functionName, fieldMaterialWgsl(source).functionName)

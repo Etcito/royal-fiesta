@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
-  MATERIAL_FUNCTION_MAX_BYTES, uniformFieldFrameScale, checkFieldPart, fieldMaterialWgsl, fieldProgramWords,
+  MATERIAL_FUNCTION_MAX_BYTES, uniformFieldFrameScale, checkFieldPart, fieldMaterialWgsl, fieldNormalsMode, fieldProgramWords,
 } from '../apps/web/src/sdf/fieldShading.ts'
 import type { FieldLabelGraphLike } from '../apps/web/src/sdf/fieldShading.ts'
 import { partDiag, planFieldPrograms } from '../apps/web/src/sdf/fieldAtlas.ts'
@@ -46,7 +46,8 @@ interface PartLike {
 }
 
 /** Every field-contract part of `assets` as the SDF port would shade it, in asset/group/part order. */
-export function fieldPreflight(assets: readonly PreflightAsset[], budget?: number): PreflightReport {
+export function fieldPreflight(assets: readonly PreflightAsset[], budget?: number,
+  normals: ReturnType<typeof fieldNormalsMode> = 'gradient'): PreflightReport {
   const parts: PreflightPart[] = []
   const costs: PartFieldProgram[] = []
   const candidates: { key: string; part: PartLike; byName: Map<string, FieldLabelGraphLike> }[] = []
@@ -73,7 +74,7 @@ export function fieldPreflight(assets: readonly PreflightAsset[], budget?: numbe
       }
     }
   }
-  const gridPlan = planFieldPrograms(costs, budget)
+  const gridPlan = planFieldPrograms(costs, budget, normals === 'smooth')
   const plan = gridPlan.plan
   for (const { key, part, byName } of candidates) {
     if (!plan.field.has(key)) { parts.push({ key, mode: 'demoted', reason: 'atlas budget: smaller parts first' }); continue }
@@ -84,7 +85,7 @@ export function fieldPreflight(assets: readonly PreflightAsset[], budget?: numbe
     const graphs = check.program.labels.map(l => (l.material === null ? null : byName.get(l.material) ?? null))
     try {
       // debug adds the ?normalsDebug lines: the larger of the two texts the page can register.
-      const out = fieldMaterialWgsl({ program: gridPlan.programs.get(key)!, labelGraphs: graphs, debug: true })
+      const out = fieldMaterialWgsl({ program: gridPlan.programs.get(key)!, labelGraphs: graphs, debug: true, normals })
       const bytes = new TextEncoder().encode(out.wgsl).length
       if (bytes > MATERIAL_FUNCTION_MAX_BYTES) {
         parts.push({ key, mode: 'material', reason: `material function ${out.functionName}: ${bytes} bytes, more than ${MATERIAL_FUNCTION_MAX_BYTES}` })
@@ -119,7 +120,7 @@ async function main(): Promise<void> {
   const at = args.indexOf('--profile')
   const profile = at >= 0 ? args[at + 1] : 'sprint'
   if (profile !== 'sprint' && profile !== 'standard') throw new Error(`--profile ${profile}: use sprint or standard`)
-  const report = fieldPreflight(await preflightAssets(profile))
+  const report = fieldPreflight(await preflightAssets(profile), undefined, fieldNormalsMode())
   if (args.includes('--json')) console.log(JSON.stringify(report, null, 2))
   else {
     console.info(`field grids: repacked ${report.repackedBytes} bytes, scale ${report.fieldGridScale}, final ${report.bytes} bytes (${report.resampledParts} resampled parts)`)

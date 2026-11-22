@@ -1,6 +1,7 @@
 import type { EngineInstance } from '@etcito/game-engine/loader'
 import type { LayoutDecl, SchemaLayout } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
+import { forgetWorldReads } from './worldRead.ts'
 import type { EngineDomainSim } from '@etcito/game-engine/zones'
 import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { ShadowView } from '@gamesaloon/rollback/zones'
@@ -229,6 +230,7 @@ class ShowRuntime implements EngineShowRuntime {
   private confirmedResult = -2
   private cursorEntity: number | undefined
   private worldMemo: WorldMemo | undefined
+  private presented: { sim: EngineDomainSim; ticks: number; value: EngineShowPresentation } | undefined
   private readonly votes = new Map<string, number>()
   private readonly listeners: ((observation: EngineShowObservation) => void)[] = []
   private disposed = false
@@ -261,8 +263,13 @@ class ShowRuntime implements EngineShowRuntime {
   presentation(): EngineShowPresentation {
     this.assertLive()
     const physics = this.physics
+    // Read again within the same engine ticks (the post-tick notify, the per-frame load check and the view refresh all
+    // ask once per frame), it is the same presentation: each build snapshots and parses the whole seat world.
+    const ticks = physics === undefined ? -1 : this.engine.tick(this.global.world) * 4294967296 + this.engine.tick(physics.sim.world)
+    const kept = this.presented
+    if (physics !== undefined && kept !== undefined && kept.sim === physics.sim && kept.ticks === ticks) return kept.value
     const world = physics === undefined ? null : this.presentationWorld(physics.sim)
-    return {
+    const value: EngineShowPresentation = {
       showId: this.factory.showId,
       tick: this.engine.tick(this.global.world),
       round: physics?.round ?? this.snapshot().round,
@@ -270,6 +277,8 @@ class ShowRuntime implements EngineShowRuntime {
       course: physics?.selection.courseData ?? null,
       worlds: world === null ? [] : [world],
     }
+    this.presented = physics === undefined ? undefined : { sim: physics.sim, ticks, value }
+    return value
   }
 
   /**
@@ -478,6 +487,8 @@ class ShowRuntime implements EngineShowRuntime {
   private openPhysics(round: number, seats: readonly number[], selection: EngineShowSelection, tick: number): void {
     this.releasePhysics()
     this.worldMemo = undefined
+    this.presented = undefined
+    forgetWorldReads(this.engine)
     const sim = this.factory.create(
       { id: round + 1, kind: 'seat', cells: [], seats: seats.map((_, roundSeat) => roundSeat), replicas: [0] },
       tick,
@@ -512,6 +523,8 @@ class ShowRuntime implements EngineShowRuntime {
     } finally {
       this.physics = undefined
       this.worldMemo = undefined
+      this.presented = undefined
+      forgetWorldReads(this.engine, physics.sim.world)
       this.factory.release(physics.sim)
     }
   }

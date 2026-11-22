@@ -8,12 +8,13 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   MATERIAL_FUNCTION_MAX_BYTES, PMF_GRID_HOST_WGSL, PMF_INTERPRETER_WGSL, PMF_STACK, checkFieldPart, fieldGridTexture,
-  fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, type FieldLabelGraphLike, type FieldProgramLike,
+  fieldInstanceParams, fieldMaterialWgsl, fieldNormalsMode, fieldProgramWords, type FieldLabelGraphLike, type FieldProgramLike,
 } from '../src/sdf/fieldShading.ts'
 import { decodeMesh } from '../src/sdf/meshWire.ts'
 import { WGSL_RESERVED, wgslReservedNames } from '../src/sdf/wgslReserved.ts'
 import * as atlas from '../src/sdf/fieldAtlas.ts'
 import * as shading from '../src/sdf/fieldShading.ts'
+import * as framePerf from '../src/perf/framePerf.ts'
 import type { ResizablePort } from '../src/sdf/sdfPort.ts'
 
 const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -82,6 +83,7 @@ test('runtime atlas fallback retains every drawable part and stays stable during
       if (id === './fieldShading.ts') return shading
       if (id === '@etcito/raa-sdfm') return { fieldSurfaceAttributes: () => ({}) }
       if (id === '../render/asyncPipelines.ts') return { materialKey: () => 'field', fieldReadiness: () => ({ status: 'ready' }), createPreparationQueue: () => ({}) }
+      if (id === '../perf/framePerf.ts') return framePerf
       if (id === '@royal-fiesta/game/render/roundLoad') return {
         roundStep: (_: string, fn: () => unknown) => fn(), renderFrame: (_: unknown, fn: () => unknown) => fn(),
       }
@@ -180,14 +182,13 @@ test('fieldMaterialWgsl runs the one fixed evaluator over material data, never t
   assert.ok(!out.wgsl.includes(FUNCTION), 'the per-part program text is not embedded')
   assert.ok(out.wgsl.includes(PMF_INTERPRETER_WGSL))
   assert.match(out.wgsl, /let db = raa_material_data_base\(in\.record\);/)
-  // The shader compiler inlines every call: the centre run and the six normal taps share ONE pmf_run call site and an
-  // operand ONE pmf_texel site, or a level's field pipelines stay compiling past the capture wait (run 12096).
-  assert.match(out.wgsl, /pmf_field\(db, p, h, scale, &w\)/)
+  // The single traversal at the raster position returns the gradient and the shared weights.
+  assert.match(out.wgsl, /let field = pmf_run\(db, p \/ scale, &w\)/)
   assert.equal(out.wgsl.match(/= pmf_run\(/g)?.length, 1)
   assert.equal(out.wgsl.match(/pmf_texel\(/g)?.length, 2, 'one definition, one call')
   assert.equal(out.wgsl.match(/raa_texture\(/g)?.length, 1)
-  assert.match(out.wgsl, /for \(var t = 0u; t < 7u; t = t \+ 1u\)/)
-  assert.match(out.wgsl, /inside && glen > 1e-6/)
+  assert.doesNotMatch(out.wgsl, /pmf_field|newton/)
+  assert.match(out.wgsl, /inside && glen > 1e-6 && glen < 3e38 && field.seam == 0u/)
   assert.ok(out.wgsl.includes(PMF_GRID_HOST_WGSL))
   assert.match(out.wgsl, /sdfm_posed_normal/)
   assert.match(out.wgsl, /base \+= w\[i\] \* pmf_v3\(l\)/)
@@ -625,8 +626,16 @@ test('normal taps respect operand scale, never fall inside one grid voxel, and s
   assert.ok(Math.abs(step(resampled) - 0.3) < 1e-6, 'never below half a voxel, even across a narrower blend')
   const fine = { ...p, operands: [{ ...grid, voxel: 0.01 }] }
   assert.ok(Math.abs(step(fine) - 0.01) < 1e-8, 'one voxel when the blends are wider')
-  const wgsl = fieldMaterialWgsl({ program: resampled, labelGraphs: [], debug: false }).wgsl
+  assert.equal(fieldNormalsMode(''), 'gradient')
+  const normals = fieldNormalsMode('?normals=field&fieldnormals=taps')
+  assert.equal(normals, 'taps')
+  const source = { program: resampled, labelGraphs: [], debug: false }
+  const old = fieldMaterialWgsl({ ...source, normals })
+  const wgsl = old.wgsl
+  assert.notEqual(old.functionName, fieldMaterialWgsl(source).functionName)
   assert.match(wgsl, /newton < 2u/)
+  assert.match(wgsl, /for \(var t = 0u; t < 7u; t = t \+ 1u\)/)
+  assert.equal(wgsl.match(/= pmf_run\(/g)?.length, 1)
   assert.match(wgsl, /p -= taps.xyz \/ sqrt\(gg\) \* clamp/)
   assert.match(wgsl, /taps = pmf_field\(db, p, h, scale, &w\)/)
 })

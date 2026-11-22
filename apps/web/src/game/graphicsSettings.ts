@@ -34,8 +34,14 @@ export interface GraphicsContract {
 
 // Royal Fiesta starts on MEDIUM (owner 2026-11-05): SDF shading, medium AO, full render scale, post on. A saved
 // choice (localStorage, GRAPHICS_KEY) still wins; MAMA's defaults fill the other keys.
+// The engine page (?engine=1) starts on 'vertex' (owner's real-GPU measure with ?raa=shading:vertex: raa.lit.forward
+// 67.7 -> 1.89 ms, lit.prepass 19.1 -> 0.10 ms, frame 17.6 ms); per-pixel SDF shading stays one choice away
+// (Graphics settings, ?shading=field or ?raa=shading:field).
+// ?normals=field (or pixel) opts back in to the per-pixel field normals.
+const PAGE = typeof location === 'undefined' ? new URLSearchParams() : new URLSearchParams(location.search)
+const ENGINE_PAGE = PAGE.get('engine') === '1' && PAGE.get('normals') !== 'field' && PAGE.get('normals') !== 'pixel'
 export const DEFAULT_GRAPHICS: Readonly<Record<string, unknown>> = Object.freeze({
-  shading: 'field', aoQuality: 2, renderScale: 1, postBloom: true, postGrading: true, jiggle: 'all',
+  shading: ENGINE_PAGE ? 'vertex' : 'field', aoQuality: 2, renderScale: 1, postBloom: true, postGrading: true, jiggle: 'all',
 })
 // Options applied by the upload: a change shows when the next scene loads.
 const ON_NEXT_LOAD = new Set(['bakeTexelDensity', 'bakeMaxSize'])

@@ -124,6 +124,10 @@ function build(): FrameTimings {
   }
 }
 
+// Lines other modules add to the overlay (the live port's shading report): name -> text, read at each report.
+const lines = new Map<string, () => string>()
+export function perfLine(name: string, text: () => string): void { if (perfEnabled) lines.set(name, text) }
+
 function report(now: number): void {
   void now
   last = build()
@@ -137,7 +141,7 @@ function report(now: number): void {
     document.body.appendChild(overlay)
   }
   const head = `${last.fps.toFixed(1)} fps  frame avg ${f(last.frameMs.avg)} p95 ${f(last.frameMs.p95)} max ${f(last.frameMs.max)} ms  dpr ${last.devicePixelRatio}\n` +
-    `scale ${last.renderScale}  presented ${(last.pixelsPerSec / 1e6).toFixed(1)} Mpx/s\n` + raaReportLines().map(l => l + '\n').join('') +
+    `scale ${last.renderScale}  presented ${(last.pixelsPerSec / 1e6).toFixed(1)} Mpx/s\n` + raaReportLines().map(l => l + '\n').join('') + [...lines.values()].map(t => { try { return t() + '\n' } catch { return '' } }).join('') +
     last.canvas.map((c, i) => `canvas ${i} ${c.label}: ${c.width}x${c.height} (css ${c.cssWidth}x${c.cssHeight}) rendered ${c.renderedPerSec.toFixed(1)}/s`).join('\n') + '\n' +
     Object.entries(last.counters).map(([k, v]) => `${k} ${v}`).join('  ') + '\nmodule                                   avg    p95    max  calls/f\n'
   const gpuHead = last.gpu.supported === false ? 'GPU pass times: unavailable (the adapter has no timestamp-query)\n'

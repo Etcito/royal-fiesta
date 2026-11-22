@@ -1,5 +1,5 @@
 /// <reference path="../types-mama.d.ts" />
-import { count, timed } from '../perf/framePerf.ts'
+import { count, perfEnabled, perfLine, timed } from '../perf/framePerf.ts'
 import { roadMesh, type RoadData } from '@royal-fiesta/sim/road'
 import { checkAwait } from '../game/checkProgress.ts'
 // SDF render port: a RenderPort on the @etcito/raa release engine, fed with the upload payload the
@@ -317,6 +317,9 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   onTiming({ step: 'RAA engine init', start, end, ms: end - start })
   try {
     await checkAwait('RAA mesh/material uploads', () => port.prepare(onProgress, onTiming))
+    const line = (): string => { const r = port.shadingReport(); return `shading ${render.shading}: field-shaded parts=${r.field} vertex=${r.vertex} texture=${r.texture} of ${r.parts}` }
+    perfLine('shading', line)
+    if (perfEnabled) console.log(`[shading] ${line()}`)
     return port
   } catch (e) {
     port.dispose()

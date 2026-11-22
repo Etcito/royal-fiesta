@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { decodeMesh } from '../src/sdf/meshWire.ts'
 import test from 'node:test'
 import {
-  PMF_INTERPRETER_WGSL, PMF_PRUNED_INTERPRETER_WGSL, PMF_PAIRED_INTERPRETER_WGSL, PMF_PRUNED_PAIRED_INTERPRETER_WGSL,
+  PMF_INTERPRETER_WGSL, fieldInterpreterWgsl, fieldMaterialWgsl, fieldVectorWeightsEnabled,
   fieldPruningEnabled, fieldGridPairsEnabled, fieldGridTexture, fieldProgramWords, type FieldGridOperandLike, type FieldProgramLike, type FieldTreeNodeLike,
 } from '../src/sdf/fieldShading.ts'
 
@@ -82,12 +82,18 @@ ${PMF_INTERPRETER_WGSL}
 function instrument(source: string) {
   return WgslParser.Parse(source.replace('sd[top] = pmf_operand', 'operand_visits += 1u; sd[top] = pmf_operand'))
 }
-const shaders = [
-  [PMF_INTERPRETER_WGSL, PMF_PRUNED_INTERPRETER_WGSL],
-  [PMF_PAIRED_INTERPRETER_WGSL, PMF_PRUNED_PAIRED_INTERPRETER_WGSL],
-].map(modes => modes.map(mode => instrument(kernel.replace(PMF_INTERPRETER_WGSL, mode))))
+const shaders = new Map<string, ReturnType<typeof instrument>>()
+function interpreter(prune: boolean, pairGrid: boolean, vectorWeights: boolean) {
+  const key = `${prune}/${pairGrid}/${vectorWeights}`
+  let ast = shaders.get(key)
+  if (!ast) {
+    ast = instrument(kernel.replace(PMF_INTERPRETER_WGSL, fieldInterpreterWgsl({ prune, pairGrid, vectorWeights })))
+    shaders.set(key, ast)
+  }
+  return ast
+}
 
-function sample(program: FieldProgramLike, points: Point[], prune = false, pairGrid = false) {
+function sample(program: FieldProgramLike, points: Point[], prune = false, pairGrid = false, vectorWeights = false) {
   const data = fieldProgramWords(program, prune)
   assert.ok(data.ok)
   const { width, height, data: texels } = fieldGridTexture(program, pairGrid) ?? { width: 0, height: 0, data: new Uint8Array(0) }
@@ -98,7 +104,7 @@ function sample(program: FieldProgramLike, points: Point[], prune = false, pairG
     atlas[i + 1] = texels[at] * 2 ** 24 + texels[at + 1] * 2 ** 16 + texels[at + 2] * 256 + texels[at + 3]
   }
   const output = new Float32Array(14 * points.length).fill(NaN)
-  new WgslExec(shaders[Number(pairGrid)][Number(prune)]).dispatchWorkgroups('sample_field', points.length, {
+  new WgslExec(interpreter(prune, pairGrid, vectorWeights)).dispatchWorkgroups('sample_field', points.length, {
     0: { 0: new Float32Array(data.words.buffer), 1: atlas, 2: Float32Array.from(points.flat()), 3: output },
   })
   return points.map((_, i) => {
@@ -243,19 +249,35 @@ test('bounded field traversal matches the full distance, gradient, seams and lab
 })
 
 
-test('paired grid texels halve atlas reads with identical field outputs and untouched source bytes', t => {
+test('paired grids and vector weights retain live field outputs and halve atlas reads', t => {
   assert.equal(fieldGridPairsEnabled('?normals=field'), true)
   assert.equal(fieldGridPairsEnabled('?normals=field&fieldGridPairs=0'), false)
+  assert.equal(fieldVectorWeightsEnabled('?normals=field'), true)
+  assert.equal(fieldVectorWeightsEnabled('?normals=field&fieldVectorWeights=0'), false)
+  const mixed = fixture()
+  const [a, b] = mixed.operands
+  mixed.labels = [...mixed.labels, ...Array.from({ length: 6 }, () => mixed.labels[0])]
+  mixed.operands = [a, { ...b, label: 7 }]
+  mixed.tree = [leaf(0), leaf(1), { op: 'union', mode: 'smooth', radius: 0.4 }]
   const assets = [
     savedSurface('assets/common/penguin.body.mesh'),
     savedSurface('assets/candy/candy.floor-tile.mesh'),
-    { program: fixture(), points: [[0, 0, 0], [-0.68, 0.9, -0.73], [0.68, -0.15, 0.22], [0, -0.15, 0.22]] as Point[] },
+    { program: mixed, points: [[0, 0, 0], [-0.68, 0.9, -0.73], [0.68, -0.15, 0.22], [0, -0.15, 0.22]] as Point[] },
   ]
   for (const [index, { program, points }] of assets.entries()) {
     const original = program.grid!.texels.slice()
+    const material = fieldMaterialWgsl({ program, debug: false, labelGraphs: [], prune: true, pairGrid: true, vectorWeights: true })
+    assert.match(material.wgsl, /var sw_low: array<vec4f/)
+    assert.match(material.wgsl, /upper_z\[k\] = pair.y/)
     for (const prune of [false, true]) {
       const full = sample(program, points, prune)
       const paired = sample(program, points, prune, true)
+      const optimized = sample(program, points, prune, true, true)
+      optimized.forEach((value, i) => {
+        compareSamples(value, paired[i], `vector fixture ${index} sample ${i}`)
+        assert.equal(value.reads, paired[i].reads)
+        assert.equal(value.visits, paired[i].visits)
+      })
       paired.forEach((value, i) => {
         compareSamples(value, full[i], `fixture ${index} sample ${i}`)
         assert.equal(value.visits, full[i].visits)

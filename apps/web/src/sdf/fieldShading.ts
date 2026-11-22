@@ -398,7 +398,9 @@ export function fieldProgramWords(program: FieldProgramLike, prune = false): { o
  * The fixed evaluator of a field program in material data at word `db` (fieldProgramWords): MAMA fieldProgramWgsl's
  * operand distances, blends and label weights, run as a stack machine over the tree instead of emitted per part.
  */
-function pmfInterpreter(analytic: boolean, prune = false, pairGrid = false): string {
+type FieldInterpreterOptions = { prune?: boolean; pairGrid?: boolean; vectorWeights?: boolean }
+
+function pmfInterpreter(analytic: boolean, { prune, pairGrid, vectorWeights }: FieldInterpreterOptions = {}): string {
   const result = analytic ? 'PmfFieldSample' : 'f32'
   return /* wgsl */ `
 ${analytic ? `struct PmfFieldSample {
@@ -493,7 +495,8 @@ ${pairGrid ? `      var value: f32;
 // The field program at word db, at point p, with the label weights in w.
 fn pmf_run(db: u32, p: vec3f, w: ptr<function, array<f32, 8>>) -> ${result} {
   var sd: array<${result}, ${PMF_STACK}>;
-  var sw: array<array<f32, 8>, ${PMF_STACK}>;
+${vectorWeights ? `  var sw_low: array<vec4f, ${PMF_STACK}>;
+  var sw_high: array<vec4f, ${PMF_STACK}>;` : `  var sw: array<array<f32, 8>, ${PMF_STACK}>;`}
   var top = 0u;
   let count = pmf_u(db + 1u);
   let operands = db + pmf_u(db + 2u);
@@ -526,7 +529,8 @@ fn pmf_run(db: u32, p: vec3f, w: ptr<function, array<f32, 8>>) -> ${result} {
       let r = operands + ${PMF_OPERAND_FLOATS}u * pmf_u(node + 1u);
       sd[top] = pmf_operand(r, p);
       let label = pmf_u(r + 1u);
-      for (var s = 0u; s < 8u; s = s + 1u) { sw[top][s] = select(0.0, 1.0, s == label); }
+${vectorWeights ? `      sw_low[top] = select(vec4f(0.0), vec4f(1.0), vec4u(0u, 1u, 2u, 3u) == vec4u(label));
+      sw_high[top] = select(vec4f(0.0), vec4f(1.0), vec4u(4u, 5u, 6u, 7u) == vec4u(label));` : `      for (var s = 0u; s < 8u; s = s + 1u) { sw[top][s] = select(0.0, 1.0, s == label); }`}
       top = top + 1u;
       continue;
     }
@@ -566,7 +570,13 @@ fn pmf_run(db: u32, p: vec3f, w: ptr<function, array<f32, 8>>) -> ${result} {
       // colorBlend 'hard': the shape stays blended, the label steps to the nearer side (MAMA meshField, vertex colours).
       let stepped = select(0.0, 1.0, bv < av);
       let h = select(select(share, 0.5, av == bv), stepped, pmf_f(node + 3u) > 0.5);
-      for (var s = 0u; s < 8u; s = s + 1u) { sw[top - 2u][s] = (1.0 - h) * sw[top - 2u][s] + h * sw[top - 1u][s]; }
+${vectorWeights ? `      if (h == 1.0) {
+        sw_low[top - 2u] = sw_low[top - 1u];
+        sw_high[top - 2u] = sw_high[top - 1u];
+      } else if (h > 0.0) {
+        sw_low[top - 2u] = (1.0 - h) * sw_low[top - 2u] + h * sw_low[top - 1u];
+        sw_high[top - 2u] = (1.0 - h) * sw_high[top - 2u] + h * sw_high[top - 1u];
+      }` : `      for (var s = 0u; s < 8u; s = s + 1u) { sw[top - 2u][s] = (1.0 - h) * sw[top - 2u][s] + h * sw[top - 1u][s]; }`}
     }
     let d = select(-blend, blend, op == 1u);${analytic ? `
     let left = sd[top - 2u];
@@ -578,16 +588,20 @@ fn pmf_run(db: u32, p: vec3f, w: ptr<function, array<f32, 8>>) -> ${result} {
     sd[top - 2u] = d;`}
     top = top - 1u;
   }
-  for (var s = 0u; s < 8u; s = s + 1u) { (*w)[s] = sw[0][s]; }
+${vectorWeights ? `  let low = sw_low[0];
+  let high = sw_high[0];
+  (*w)[0] = low.x; (*w)[1] = low.y; (*w)[2] = low.z; (*w)[3] = low.w;
+  (*w)[4] = high.x; (*w)[5] = high.y; (*w)[6] = high.z; (*w)[7] = high.w;` : `  for (var s = 0u; s < 8u; s = s + 1u) { (*w)[s] = sw[0][s]; }`}
   return sd[0];
 }
 `
 }
 
 export const PMF_INTERPRETER_WGSL = pmfInterpreter(true)
-export const PMF_PRUNED_INTERPRETER_WGSL = pmfInterpreter(true, true)
-export const PMF_PAIRED_INTERPRETER_WGSL = pmfInterpreter(true, false, true)
-export const PMF_PRUNED_PAIRED_INTERPRETER_WGSL = pmfInterpreter(true, true, true)
+export function fieldInterpreterWgsl(options: FieldInterpreterOptions): string {
+  return pmfInterpreter(true, options)
+}
+
 const PMF_TAPS_INTERPRETER_WGSL = pmfInterpreter(false)
 
 /** The field grid as an Engine.addTexture argument, or null when the program has no grid. */
@@ -801,6 +815,10 @@ export function fieldGridPairsEnabled(search = typeof location === 'undefined' ?
   return new URLSearchParams(search).get('fieldGridPairs') !== '0'
 }
 
+export function fieldVectorWeightsEnabled(search = typeof location === 'undefined' ? '' : location.search): boolean {
+  return new URLSearchParams(search).get('fieldVectorWeights') !== '0'
+}
+
 export function fieldNormalsMode(search = typeof location === 'undefined' ? '' : location.search): FieldNormals {
   return new URLSearchParams(search).get('fieldnormals') === 'taps' ? 'taps' : 'gradient'
 }
@@ -818,9 +836,7 @@ export function fieldMaterialWgsl(src: {
   labelGraphs: readonly (FieldLabelGraphLike | null)[]
   debug: boolean
   normals?: FieldNormals
-  prune?: boolean
-  pairGrid?: boolean
-}): { functionName: string; wgsl: string } {
+} & FieldInterpreterOptions): { functionName: string; wgsl: string } {
   const { program, debug } = src
   const labels = program.labels.slice(0, MAX_LABELS)
   const graphs = labels.map((_, i) => src.labelGraphs[i] ?? null)
@@ -832,9 +848,7 @@ export function fieldMaterialWgsl(src: {
     ? '\n  // ?normalsDebug: the normal lighting receives, 0.5 + n / 2.\n  o.base_color = n * 0.5 + vec3f(0.5);\n  o.metallic = 0.0;\n  o.roughness = 1.0;'
     : ''
   const taps = (src.normals ?? fieldNormalsMode()) === 'taps'
-  const interpreter = taps ? PMF_TAPS_INTERPRETER_WGSL
-    : src.pairGrid ? (src.prune ? PMF_PRUNED_PAIRED_INTERPRETER_WGSL : PMF_PAIRED_INTERPRETER_WGSL)
-    : src.prune ? PMF_PRUNED_INTERPRETER_WGSL : PMF_INTERPRETER_WGSL
+  const interpreter = taps ? PMF_TAPS_INTERPRETER_WGSL : fieldInterpreterWgsl(src)
   const tapsFunction = taps ? `
 // The centre run (distance and label weights in w) and six central taps at p +- h * e_i,
 // with h from voxel / 2 to one voxel (fieldStep), in ONE loop: pmf_run has a single call site. The shader compiler inlines every call, and the seven call sites

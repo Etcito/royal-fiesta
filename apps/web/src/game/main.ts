@@ -354,6 +354,11 @@ function loop(frame: (dtS: number) => void, interval: () => number = () => 0): (
   return () => cancelAnimationFrame(id)
 }
 
+// True once an engine has configured the canvas's WebGPU context (the UI overlay draws only on such a canvas).
+function configured(canvas: HTMLCanvasElement): boolean {
+  try { return (canvas.getContext('webgpu') as { getConfiguration(): unknown } | null)?.getConfiguration() != null } catch { return false }
+}
+
 // One canvas per client, appended to the #views grid in client order.
 function mountCanvas(root: HTMLElement, cell: ClientCell): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
@@ -2809,7 +2814,6 @@ class App {
   }
 
   private releaseLobby(): void {
-    this.parkLobby()
     this.startView?.unmount()
     this.startView = null
     this.preparedLocal?.dispose()
@@ -2823,6 +2827,35 @@ class App {
     this.lobbyAssets.clear()
     this.sound.dispose()
     this.lobbySoundOff = true
+  }
+
+  // The one canvas on the page is the one the UI is drawn over: the show's once its engine has configured it, else the
+  // lobby's. The other leaves the DOM (and the lobby parks at 1x1 while it does) so the page never holds two.
+  // The lobby is attached and unparked again before its next frame, whenever the show's canvas is not the target.
+  uiTarget(): HTMLCanvasElement | null {
+    const lobby = this.loaded?.canvases[0] ?? null
+    const mode = this.mode
+    const show = mode instanceof ShowAdapter ? mode.show.lookCanvas : null
+    if (show !== null && configured(show)) return show
+    return lobby
+  }
+
+  private syncUiTarget(): void {
+    const lobby = this.loaded?.canvases[0] ?? null
+    const mode = this.mode
+    const show = mode instanceof ShowAdapter ? mode.show.lookCanvas : null
+    const target = this.uiTarget()
+    if (target === null) return
+    if (target === lobby) {
+      if (!lobby.isConnected) this.views.appendChild(lobby)
+      show?.remove()
+      if (this.lobbyParked) { this.lobbyParked = false; this.viewsSizeKey = ''; this.resizeViews() }
+    } else {
+      show!.style.display = ''
+      if (!show!.isConnected) this.views.appendChild(show!)
+      this.parkLobby()
+      lobby?.remove()
+    }
   }
 
   private stopMode(): void {
@@ -3098,6 +3131,7 @@ class App {
   // Presents nav's screen through the uaa host, with the round HUD on the HUD screens, then renders it.
   private draw(): void {
     const nav = this.nav
+    this.syncUiTarget()
     this.settingsPage = pageAfterScreen(this.drawnScreen, nav.screen, this.settingsPage)
     this.drawnScreen = nav.screen
     if (this.showView?.screen !== nav.screen) this.unmountShowView()
@@ -3462,12 +3496,14 @@ function pageRoots(): { views: HTMLElement; screens: HTMLElement } {
 // Boot waits for the uaa host: there is no DOM menu, so a GPU, asset or font failure fails the boot.
 // taken: an op took the page while the host was being created; the App then never starts.
 async function start(
-  canvas: HTMLCanvasElement, env: AppEnv, taken: () => boolean, onScreen?: (e: UaaScreenChange) => void, searchOverride?: string,
+  canvas: HTMLCanvasElement | null, env: AppEnv, taken: () => boolean, onScreen?: (e: UaaScreenChange) => void, searchOverride?: string,
 ): Promise<{ app: App; host: UaaHost } | null> {
   const { views, screens } = pageRoots()
   let created: App | null = null
+  // The page draws its UI over the engine's own canvas (no canvas of its own); the ops pages keep canvas#ui.
   const host = await createUaaHost({
-    canvas, width: Math.max(1, screens.clientWidth), height: Math.max(1, screens.clientHeight), dpr: window.devicePixelRatio || 1,
+    ...(canvas === null ? { overlay: { target: () => created?.uiTarget() ?? null } } : { canvas }),
+    width: Math.max(1, screens.clientWidth), height: Math.max(1, screens.clientHeight), dpr: window.devicePixelRatio || 1,
     onCommand: c => created?.command(c), onScreen,
   })
   if (taken()) {
@@ -3580,13 +3616,11 @@ try {
     app?.dispose()
   }, startForOp)
   if (!opsMode) {
-    const canvas = document.querySelector<HTMLCanvasElement>('#screens > canvas#ui')
-    if (canvas === null) throw new Error('game.html needs main#views and div#screens holding canvas#ui')
     const storage = pageStorage()
     bootStages = new BootStages(showStall)
     boot.enter('ui host (fonts, images, WebGPU)')
     // The shell stays on its own progress screen until App.load has the complete start scene up (wavedashReady).
-    start(canvas, { store: storage ?? memoryStore(), padStorage: storage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
+    start(null, { store: storage ?? memoryStore(), padStorage: storage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
   }
 } catch (e) {
   bootFailed(e)

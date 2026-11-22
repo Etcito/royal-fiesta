@@ -12,15 +12,18 @@ import {
   createFontRegistry, createUi, loadUiDoc, parseUiAssetText, UaaError,
   type FontEntry, type Rect, type Ui, type UiAsset, type UiDoc, type UiInputEvent, type UiRenderer, type Viewport,
 } from '@etcito/uaa'
-import { createWebGpuRenderer, type WebGpuRendererOptions } from '@etcito/uaa/webgpu'
+import { createWebGpuOverlay, createWebGpuRenderer, type WebGpuRendererOptions } from '@etcito/uaa/webgpu'
 import type { MenuCmd, MenuModel } from '@royal-fiesta/game/screens/menuModel'
 import { actionToCmd, screenProps, type WidgetProps } from './screenMap.ts'
 import { withLogo, type LogoDevice } from './logoRenderer.ts'
 import logo from '../../../../ui/logo.json' with { type: 'json' }
 import { wardrobeAssets } from './wardrobeAssets.ts'
-import { withCosmeticThumbnails } from './cosmeticThumbnails.ts'
+import { prefetchThumbnails, withCosmeticThumbnails } from './cosmeticThumbnails.ts'
 import { withCapsuleButtons } from './buttonMapping.ts'
 import { withSettingsWidgets } from './settingsWidgets.ts'
+
+// The device type uaa's overlay takes (the page has no WebGPU typings of its own).
+type GpuDev = Parameters<typeof createWebGpuOverlay>[1]['device']
 
 export interface UaaCommand {
   cmd: MenuCmd
@@ -35,7 +38,12 @@ export interface UaaScreenChange {
 }
 
 export interface UaaHostOptions {
-  canvas: HTMLCanvasElement
+  // Either its own transparent canvas (the ops pages: their captures composite it over the views) ...
+  canvas?: HTMLCanvasElement
+  // ... or no canvas of its own: each frame the UI is blended over the canvas target() returns, on the device
+  // that canvas is configured with (the engine's), after the engine drew it in the same task. A new canvas or a
+  // new device (every show round creates an engine) rebuilds the renderer on it; null draws nothing.
+  overlay?: { target(): HTMLCanvasElement | null }
   // The initial size: CSS px and devicePixelRatio, as in resize().
   width: number
   height: number
@@ -194,20 +202,44 @@ function sizeCanvas(canvas: HTMLCanvasElement, width: number, height: number, dp
 // Creates the uaa layer on the canvas. Rejects with the UaaError of the first GPU, asset, document
 // or font failure; whatever was created before it is released first.
 export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
-  const { canvas } = o
-  // RAA shows through; input arrives only through input(), so the canvas never takes the pointer.
-  Object.assign(canvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', background: 'transparent', pointerEvents: 'none' })
-  sizeCanvas(canvas, o.width, o.height, o.dpr)
-  const device = await requestDevice()
+  const { canvas, overlay } = o
+  if (canvas === undefined && overlay === undefined) throw new UaaError('RENDERER_STATE', '', 'createUaaHost needs a canvas or an overlay target')
+  if (canvas !== undefined) {
+    // RAA shows through; input arrives only through input(), so the canvas never takes the pointer.
+    Object.assign(canvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', background: 'transparent', pointerEvents: 'none' })
+    sizeCanvas(canvas, o.width, o.height, o.dpr)
+  }
+  const device = canvas === undefined ? null : await requestDevice()
+  if (overlay !== undefined) prefetchThumbnails()
   const thumbnails = new Map<string, string>()
   let renderer: UiRenderer | null = null
   let doc: UiDoc
   let ui: Ui
+  // The renderer chain (overlay or own canvas, capsule buttons, logo, thumbnails) on one canvas and one device.
+  const buildChain = async (on: HTMLCanvasElement, dev: GpuDev, own: boolean): Promise<UiRenderer> => {
+    let r: UiRenderer = own
+      ? await checkAwait('UI renderer', () => createWebGpuRenderer(on, { device: dev as NonNullable<WebGpuRendererOptions['device']> }))
+      : createWebGpuOverlay(on, { device: dev })
+    r = withCapsuleButtons(withSettingsWidgets(r), () => ui.screen())
+    r = await checkAwait('UI logo', () => withLogo(r, on, dev as unknown as LogoDevice, { ...logo, format: logo.format as 'png' | 'svg' }, document.baseURI))
+    return withCosmeticThumbnails(r, on, dev as unknown as LogoDevice, thumbnails)
+  }
+  // Overlay mode: ui holds this one renderer for good; it forwards to a chain rebuilt for the current canvas and device.
+  let inner: UiRenderer | null = null
+  let innerCanvas: HTMLCanvasElement | null = null
+  let innerDevice: GpuDev | null = null
+  let building = false
+  let buildError: unknown = null
+  let lastViewport: Viewport | null = null
+  const proxy: UiRenderer = {
+    kind: 'webgpu',
+    resize(v) { lastViewport = v; inner?.resize(v) },
+    render(list) { inner?.render(list) },
+    destroy() { inner?.destroy(); inner = null },
+  }
   try {
-    renderer = await checkAwait('UI renderer', () => createWebGpuRenderer(canvas, { device: device as NonNullable<WebGpuRendererOptions['device']> }))
-    renderer = withCapsuleButtons(withSettingsWidgets(renderer), () => ui.screen())
-    renderer = await checkAwait('UI logo', () => withLogo(renderer!, canvas, device as unknown as LogoDevice, { ...logo, format: logo.format as 'png' | 'svg' }, document.baseURI))
-    renderer = await withCosmeticThumbnails(renderer, canvas, device as unknown as LogoDevice, thumbnails)
+    if (canvas !== undefined) renderer = await buildChain(canvas, device as GpuDev, true)
+    else renderer = proxy
     const assets = loadAssets(uiAssetTexts())
     try {
       doc = loadUiDoc(JSON.parse(uiDocText()), assets)
@@ -221,11 +253,48 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     ui = createUi({ doc, assets, fonts, renderer, viewport, nowMs: performance.now() })
   } catch (e) {
     renderer?.destroy()
-    device.destroy()
+    device?.destroy()
     throw e
   }
 
+  // Overlay mode: the canvas to draw on now, with its device, once the chain for them is built (else null; a build starts).
+  const bind = (): boolean => {
+    const on = overlay!.target()
+    if (on === null) return false
+    const config = (on.getContext('webgpu') as { getConfiguration(): { device: GpuDev } | null } | null)?.getConfiguration()
+    if (config === null || config === undefined) return false
+    if (inner !== null && on === innerCanvas && config.device === innerDevice) return true
+    if (!building) {
+      building = true
+      const dev = config.device
+      // The old chain's resources die with its device (an engine's device is destroyed with the engine).
+      const old = inner
+      inner = null
+      try { old?.destroy() } catch { /* its device is gone */ }
+      buildChain(on, dev, false).then(r => {
+        if (destroyed) { r.destroy(); return }
+        inner = r
+        innerCanvas = on
+        innerDevice = dev
+        if (lastViewport !== null) r.resize(lastViewport)
+      }, e => { buildError = e; console.error('[uaa-overlay] chain failed:', e) }).finally(() => { building = false })
+    }
+    return false
+  }
+  // The overlay's pixel ratio is the target's backing size over the page's CSS size (the engine owns that size).
+  let sizedFor = ''
+  const sizeToTarget = (): void => {
+    const on = innerCanvas
+    if (on === null || cssW <= 0) return
+    const key = `${on.width}x${on.height}@${cssW}x${cssH}`
+    if (key === sizedFor) return
+    sizedFor = key
+    ui.resize({ width: cssW, height: cssH, pixelRatio: on.width / cssW, safeArea: o.safeArea ?? deviceSafeArea() })
+  }
+
   let dpr = o.dpr
+  let cssW = o.width
+  let cssH = o.height
   let destroyed = false
   // The last props set per widget id: present() runs every page frame and uaa re-lays out on each set.
   const last = new Map<string, string>()
@@ -262,6 +331,12 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     },
     frame(nowMs) {
       if (destroyed) return
+      if (buildError !== null) throw buildError
+      if (overlay !== undefined) {
+        // Drawn only on a canvas the engine has configured, after the engine's own frame; no target, no UI this frame.
+        if (!bind()) return
+        sizeToTarget()
+      }
       checkPhase('UI update')
       ui.update(nowMs)
       checkPhase('UI render')
@@ -270,6 +345,14 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
     },
     resize(width, height, ratio) {
       dpr = ratio
+      cssW = width
+      cssH = height
+      if (canvas === undefined) {
+        sizedFor = ''
+        sizeToTarget()
+        if (innerCanvas === null) ui.resize({ width, height, pixelRatio: ratio * renderScale, safeArea: o.safeArea ?? deviceSafeArea() })
+        return
+      }
       sizeCanvas(canvas, width, height, ratio)
       ui.resize({ width, height, pixelRatio: ratio * renderScale, safeArea: o.safeArea ?? deviceSafeArea() })
     },
@@ -286,7 +369,7 @@ export async function createUaaHost(o: UaaHostOptions): Promise<UaaHost> {
       for (const off of offs) off()
       // ui.destroy releases the renderer; the device is ours.
       ui.destroy()
-      device.destroy()
+      device?.destroy()
     },
   }
 }

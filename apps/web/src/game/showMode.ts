@@ -122,8 +122,7 @@ export class ShowMode {
     this.canvas.width = this.background ? 1 : this.drawSize.width
     this.canvas.height = this.background ? 1 : this.drawSize.height
     this.canvas.dataset.show = 'true'
-    this.canvas.style.display = 'none'
-    options.views.appendChild(this.canvas)
+    // Not in the DOM yet: the app puts it on the page (the one canvas) once the engine has configured it.
   }
 
   static async create(options: ShowModeOptions): Promise<ShowMode> {
@@ -326,8 +325,6 @@ export class ShowMode {
         }
       }
       const visible = ['countdown', 'round', 'spectate'].includes(this.screen())
-      this.canvas.style.display = visible ? '' : 'none'
-      for (const stage of this.stages) stage.canvas.style.display = visible ? 'none' : stage.display
       const round = this.activeRound()
       if (visible && this.scene !== null && round !== null && round.plan.index === this.index) {
         this.scene.update(round.match, 1, dt)
@@ -351,8 +348,6 @@ export class ShowMode {
       timed('ShowMode.loadEngine', () => this.loadEngine(runtime))
       timed('EngineShowEffects.pump', () => this.effects?.pump())
       const visible = ['countdown', 'round', 'spectate'].includes(this.screen())
-      this.canvas.style.display = visible ? '' : 'none'
-      for (const stage of this.stages) stage.canvas.style.display = visible ? 'none' : stage.display
       if (visible && this.scene !== null && this.readView !== null && this.presenter !== null) {
         const presenter = this.presenter, view = this.readView, scene = this.scene
         timed('EngineSeatPresenter.refill', () => presenter.refill(runtime.presentation(), runtime.snapshot(), view.nearSeats()))

@@ -24,6 +24,8 @@ export interface EngineShowConfig {
   humans: readonly boolean[]
   plan?: readonly number[]
   testMode?: boolean
+  /** The rendered local show may drop excess wall-clock debt while still executing consecutive 60 Hz ticks. */
+  limitCatchup?: boolean
 }
 
 export interface EngineRoundResult {

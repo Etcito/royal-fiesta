@@ -41,6 +41,7 @@ export interface EngineShowOptions {
   seats: number
   plan?: readonly number[]
   testMode: boolean
+  limitCatchup?: boolean
 }
 
 export interface EngineBackend {
@@ -98,7 +99,8 @@ export async function loadEngineBackend(loaders: EngineBackendLoaders): Promise<
   }
   const createHub = (spawn: number, bots: number): Promise<HubRuntime> =>
     createEngineHub(config({ seed: 0, humans: 1, seats: SEATS, testMode: false }), authored.plaza, spawn, bots)
-  const createShow = (options: EngineShowOptions): Promise<EngineShowRuntime> => createEngineShow(config(options))
+  const createShow = (options: EngineShowOptions): Promise<EngineShowRuntime> =>
+    createEngineShow({ ...config(options), limitCatchup: options.limitCatchup === true })
   const flowBackend = (options: { seats: number; testMode: boolean }): FlowBackend => {
     const onlineConfig = (seed: number, humans: number): EngineShowConfig =>
       config({ seed, humans, seats: options.seats, testMode: options.testMode })

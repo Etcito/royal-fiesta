@@ -28,6 +28,7 @@ export function setStepProbe(next: StepProbe | null): void { probe = next }
 
 const TICK_RATE = 60
 const MAX_TICKS_PER_FRAME = 8
+const RENDERED_LOCAL_TICK_LIMIT = 2
 const S1_NEUTRAL = 32639
 const NO_SHADOW: ShadowView = { count: 0, fromDomain: () => 0, reader: () => new SnapReader(new Uint8Array(0)) }
 
@@ -326,9 +327,14 @@ class ShowRuntime implements EngineShowRuntime {
     if (!Number.isFinite(accumulated)) fail('frame.dtS', 'accumulated time is not finite; pass a smaller elapsed time')
     this.accumulator = accumulated
     const whole = Math.floor(this.accumulator + 1e-9)
-    if (whole < 1) return
-    const count = Math.min(MAX_TICKS_PER_FRAME, whole)
+    const limited = this.config.limitCatchup === true
+    const count = Math.min(limited ? RENDERED_LOCAL_TICK_LIMIT : MAX_TICKS_PER_FRAME, whole)
+    // Keep sub-tick time. Dropping excess elapsed time slows the local show during stalls without skipping tick IDs.
+    const dropped = limited ? whole - count : 0
+    this.accumulator -= dropped
     probe?.count('sim ticks this frame', count)
+    probe?.count('sim catch-up ticks dropped', dropped)
+    if (whole < 1) return
     for (let i = 0; i < count; i++) {
       // Consume the tick before executing it: a listener or effect failure after the tick ran must
       // never leave the accumulator asking for that same executed tick again.

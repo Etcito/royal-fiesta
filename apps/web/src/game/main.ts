@@ -2735,7 +2735,8 @@ class App {
     try {
       const seed = Date.now() >>> 0
       const options = { ...this.showOptions(loaded, q, this.wornLook()), seed }
-      const runtime = await backend.createShow({ seed, humans: q.players ?? 1, seats: options.seats, testMode: q.test })
+      const limitCatchup = new URLSearchParams(this.search).get('simCatchup') !== '0'
+      const runtime = await backend.createShow({ seed, humans: q.players ?? 1, seats: options.seats, testMode: q.test, limitCatchup })
       if (this.disposed || load !== this.showLoad) {
         runtime.dispose()
         return

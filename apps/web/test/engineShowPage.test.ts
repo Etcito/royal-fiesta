@@ -394,6 +394,38 @@ test('bot movement is measured between bot checks, not between per-tick local sa
   assert.equal(collector.botCount(), 1)
 })
 
+test('local engine show catch-up drops excess time and keeps consecutive fixed ticks', async () => {
+  const content = await loadEngineShowContent()
+  const schemaText = await readRepoText(RF_EGE_SCHEMA)
+  const scriptBytes = await rfScriptBytes()
+  for (const limitCatchup of [true, false]) {
+    const engine = await loadEngine()
+    engine.setSchema(schemaText)
+    const runtime = await createEngineShow({
+      engine, schemaText, scriptBytes, seed: 7, limitCatchup,
+      identity: { backend: 'engine', schemaKey: schemaLayout(engine).key, moduleKey: 'test' },
+      courses: content.courses, assets: content.assets, zones: content.zones, season: content.season,
+      humans: Array.from({ length: 60 }, (_, seat) => seat === 0),
+    })
+    const tick = () => engine.tick(runtime.worlds()[0]!.world)
+    const start = tick()
+    const ticks: number[] = []
+    runtime.onPresentation(observation => {
+      if (observation.kind === 'post-tick') ticks.push(observation.tick - start)
+    })
+    try {
+      runtime.frame(6.5 / 60, () => NEUTRAL_CODE)
+      assert.equal(tick() - start, limitCatchup ? 2 : 6)
+      runtime.frame(0, () => NEUTRAL_CODE)
+      assert.equal(tick() - start, limitCatchup ? 2 : 6)
+      runtime.frame(0.5 / 60, () => NEUTRAL_CODE)
+      assert.deepEqual(ticks, limitCatchup ? [1, 2, 3] : [1, 2, 3, 4, 5, 6, 7])
+    } finally {
+      runtime.dispose()
+    }
+  }
+})
+
 test('the sixty-seat test-mode round moves its scripted bots and botsMoved reads positive through the page bot checks', async () => {
   // Same construction as the page's sixty-seat-engine-round: authored courses and season, one human
   // at room seat 0, default plan, test mode; the 59 bots are never sampled, their brains drive them.

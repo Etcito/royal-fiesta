@@ -297,7 +297,7 @@ interface SkinSlot { instance: number; part: PosePart }
 // fallbacks: resident vertex-colour copies (index into partNames), hidden once their shading can draw.
 // textured: the baked-texture member per part (addTextured), shown only in 'baked' mode.
 // bakes: the bake of each instance's part (null = not a baked part).
-interface Live { transform?: number[]; scale?: Vec3T; stretched: LiveStretched[]; asset: number; root: number; nodes: number[]; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; textured: LiveTextured[]; bakes: (SdfmBakedPart | null)[]; tint: Vec3T | null }
+interface Live { transform?: number[]; scale?: Vec3T; stretched: LiveStretched[]; asset: number; root: number; nodes: number[]; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; textured: LiveTextured[]; bakes: (SdfmBakedPart | null)[]; tint: Vec3T | null; vertexOnly: boolean }
 interface LiveFallback { instance: number; part: PartUpload; index: number; ready: boolean; failed: boolean }
 // A field member: its instance params at unit scale and its part rotation, re-sent with the stretch when the instance scales.
 interface LiveStretched { instance: number; params: number[]; r: QuatT }
@@ -983,18 +983,24 @@ class SdfRenderPort implements ResizablePort {
     return instance
   }
 
-  createInstance(asset: number, tint: Vec3T | null): number {
+  createInstance(asset: number, tint: Vec3T | null, shading?: 'vertex'): number {
     const uploaded = this.uploaded[asset]
     if (uploaded === undefined) refuse(AREA, WHERE, `createInstance: unknown asset handle ${asset}; register the asset first with registerAsset`)
     if (tint !== null && (tint.length !== 3 || !tint.every(Number.isFinite))) refuse(AREA, WHERE, 'tint is not 3 finite numbers; pass [r, g, b] or null')
     const parts = tint === null ? uploaded.parts : this.tintableParts(uploaded)
     const engine = this.need()
     const root = engine.addNode(null)
+    const vertexOnly = shading === 'vertex'
     const live: Live = { stretched: [], asset, root, nodes: [], instances: [], partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [],
-      filter: null, visible: true, bones: uploaded.bones ?? 0, skin: [], pose: null, fallbacks: [], textured: [], bakes: [], tint }
+      filter: null, visible: true, bones: uploaded.bones ?? 0, skin: [], pose: null, fallbacks: [], textured: [], bakes: [], tint, vertexOnly }
     parts.forEach((part, index) => {
       const node = engine.addNode(root, part.t, part.r)
       live.nodes.push(node)
+      if (vertexOnly) {
+        const vertex = part.fallback ?? part
+        live.instances.push(this.addMember(live, node, vertex.mesh, vertex.object, part, part, tint))
+        return
+      }
       const member = this.addMember(live, node, part.mesh, part.object, part, part, tint, part.params)
       live.instances.push(member)
       if (part.params !== undefined) live.stretched.push({ instance: member, params: part.params, r: part.r })
@@ -1007,7 +1013,7 @@ class SdfRenderPort implements ResizablePort {
         live.textured.push({ instance: this.addMember(live, node, part.textured.mesh, undefined, part, part.textured, tint), part, index })
       }
     })
-    live.bakes = parts.map(part => part.bake ?? null)
+    if (!vertexOnly) live.bakes = parts.map(part => part.bake ?? null)
     this.live.push(live)
     this.updateFallbacks(live)
     this.applyVisibility(live)
@@ -1086,7 +1092,7 @@ class SdfRenderPort implements ResizablePort {
         if (textured === undefined) continue
         const index = uploaded.parts.indexOf(target)
         for (const live of this.live) {
-          if (live === null || live.asset !== handle || live.textured.some(entry => entry.index === index)) continue
+          if (live === null || live.asset !== handle || live.vertexOnly || live.textured.some(entry => entry.index === index)) continue
           const node = live.nodes[index]
           if (node === undefined) continue
           live.textured.push({ instance: this.addMember(live, node, textured.mesh, undefined, target, textured, live.tint), part: target, index })
@@ -1216,7 +1222,7 @@ class SdfRenderPort implements ResizablePort {
       if (uploaded === undefined || !requested.has(uploaded.assetId)) continue
       if (!source.partNames.some(name => source.filter === null || source.filter.has(name))) continue
       // Colours and joint matrices are instance data; the presence of tint/pose changes the shader variant.
-      const key = JSON.stringify([this.shading, source.asset, source.tint !== null, source.pose !== null,
+      const key = JSON.stringify([source.vertexOnly ? 'vertex-only' : this.shading, source.asset, source.tint !== null, source.pose !== null,
         source.filter === null ? null : [...source.filter].sort()])
       if (variants.has(key) || this.warming.has(key)) continue
       variants.add(key)
@@ -1255,7 +1261,7 @@ class SdfRenderPort implements ResizablePort {
     const view = this.target!.viewports[0]
     const aspect = view === undefined ? 1 : view.width / Math.max(1, view.height)
     const scale = Math.min(1e-3, ahead * Math.min(1, aspect) * Math.tan(camera.fovYDeg * Math.PI / 360) / (32 * extent * pose))
-    const instance = this.createInstance(source.asset, source.tint)
+    const instance = this.createInstance(source.asset, source.tint, source.vertexOnly ? 'vertex' : undefined)
     try {
       this.setPartFilter(instance, source.filter === null ? null : [...source.filter])
       if (source.pose !== null) this.setPose(instance, source.pose)
@@ -1297,7 +1303,7 @@ class SdfRenderPort implements ResizablePort {
         const copy = live.fallbacks.find(c => c.index === index)
         let mode: ShadingMode = this.shadingOfPart.get(key) ?? 'vertex'
         let reason = this.shadingErrors.get(key)
-        if (this.shading === 'vertex') { mode = 'vertex'; reason = 'vertex mode' }
+        if (this.shading === 'vertex' || live.vertexOnly) { mode = 'vertex'; reason = 'vertex mode' }
         else if (this.shading === 'baked' && live.textured.some(t => t.index === index)) mode = 'baked'
         else if (copy !== undefined && !copy.ready) {
           mode = 'vertex'

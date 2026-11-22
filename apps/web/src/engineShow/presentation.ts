@@ -9,6 +9,7 @@ import type {
   EnginePresentationWorld, EngineRoundResult, EngineShowObservation, EngineShowPresentation, EngineShowSnapshot,
 } from '@royal-fiesta/game/ege/showTypes'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
+import { FarPenguins, type FarPenguinAsset } from '@royal-fiesta/game/render/farRender'
 import { PALETTE } from '@royal-fiesta/game/render/palette'
 import type { RenderPort, Vec3T } from '@royal-fiesta/game/render/port'
 import type { GameScreen } from '@royal-fiesta/game/screens/nav'
@@ -272,26 +273,29 @@ export class EngineSeatPresenter {
   }
 }
 
-/**
- * The far penguin RenderBridge path: the unchanged engine RenderBridge draws EngineFarView records through a
- * RaaEngineView adapter that instances the existing far penguin mesh (zoneContent's bean) on the render port.
- */
-export function farPenguinBridge(port: RenderPort, bean: PrimsAsset): Pick<RenderBridge, 'sync' | 'dispose' | 'instances'> {
-  const asset = port.registerAsset('zone-far-bean', bean)
+/** EngineFarView uses byte colours on the bridge. Restore the exact palette for the authored tint graph. */
+export function farPenguinBridge(port: RenderPort, bean: PrimsAsset, penguin?: FarPenguinAsset) {
+  const figures = penguin === undefined ? null : new FarPenguins(port, penguin)
+  const asset = figures === null ? port.registerAsset('zone-far-bean', bean) : null
   const colors: Vec3T[] = []
   const nodes = new Map<number, number | null>()
   let next = 1
+  let tick = 0
   const raa: RaaEngineView = {
     primitiveMesh: () => 0,
     addMaterial(desc) {
-      return colors.push([desc.color[0], desc.color[1], desc.color[2]]) - 1
+      const rgb: Vec3T = [desc.color[0], desc.color[1], desc.color[2]]
+      const palette = figures === null ? undefined : PALETTE.find(color =>
+        color.every((value, i) => Math.round(value * 255) / 255 === rgb[i]))
+      return colors.push(palette ?? rgb) - 1
     },
     addNode() {
       nodes.set(next, null)
       return next++
     },
     addInstance(node, _mesh, material) {
-      const instance = port.createInstance(asset, colors[material] ?? null)
+      const tint = colors[material] ?? null
+      const instance = figures === null ? port.createInstance(asset!, tint) : figures.create(tint)
       nodes.set(node, instance)
       return instance
     },
@@ -300,18 +304,33 @@ export function farPenguinBridge(port: RenderPort, bean: PrimsAsset): Pick<Rende
         const instance = nodes.get(ids[i])
         if (instance === null || instance === undefined) continue
         const o = i * 10
-        port.setTransform(instance, [trs[o], trs[o + 1], trs[o + 2]], [trs[o + 3], trs[o + 4], trs[o + 5], trs[o + 6]], UNIT)
+        const position: Vec3T = [trs[o], trs[o + 1], trs[o + 2]]
+        port.setTransform(instance, position, [trs[o + 3], trs[o + 4], trs[o + 5], trs[o + 6]], UNIT)
+        figures?.move(instance, position, tick)
       }
     },
     setVisible: (instance, visible) => port.setVisible(instance, visible),
     removeNode(node) {
       const instance = nodes.get(node)
       nodes.delete(node)
-      if (instance !== null && instance !== undefined) port.destroyInstance(instance)
+      if (instance !== null && instance !== undefined) {
+        figures?.forget(instance)
+        port.destroyInstance(instance)
+      }
       if (node !== 1) return
       for (const [, other] of nodes) if (other !== null) port.destroyInstance(other)
       nodes.clear()
     },
   }
-  return new RenderBridge(raa)
+  const bridge = new RenderBridge(raa)
+  return {
+    get instances() { return bridge.instances },
+    ready: figures?.ready ?? Promise.resolve(),
+    sync(view: ViewBuffer, at = 0) { tick = at; bridge.sync(view) },
+    dispose() { figures?.dispose(); bridge.dispose() },
+  }
+}
+
+export function seatTierLine(submission: Pick<EngineSeatSubmission, 'near' | 'far'>, shading: string, far: 'penguin' | 'oldbean'): string {
+  return `Seats  near ${submission.near.size} (${shading})  far ${submission.far.size} (vertex, ${far})`
 }

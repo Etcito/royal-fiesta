@@ -131,6 +131,15 @@ test('runtime atlas fallback retains every drawable part and stays stable during
     assert.ok(port.drawnParts().every(p => p.mode === 'vertex'))
     assert.equal([...visible.values()].filter(Boolean).length, parts.length * 2)
     assert.deepEqual(cheap.grid!.texels, saved)
+    const oldMembers = new Set(visible.keys())
+    port.createInstance(handle, null, 'vertex')
+    const newMembers = [...visible.keys()].filter(id => !oldMembers.has(id))
+    assert.equal(newMembers.length, parts.length, 'the far tier creates a single draw member per part')
+    for (const shading of ['baked', 'vertex', 'field'] as const) {
+      port.setShading(shading)
+      assert.equal(port.drawnParts().slice(-parts.length).every(part => part.mode === 'vertex'), true)
+      assert.equal(newMembers.every(id => visible.get(id)), true)
+    }
   }
 })
 

@@ -32,7 +32,7 @@ import { PodiumStage } from '@royal-fiesta/game/render/podiumStage'
 import type { PodiumLayout } from '@royal-fiesta/game/content'
 import { audioManifestUrl } from '../play/sound.ts'
 import { createEngineShowReady } from './ready.ts'
-import { EngineScreenTracker, EngineSeatPresenter, engineEffectSinks, farPenguinBridge, podiumPlayers } from './presentation.ts'
+import { EngineScreenTracker, EngineSeatPresenter, engineEffectSinks, farPenguinBridge, podiumPlayers, seatTierLine } from './presentation.ts'
 import type { EngineScreenModel, EngineSeatSubmission } from './presentation.ts'
 import { engineShowTestMode } from './testMode.ts'
 import { checkAwait } from '../game/checkProgress.ts'
@@ -361,7 +361,8 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
     } else {
       if (current.podiumKey !== '') current.stage.hide()
       current.podiumKey = ''
-      current.bridge.sync(submission.view)
+      current.bridge.sync(submission.view, current.read.tick)
+      model.hud = [...model.hud, seatTierLine(submission, port.shadingMode, authoredRef!.zoneContent.farModel)]
     }
     current.effects.pump()
     port.render()
@@ -454,7 +455,8 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
         crowdAspect: () => WIDTH / HEIGHT,
       })
       const currentScene = scene
-      bridge = farPenguinBridge(shared, authored.zoneContent.bean)
+      const zone = authored.zoneContent
+      bridge = farPenguinBridge(shared, zone.bean, zone.farModel === 'penguin' ? { asset: zone.character, skinned: zone.skinned } : undefined)
       stage = new PodiumStage({
         port: shared,
         viewport: 0,
@@ -705,7 +707,7 @@ export async function mountEngineShow(root: HTMLElement, options: EngineShowPage
     },
     async settle() {
       const current = live
-      if (current !== null) await current.scene.animationReady()
+      if (current !== null) await Promise.all([current.scene.animationReady(), current.bridge.ready])
       const deadline = performance.now() + 20000
       while (pendingPipelines() > 0) {
         if (performance.now() >= deadline) throw new Error(`[engine-show] pipeline readiness timed out; ${pendingPipelines()} pipelines still pending`)

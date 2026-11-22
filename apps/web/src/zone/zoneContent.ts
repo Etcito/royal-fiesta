@@ -2,7 +2,7 @@
 import type { ProfileName } from '@royal-fiesta/sim/course'
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
 import type { RenderTarget } from '@royal-fiesta/game/render/port'
-import { farFigureMesh } from '@royal-fiesta/game/render/farRender'
+import { farFigureMesh, farFigureMode } from '@royal-fiesta/game/render/farRender'
 import { SdfContent, skinnedCharacterOf } from '../content/providers/sdf.ts'
 
 // Cache each course independently; a round never joins a pending full lobby load.
@@ -31,16 +31,23 @@ export function zoneContent(profile: ProfileName, courseId?: string, seasonOnly?
 }
 
 function zoneContentOf(content: SdfContent, loaded: ReturnType<SdfContent['meshData']>) {
+  const character = content.character()
+  const skinned = skinnedCharacterOf(content)
+  const farModel = farFigureMode()
+  const bean = farModel === 'oldbean' ? oldBean(loaded) : character
+  return {
+    assets: (name: string) => content.assets(name),
+    character, bean, skinned, farModel, dressing: content.dressing(),
+    createPort: (target: RenderTarget) => content.createPort(target),
+  }
+}
+
+function oldBean(loaded: ReturnType<SdfContent['meshData']>): PrimsAsset {
   const id = 'zone.far-bean'
   const data = farFigureMesh()
   loaded.meshed.set(id, { assetId: id, hash: '', mesher: 'paramesh', parts: 1,
     triangles: data.groups[0].parts[0].meshes[0].indices.length / 3, data, transfer: [] })
-  const bean: PrimsAsset = { format: 'raa.prims', version: 0, id, name: id,
+  return { format: 'raa.prims', version: 0, id, name: id,
     budget: { triangles: 0, segments: 0 }, nodes: [], materials: {}, anchors: {},
     collision: { mode: 'override', colliders: [] } }
-  return {
-    assets: (name: string) => content.assets(name),
-    character: content.character(), bean, skinned: skinnedCharacterOf(content), dressing: content.dressing(),
-    createPort: (target: RenderTarget) => content.createPort(target),
-  }
 }

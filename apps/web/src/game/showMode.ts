@@ -1,6 +1,7 @@
 import { DPR_CAP, pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
 import { renderScale } from '../perf/renderScale.ts'
-import { timed } from '../perf/framePerf.ts'
+import { perfEnabled, perfLine, timed } from '../perf/framePerf.ts'
+import type { ShadingMode } from '../sdf/sdfPort.ts'
 import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { checkAwait } from './checkProgress.ts'
@@ -28,7 +29,7 @@ import type { EngineRoundResult, EngineShowObservation, EngineShowRuntime } from
 import { EngineShowView } from '@royal-fiesta/game/ege/showView'
 import { EngineShowEffects } from '@royal-fiesta/game/ege/showEffects'
 import type { SceneReadView } from '@royal-fiesta/game/render/sceneReadView'
-import { EngineSeatPresenter, engineEffectSinks, farPenguinBridge } from '../engineShow/presentation.ts'
+import { EngineSeatPresenter, engineEffectSinks, farPenguinBridge, seatTierLine } from '../engineShow/presentation.ts'
 import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { loadShowContent } from './showContent.ts'
@@ -100,6 +101,8 @@ export class ShowMode {
   private effects: EngineShowEffects | null = null
   private presenter: EngineSeatPresenter | null = null
   private bridge: ReturnType<typeof farPenguinBridge> | null = null
+  private farModel: 'penguin' | 'oldbean' = 'penguin'
+  private tierLine = ''
   private unsubscribe: (() => void) | null = null
   private engineKey = ''
   /**
@@ -348,10 +351,16 @@ export class ShowMode {
       timed('ShowMode.loadEngine', () => this.loadEngine(runtime))
       timed('EngineShowEffects.pump', () => this.effects?.pump())
       const visible = ['countdown', 'round', 'spectate'].includes(this.screen())
+      this.tierLine = ''
       if (visible && this.scene !== null && this.readView !== null && this.presenter !== null) {
         const presenter = this.presenter, view = this.readView, scene = this.scene
         timed('EngineSeatPresenter.refill', () => presenter.refill(runtime.presentation(), runtime.snapshot(), view.nearSeats()))
-        timed('RenderBridge.sync', () => this.bridge?.sync(presenter.submission().view))
+        const submission = presenter.submission()
+        timed('RenderBridge.sync', () => this.bridge?.sync(submission.view, view.tick))
+        if (perfEnabled) {
+          const mode = (scene.port as { shadingMode?: ShadingMode }).shadingMode ?? 'scene'
+          this.tierLine = seatTierLine(submission, mode, this.farModel)
+        }
         timed('ZoneNetScene.present', () => scene.present(view, 1, dt))
         timed('ZoneNetScene.render', () => scene.render())
       }
@@ -403,10 +412,10 @@ export class ShowMode {
     const key = `${presentation.round}:${course.id}`
     if (key === this.engineKey) return
     this.engineKey = key
-    this.scene?.dispose()
-    this.scene = null
     this.bridge?.dispose()
     this.bridge = null
+    this.scene?.dispose()
+    this.scene = null
     void this.prepareEngine(key, presentation.round, course)
   }
 
@@ -431,9 +440,12 @@ export class ShowMode {
       this.scene = scene
       this.sceneBacking = backing
       this.grow()
-      this.bridge = farPenguinBridge(scene.port, content.bean)
+      this.farModel = content.farModel
+      const bridge = this.bridge = farPenguinBridge(scene.port, content.bean, this.farModel === 'penguin'
+        ? { asset: content.character, skinned: content.skinned } : undefined)
+      if (perfEnabled) perfLine('seats', () => this.tierLine)
       if (this.readView !== null) scene.present(this.readView, 1, 0)
-      await checkAwait(`round ${round}: scene paint and animation`, () => scene.ready())
+      await checkAwait(`round ${round}: scene paint and animation`, () => Promise.all([scene.ready(), bridge.ready]))
       await prepareCourse(scene.port, course.id, { cancelled: () => !live() })
       if (live()) this.director?.worldReady(round)
     } catch (error) {
@@ -610,6 +622,7 @@ export class ShowMode {
     this.presenter = null
     this.bridge?.dispose()
     this.bridge = null
+    this.tierLine = ''
     if (!this.driven) this.engineRuntime?.dispose()
     this.engineRuntime = null
     this.scene?.dispose()

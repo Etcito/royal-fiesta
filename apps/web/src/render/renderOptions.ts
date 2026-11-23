@@ -5,10 +5,13 @@
 import { applyRenderOptions } from '@etcito/raa-sdfm'
 import type { Engine } from '@etcito/raa'
 import { setJiggleQuality } from '@royal-fiesta/game/anim/jiggle'
+import { applyRaaOverrides, raaOptionValues } from '../perf/raaOverrides.ts'
 
 export type RenderOptionValues = Readonly<Record<string, unknown>>
 
-let current: RenderOptionValues = {}
+// ?raa=<key>:<value> graphics options (perf/raaOverrides.ts) win over the player's.
+const urlOptions = raaOptionValues()
+let current: RenderOptionValues = { ...urlOptions }
 const listeners = new Set<(options: RenderOptionValues) => void>()
 
 export function renderOptions(): RenderOptionValues {
@@ -17,7 +20,7 @@ export function renderOptions(): RenderOptionValues {
 
 // Replaces the page's options and tells every live port.
 export function setRenderOptions(options: RenderOptionValues): void {
-  current = { ...options }
+  current = { ...options, ...urlOptions }
   // The jiggle bones are stepped by the views (packages/game anim/jiggle.ts), not by the engine.
   setJiggleQuality(current.jiggle)
   for (const listener of listeners) listener(current)
@@ -39,6 +42,7 @@ export function applyEngineOptions(engine: Engine, options: RenderOptionValues, 
   const picked: Record<string, unknown> = {}
   for (const key of ENGINE_KEYS) if (options[key] !== undefined) picked[key] = options[key]
   const { skipped } = applyRenderOptions(engine, picked, { bloom: post, grading: post })
+  applyRaaOverrides(engine)
   for (const { key, reason } of skipped) {
     const line = `[graphics] ${key} not applied: ${reason}`
     if (warned.has(line)) continue

@@ -365,7 +365,7 @@ test('rollingLog body stays at from before any rolling-log script', async () => 
   }
 })
 
-test('doorBank emits door bodies and hidden debris visuals', async () => {
+test('doorBank emits door bodies and hidden debris visuals sized from their door', async () => {
   const doors = [
     { t: [-3.5, 1, 8], yawDeg: 0, size: [0.9, 2, 0.3] },
     { t: [-2.5, 1, 8], yawDeg: 0, size: [0.9, 2, 0.3] },
@@ -395,7 +395,7 @@ test('doorBank emits door bodies and hidden debris visuals', async () => {
     assert.equal(id, root + 3 + i)
     const debris = emitted.scene.entities[id]
     assert.deepEqual(debris.components?.feature_door_bank_debris, { owner: 0, door: Math.floor(i / 3), piece: i % 3 - 1 })
-    assert.deepEqual(debris.components?.['ege.render'], { shape: 1, color: 0xE8C39E, params: [0, 0, 0, 0], visible: 0 })
+    assert.deepEqual(debris.components?.['ege.render'], { shape: 1, color: 0xE8C39E, params: [0.9 * 0.15, 2 * 0.15, 0.3 * 0.15, 0], visible: 0 })  // sized at emission: drawn before the first tick (2026-11-20)
   }
   emitBuilds(await inputWith('courses/s1-e-sugar-sprint.course.json', null))
   refusedAt(input, { ...spec, params: { ...spec.params, rows: [{ doors: doors.slice(0, 1), real: 1 }] } }, 'rows/0/doors')

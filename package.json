@@ -50,6 +50,7 @@
     "@types/node": "^24",
     "assemblyscript": "0.28.20",
     "sharp": "0.35.5",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wgsl_reflect": "1.6.0"
   }
 }

@@ -17,6 +17,8 @@ import { parseArgs } from 'node:util'
 const NAMES = ['Alpha', 'Beta', 'Gamma', 'Delta']
 const POLL_MS = 500
 const STALL_MS = 30000
+// How often the engine run prints each client's visibility, tick and memory.
+const SAMPLE_MS = 20000
 const EXIT_WAIT_MS = 5000
 // Longest wait for one CDP answer (evaluate, input, target, enable) or one browser endpoint read; never past the deadline.
 const CALL_TIMEOUT_MS = 15000
@@ -155,7 +157,9 @@ async function openPage(options, d, index, owned, deadlineAt) {
   // No throttling-disabling flags: a genuinely hidden page must stay throttled (the background-client case).
   const child = d.spawn(options.chrome, ['--headless=new', `--remote-debugging-port=${port}`,
     `--user-data-dir=${join(d.tmpdir(), `rf-online-chrome-${port}`)}`, '--no-first-run', '--enable-unsafe-webgpu',
-    '--window-size=960,540', url], { stdio: 'ignore' })
+    // Each client's window sits at its own place on the screen, side by side and never overlapping: an occluded window
+    // is throttled by Chrome, and a page that merely lost the foreground to its neighbour must not read as a stall.
+    `--window-position=${index * 980},0`, '--window-size=960,540', url], { stdio: 'ignore' })
   owned.push(child)
   let target = null
   const until = d.now() + options.boot * 1000 + STALL_MS
@@ -200,6 +204,24 @@ async function openPage(options, d, index, owned, deadlineAt) {
     return page
   }
   return page
+}
+
+/**
+ * One diagnostics line per client every SAMPLE_MS: its page visibility, tick and screen, and the page's own JS heap and
+ * DOM node count (CDP Performance.getMetrics). CDP has no per-process GPU or renderer memory; the host reads those from
+ * the OS. A failed read is printed, never hidden.
+ */
+async function sampleLine(d, page, seconds) {
+  const s = page.state
+  let heap = 'n/a'
+  try {
+    const metrics = (await page.call('Performance.getMetrics'))?.metrics ?? []
+    const get = key => metrics.find(m => m.name === key)?.value
+    heap = `jsHeap ${Math.round((get('JSHeapUsedSize') ?? 0) / 1048576)} MB, nodes ${get('Nodes')}`
+  } catch (e) {
+    heap = `metrics failed: ${messageOf(e)}`
+  }
+  return `[harness] t=${seconds}s ${page.name} visibility ${s?.visibility ?? 'unknown'} screen ${s?.screen ?? 'none'} tick ${s?.tick ?? 'none'} | ${heap}`
 }
 
 async function pollPage(d, page, deadlineAt, label, check) {
@@ -264,7 +286,13 @@ async function runEngine(options, d, owned, deadlineAt) {
 
   const lastTick = new Map(pages.map(page => [page, page.state?.tick ?? 0]))
   const lastChange = new Map(pages.map(page => [page, d.now()]))
+  const startedAt = d.now()
+  let sampledAt = 0
   for (;;) {
+    if (d.now() - sampledAt >= SAMPLE_MS) {
+      sampledAt = d.now()
+      for (const page of pages) d.log(await sampleLine(d, page, Math.round((d.now() - startedAt) / 1000)))
+    }
     if (d.now() > deadlineAt) {
       throw new Error(`deadline before ${until}; ${pages.map(page => `${page.name} ${shown(page.state)}`).join(' | ')}`)
     }

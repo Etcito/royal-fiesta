@@ -27,6 +27,24 @@ async function trimThumbnail(bitmap: ImageBitmap): Promise<ImageBitmap> {
   return cropped
 }
 
+const trimmed = new Map<string, Promise<ImageBitmap | null>>()
+function trimmedThumbnail(id: string, url: string): Promise<ImageBitmap | null> {
+  let bitmap = trimmed.get(id)
+  if (bitmap === undefined) {
+    bitmap = (async () => {
+      const response = await fetch(new URL(url, document.baseURI))
+      return response.ok ? trimThumbnail(await decodeLogo(await response.blob())) : null
+    })()
+    trimmed.set(id, bitmap)
+  }
+  return bitmap
+}
+
+/** Starts decoding every thumbnail now, so the first renderer built on an engine's device finds them ready. */
+export function prefetchThumbnails(): void {
+  for (const [id, url] of urls) trimmedThumbnail(id, url).catch(() => undefined)
+}
+
 export async function withCosmeticThumbnails(renderer: UiRenderer, canvas: HTMLCanvasElement, device: LogoDevice,
   selected: ReadonlyMap<string, string>): Promise<UiRenderer> {
   const shader = device.createShaderModule({ label: 'cosmetic-thumbnails', code: SHADER })
@@ -39,13 +57,14 @@ export async function withCosmeticThumbnails(renderer: UiRenderer, canvas: HTMLC
   const context = canvas.getContext('webgpu') as unknown as { getCurrentTexture(): { createView(): unknown } }
   const textures = new Map<string, { texture: ReturnType<LogoDevice['createTexture']>; width: number; height: number }>()
   // Only real sidecars are requested: absent art becomes a name card, never a fallback box.
-  for (const [id, url] of urls) {
-    const response = await fetch(new URL(url, document.baseURI))
-    if (!response.ok) continue
-    const bitmap = await trimThumbnail(await decodeLogo(await response.blob()))
+  // The decoded bitmaps are device-independent: fetched and trimmed once per page, in parallel, then uploaded to this device
+  // (the overlay rebuilds its renderer for each engine device, and a frame in flight must not hold a rebuild up).
+  const decoded = await Promise.all([...urls].map(async ([id, url]) => [id, await trimmedThumbnail(id, url)] as const))
+  for (const [id, bitmap] of decoded) {
+    if (bitmap === null) continue
     const texture = device.createTexture({ size: [bitmap.width, bitmap.height], format: 'rgba8unorm', usage: 0x16 })
     device.queue.copyExternalImageToTexture({ source: bitmap }, { texture, premultipliedAlpha: true }, [bitmap.width, bitmap.height])
-    textures.set(id, { texture, width: bitmap.width, height: bitmap.height }); bitmap.close()
+    textures.set(id, { texture, width: bitmap.width, height: bitmap.height })
   }
   const uniforms = new Map<string, ReturnType<LogoDevice['createBuffer']>>()
   const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' })

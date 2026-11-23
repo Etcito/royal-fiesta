@@ -1,13 +1,19 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { farFigureMesh, farFigureMode } from '@royal-fiesta/game/render/farRender'
+import { seatTint } from '@royal-fiesta/game/render/palette'
+import type { SkinnedCharacter } from '@royal-fiesta/game/render/sceneView'
+import type { Vec3T } from '@royal-fiesta/game/render/port'
 import { ROUND_KINDS } from '@royal-fiesta/sim/season/kinds'
 import type { SchedMap } from '@royal-fiesta/sim/season/scheduler'
 import type {
   EnginePresentationWorld, EngineRoundResult, EngineShowObservation, EngineShowPresentation, EngineShowSnapshot,
 } from '@royal-fiesta/game/ege/showTypes'
 import {
-  confirmedPodium, EngineScreenTracker, EngineSeatPresenter, engineEffectSinks, farPenguinBridge,
+  confirmedPodium, EngineScreenTracker, EngineSeatPresenter, engineEffectSinks, farPenguinBridge, seatTierLine,
 } from '../src/engineShow/presentation.ts'
+import { decodeMesh } from '../src/sdf/meshWire.ts'
 import type { EnginePresentationReaders } from '../src/engineShow/presentation.ts'
 
 const ALL = Array.from({ length: 60 }, (_, seat) => seat)
@@ -91,6 +97,21 @@ test('a reused domain handle with a new incarnation clears departed seats; relea
   assert.equal(near.size, 8)
 })
 
+test('the released-incarnation memory stays bounded across many rounds', () => {
+  const presenter = new EngineSeatPresenter(readers())
+  const ROUNDS = 40
+  const sizes: number[] = []
+  for (let round = 1; round <= ROUNDS; round++) {
+    presenter.observe(observation('post-tick', [world(1, round, ALL)]), near8)
+    presenter.observe(observation('before-release', [world(1, round, ALL)]), new Set())
+    // The runtime released it: the next observation no longer lists the departed incarnation.
+    presenter.refill(observation('post-tick', []).presentation, snap(), near8)
+    sizes.push(presenter.releasedCount)
+  }
+  assert.equal(sizes[ROUNDS - 1], sizes[2], 'the set after many rounds holds what it held after a few')
+  assert.equal(presenter.releasedCount, 0)
+})
+
 test('all-human near selection is honoured and conflicting live mappings refuse', () => {
   const presenter = new EngineSeatPresenter(readers())
   const humans = new Set([0, 1, 2, 3, 4, 5, 6, 7])
@@ -163,6 +184,60 @@ test('the far penguin bridge instances the far mesh per submitted seat and relea
   presenter.observe(observation('post-tick', [world(1, 1, ALL)]), near8)
   bridge.sync(presenter.submission().view)
   assert.equal(live.size, 52)
+  bridge.dispose()
+  assert.equal(live.size, 0)
+})
+
+test('the 52 cheap seats use the saved body, exact seat tints and lower-rate clips', async () => {
+  assert.equal(farFigureMode(''), 'penguin')
+  assert.equal(farFigureMode('?engine=1&far=penguin'), 'penguin')
+  assert.equal(farFigureMode('?engine=1&far=oldbean'), 'oldbean')
+  const saved = decodeMesh(new Uint8Array(readFileSync('assets/common/penguin.body.mesh'))) as unknown as {
+    data: { groups: { parts: { name: string; skin: SkinnedCharacter['skin']['parts'][number]['skin']; meshes: { indices: Uint32Array }[] }[] }[] }
+  }
+  const body = saved.data.groups[0].parts[0]
+  const triangles = body.meshes.reduce((sum, mesh) => sum + mesh.indices.length / 3, 0)
+  const legacyTriangles = farFigureMesh().groups[0].parts[0].meshes[0].indices.length / 3
+  assert.deepEqual([triangles, legacyTriangles, 8 * triangles + 52 * legacyTriangles, 60 * triangles], [2886, 840, 66768, 173160])
+
+  const { rig, clips } = JSON.parse(readFileSync('assets/common/penguin.body.asset.json', 'utf8')).document.nodes.penguin
+  const id = 'penguin.body'
+  const skinned: SkinnedCharacter = { assetId: id, graph: '', skin: { rig, clips, parts: [body] } }
+  const live = new Map<number, Vec3T | null>()
+  const posed: Float32Array[] = []
+  let next = 0
+  const port = {
+    registerAsset() { assert.fail('far penguins should reuse the skinned body') },
+    registerSkinned(asset: string, skin: SkinnedCharacter['skin']) {
+      assert.equal(asset, id); assert.equal(skin, skinned.skin); return 7
+    },
+    createInstance(asset: number, tint: Vec3T | null, shading: string) {
+      assert.equal(asset, 7); assert.equal(shading, 'vertex'); live.set(++next, tint); return next
+    },
+    setPose(_instance: number, matrices: Float32Array) { posed.push(matrices) },
+    setTransform() {},
+    setVisible() {},
+    destroyInstance(instance: number) { live.delete(instance) },
+  }
+  const bridge = farPenguinBridge(port as never, { id: 'zone.far-bean' } as never, { asset: { id } as never, skinned })
+  const presenter = new EngineSeatPresenter(readers())
+  presenter.observe(observation('post-tick', [world(1, 1, ALL)]), near8)
+  const submission = presenter.submission()
+  assert.equal(seatTierLine(submission, 'field', 'penguin'), 'Seats  near 8 (field)  far 52 (vertex, penguin)')
+  await bridge.ready
+  bridge.sync(submission.view, 8)
+  assert.deepEqual([...live.values()], ALL.slice(8).map(seatTint))
+  assert.equal(posed.length, 104, 'each seat receives its initial pose and its first clip sample')
+  assert.equal(posed.at(-1)?.length, 16 * rig.bones.length)
+  assert.equal(posed.at(-1), posed.at(-2), 'the clip sample is shared')
+  bridge.sync(submission.view, 11)
+  assert.equal(posed.length, 104)
+  bridge.sync(submission.view, 12)
+  assert.equal(posed.length, 156)
+  const row = new DataView(submission.view.bytes.buffer)
+  row.setFloat32(8 + 16, row.getFloat32(8 + 16, true) + 0.2, true)
+  bridge.sync(submission.view, 16)
+  assert.notDeepEqual(posed.at(-52), posed.at(-51), 'moving and stationary seats use different authored clips')
   bridge.dispose()
   assert.equal(live.size, 0)
 })

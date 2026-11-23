@@ -25,7 +25,25 @@ export interface ShowContent {
   info(mapId: string): ShowMapInfo
 }
 
-export async function loadShowContent(profile: ProfileName): Promise<ShowContent> {
+/** The course ids of the season's playable maps (what the show plays). */
+export function seasonCourseIds(): Set<string> {
+  return new Set(playableMaps(parseSeason(JSON.parse(seasonText), 'courses/season.json')).map(map => map.course))
+}
+
+const showLoads = new Map<ProfileName, Promise<ShowContent>>()
+
+/** One load per profile and page: the boot and the engine's authored show read the same content. */
+export function loadShowContent(profile: ProfileName): Promise<ShowContent> {
+  let load = showLoads.get(profile)
+  if (load === undefined) {
+    load = readShowContent(profile)
+    showLoads.set(profile, load)
+    load.catch(() => { if (showLoads.get(profile) === load) showLoads.delete(profile) })
+  }
+  return load
+}
+
+async function readShowContent(profile: ProfileName): Promise<ShowContent> {
   const season = parseSeason(JSON.parse(seasonText), 'courses/season.json')
   const maps = playableMaps(season)
   const builtCourses = new Set(maps.map(map => map.course))

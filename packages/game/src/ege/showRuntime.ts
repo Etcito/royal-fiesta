@@ -1,6 +1,7 @@
 import type { EngineInstance } from '@etcito/game-engine/loader'
 import type { LayoutDecl, SchemaLayout } from '@etcito/game-engine/script'
 import { readWorldState } from '@etcito/game-engine/world-state'
+import { forgetWorldReads } from './worldRead.ts'
 import type { EngineDomainSim } from '@etcito/game-engine/zones'
 import { SnapReader, SnapWriter } from '@gamesaloon/rollback'
 import type { ShadowView } from '@gamesaloon/rollback/zones'
@@ -20,8 +21,14 @@ import type {
   EngineWorldRef,
 } from './showTypes.ts'
 
+/** Sub-step timing hook of one tick: the page sets it under ?perf=1 (apps/web perf/framePerf.ts); null costs one check per step. */
+export interface StepProbe { begin(): number; end(name: string, token: number): void; count(name: string, value: number): void }
+let probe: StepProbe | null = null
+export function setStepProbe(next: StepProbe | null): void { probe = next }
+
 const TICK_RATE = 60
 const MAX_TICKS_PER_FRAME = 8
+const RENDERED_LOCAL_TICK_LIMIT = 2
 const S1_NEUTRAL = 32639
 const NO_SHADOW: ShadowView = { count: 0, fromDomain: () => 0, reader: () => new SnapReader(new Uint8Array(0)) }
 
@@ -74,6 +81,42 @@ interface WorldMemo {
   readonly world: EnginePresentationWorld
   readonly entities: Uint8Array
   readonly zones: Uint8Array
+}
+
+/**
+ * The one-entry presentation mapping memo of a runtime: resolving a world decodes all of it, and a page reads the
+ * presentation several times per frame (view refresh, effects pump, observers, the show's own `view()`). The kept
+ * mapping serves while the snapshot bytes it derives from are unchanged for the same incarnation; one entry only,
+ * so it never grows with the ticks played. The online runtime used to resolve on every call (the offline one kept it).
+ */
+export class PresentationMemo {
+  private memo: WorldMemo | undefined
+
+  resolve(
+    engine: EngineInstance,
+    layout: SchemaLayout,
+    sim: EngineDomainSim,
+    ref: () => EngineWorldRef,
+    build: () => EnginePresentationWorld | null,
+  ): EnginePresentationWorld | null {
+    const key = mappingBytes(engine.snapshot(sim.world), layout)
+    const memo = this.memo
+    if (key !== undefined && memo !== undefined && memo.sim === sim
+      && sameBytes(memo.entities, key.entities) && sameBytes(memo.zones, key.zones)) {
+      return { ...memo.world, ref: ref() }
+    }
+    this.memo = undefined
+    // Copy before the factory reads the engine again: the snapshot view is only valid until the next engine call.
+    const kept = key === undefined ? undefined : { entities: key.entities.slice(), zones: key.zones.slice() }
+    const world = build()
+    if (world !== null && kept !== undefined) this.memo = { sim, world, ...kept }
+    return world
+  }
+
+  /** True while a mapping is kept (a release or a new round clears it). */
+  get kept(): boolean { return this.memo !== undefined }
+
+  clear(): void { this.memo = undefined }
 }
 
 /** A copied `show_lifecycle_input` patch: the host facts are applied before the next rules step. */
@@ -188,6 +231,7 @@ class ShowRuntime implements EngineShowRuntime {
   private confirmedResult = -2
   private cursorEntity: number | undefined
   private worldMemo: WorldMemo | undefined
+  private presented: { sim: EngineDomainSim; ticks: number; value: EngineShowPresentation } | undefined
   private readonly votes = new Map<string, number>()
   private readonly listeners: ((observation: EngineShowObservation) => void)[] = []
   private disposed = false
@@ -220,8 +264,13 @@ class ShowRuntime implements EngineShowRuntime {
   presentation(): EngineShowPresentation {
     this.assertLive()
     const physics = this.physics
+    // Read again within the same engine ticks (the post-tick notify, the per-frame load check and the view refresh all
+    // ask once per frame), it is the same presentation: each build snapshots and parses the whole seat world.
+    const ticks = physics === undefined ? -1 : this.engine.tick(this.global.world) * 4294967296 + this.engine.tick(physics.sim.world)
+    const kept = this.presented
+    if (physics !== undefined && kept !== undefined && kept.sim === physics.sim && kept.ticks === ticks) return kept.value
     const world = physics === undefined ? null : this.presentationWorld(physics.sim)
-    return {
+    const value: EngineShowPresentation = {
       showId: this.factory.showId,
       tick: this.engine.tick(this.global.world),
       round: physics?.round ?? this.snapshot().round,
@@ -229,6 +278,8 @@ class ShowRuntime implements EngineShowRuntime {
       course: physics?.selection.courseData ?? null,
       worlds: world === null ? [] : [world],
     }
+    this.presented = physics === undefined ? undefined : { sim: physics.sim, ticks, value }
+    return value
   }
 
   /**
@@ -276,8 +327,14 @@ class ShowRuntime implements EngineShowRuntime {
     if (!Number.isFinite(accumulated)) fail('frame.dtS', 'accumulated time is not finite; pass a smaller elapsed time')
     this.accumulator = accumulated
     const whole = Math.floor(this.accumulator + 1e-9)
+    const limited = this.config.limitCatchup === true
+    const count = Math.min(limited ? RENDERED_LOCAL_TICK_LIMIT : MAX_TICKS_PER_FRAME, whole)
+    // Keep sub-tick time. Dropping excess elapsed time slows the local show during stalls without skipping tick IDs.
+    const dropped = limited ? whole - count : 0
+    this.accumulator -= dropped
+    probe?.count('sim ticks this frame', count)
+    probe?.count('sim catch-up ticks dropped', dropped)
     if (whole < 1) return
-    const count = Math.min(MAX_TICKS_PER_FRAME, whole)
     for (let i = 0; i < count; i++) {
       // Consume the tick before executing it: a listener or effect failure after the tick ran must
       // never leave the accumulator asking for that same executed tick again.
@@ -326,9 +383,12 @@ class ShowRuntime implements EngineShowRuntime {
 
   /** One executed tick: sample first, then step the rules world and the live physics world. */
   private step(sample: (roomSeat: number) => number): void {
+    let t = probe?.begin() ?? 0
     const before = this.snapshot()
+    probe?.end('tick: rules snapshot', t)
     if (before.screen === 'done') return
     const batch = new Map<number, number>()
+    t = probe?.begin() ?? 0
     for (const roomSeat of before.seatOf) {
       const slot = this.slots[roomSeat]
       if (slot === undefined) fail('frame.seatOf', `room seat ${roomSeat} has no configured input slot`)
@@ -339,6 +399,8 @@ class ShowRuntime implements EngineShowRuntime {
       }
       batch.set(roomSeat, engineCodeOfS1(raw))
     }
+    probe?.end('tick: input sample', t)
+    t = probe?.begin() ?? 0
     const now = this.engine.tick(this.global.world)
     const created = before.screen === 'loading' && this.physics?.round !== before.round
     if (created) {
@@ -352,21 +414,30 @@ class ShowRuntime implements EngineShowRuntime {
       this.applyLifecycle(this.acknowledgedRound, now)
       this.confirmedResult = before.round
     }
+    probe?.end('tick: round open / lifecycle', t)
     const physics = this.physics
     if (!physics) {
       this.global.step([], NO_SHADOW)
       this.notify('post-tick')
       return
     }
+    t = probe?.begin() ?? 0
     this.global.step([], this.shadowOf(physics))
+    probe?.end('tick: rules world step (show scripts)', t)
+    t = probe?.begin() ?? 0
     if (created || PLAY_SCREENS.includes(before.screen)) {
       this.factory.worldRef(physics.sim).binding.stepCodes(this.codesOf(physics, batch))
     }
+    probe?.end('tick: physics world stepCodes', t)
+    t = probe?.begin() ?? 0
     const after = this.snapshot()
+    probe?.end('tick: rules snapshot', t)
     const released = after.screen === 'results' || after.screen === 'podium' || after.screen === 'done'
+    t = probe?.begin() ?? 0
     try {
       this.notify('post-tick', after)
     } finally {
+      probe?.end('tick: notify (presentation listeners)', t)
       if (released) this.releasePhysics()
     }
   }
@@ -374,16 +445,21 @@ class ShowRuntime implements EngineShowRuntime {
   /** Delivers one observation synchronously; listener failures surface after every listener ran. */
   private notify(kind: ObservationKind, snapshot: EngineShowSnapshot = this.snapshot()): void {
     if (this.listeners.length === 0) return
+    const tb = probe?.begin() ?? 0
     const observation: EngineShowObservation = {
       kind, tick: this.engine.tick(this.global.world), snapshot, presentation: this.presentation(),
     }
+    probe?.end('notify: build presentation', tb)
     let failure: unknown
+    let index = 0
     for (const listener of [...this.listeners]) {
+      const t = probe?.begin() ?? 0
       try {
         listener(observation)
       } catch (error) {
         if (failure === undefined) failure = error
       }
+      probe?.end(`notify listener #${index++}`, t)
     }
     if (failure !== undefined) throw failure
   }
@@ -417,6 +493,8 @@ class ShowRuntime implements EngineShowRuntime {
   private openPhysics(round: number, seats: readonly number[], selection: EngineShowSelection, tick: number): void {
     this.releasePhysics()
     this.worldMemo = undefined
+    this.presented = undefined
+    forgetWorldReads(this.engine)
     const sim = this.factory.create(
       { id: round + 1, kind: 'seat', cells: [], seats: seats.map((_, roundSeat) => roundSeat), replicas: [0] },
       tick,
@@ -451,6 +529,8 @@ class ShowRuntime implements EngineShowRuntime {
     } finally {
       this.physics = undefined
       this.worldMemo = undefined
+      this.presented = undefined
+      forgetWorldReads(this.engine, physics.sim.world)
       this.factory.release(physics.sim)
     }
   }

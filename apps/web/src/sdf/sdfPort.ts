@@ -1,4 +1,5 @@
 /// <reference path="../types-mama.d.ts" />
+import { count, perfEnabled, perfLine, timed } from '../perf/framePerf.ts'
 import { roadMesh, type RoadData } from '@royal-fiesta/sim/road'
 import { checkAwait } from '../game/checkProgress.ts'
 // SDF render port: a RenderPort on the @etcito/raa release engine, fed with the upload payload the
@@ -24,7 +25,7 @@ import { installShaderCache } from '../render/shaderCache.ts'
 import { createPreparationQueue, deviceOfCanvas, fieldReadiness, materialKey } from '../render/asyncPipelines.ts'
 import { applyEngineOptions, onRenderOptions, preferredNormals, renderOptions } from '../render/renderOptions.ts'
 import { FIELD_ATLAS_BYTES, partDiag, planFieldAtlas, planFieldPrograms, type FieldAtlasPlan, type PartFieldProgram } from './fieldAtlas.ts'
-import { checkFieldPart, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, fieldStretch, uniformFieldFrameScale, withFieldStretch } from './fieldShading.ts'
+import { checkFieldPart, fieldGridPairsEnabled, fieldGridTexture, fieldInstanceParams, fieldMaterialWgsl, fieldProgramWords, fieldNormalsMode, fieldPruningEnabled, fieldStretch, fieldVectorWeightsEnabled, smoothFieldGridTexture, uniformFieldFrameScale, withFieldStretch } from './fieldShading.ts'
 
 export interface PartWorldBounds { key: string; min: number[]; max: number[]; surface?: number[][] }
 
@@ -34,7 +35,10 @@ export interface ResizablePort extends SkinnedRenderPort {
   resize(cssW: number, cssH: number, dpr: number, viewports: Viewport[]): void
   setPartFilter(instance: number, parts: readonly string[] | null): void
   shadingReport(): ShadingReport
+  readonly shadingMode: ShadingMode
   setShading(mode: ShadingMode): void
+  pendingTextureBakes: () => number
+  textureBakeFailed(assetId: string, reason: string): void
   addTextured(assetId: string, meshed: MeshedAsset): void
   /**
    * Handoff: Engine round page: load, scene view, render bridge, composite and live mode takes this:
@@ -99,7 +103,7 @@ export interface GameRenderOptions { shading: ShadingMode; normalsDebug: boolean
  */
 export type NormalsMode = 'pixel' | 'vertex'
 export function normalsMode(search: string = typeof location === 'undefined' ? '' : location.search): NormalsMode {
-  return new URLSearchParams(search).get('normals') === 'vertex' ? 'vertex' : preferredNormals()
+  return (urlShading(new URLSearchParams(search)) ?? preferredNormals()) === 'vertex' ? 'vertex' : 'pixel'
 }
 
 /** MAMA's game render-options contract as the port uses it (virtual:rf-mama GAME_RENDER_OPTIONS). */
@@ -115,13 +119,16 @@ const PORT_OPTIONS = ['shading', 'bakeTexelDensity', 'bakeMaxSize'] as const
 function shadingModeOf(value: unknown): ShadingMode | null {
   return value === 'field' || value === 'vertex' || value === 'baked' ? value : null
 }
-// The landed MAMA option names this port applies ('field' is the per-pixel SDF, 'baked' the texture shading).
-function shadingToContract(mode: ShadingMode): RfGameRenderOptions['shading'] {
-  return mode
+function urlShading(params: URLSearchParams): ShadingMode | null {
+  const shading = shadingModeOf(params.get('shading'))
+  if (shading !== null) return shading
+  const normals = params.get('normals')
+  if (normals === 'pixel' || normals === 'field') return 'field'
+  return normals === 'vertex' ? 'vertex' : null
 }
 
 /**
- * The chosen port options first, then the page address: `?normals=vertex` forces 'vertex' and `?normalsDebug`
+ * The chosen port options first, then the page address. `?normals=field|vertex` selects shading and `?normalsDebug`
  * turns on the normal look. The default is 'field' (the part's field program evaluated per fragment).
  */
 export function gameRenderOptions(search?: string, chosen?: Partial<GameRenderOptions>): GameRenderOptions
@@ -137,8 +144,7 @@ export function gameRenderOptions(a: RenderContract | string | null = '', b?: un
   if (typeof a === 'string') {
     const params = new URLSearchParams(a)
     const chosen = isRecord(b) ? b as Partial<GameRenderOptions> : {}
-    let shading = shadingModeOf(chosen.shading) ?? 'field'
-    if (params.get('normals') === 'vertex') shading = 'vertex'
+    const shading = urlShading(params) ?? shadingModeOf(chosen.shading) ?? 'field'
     return { shading, normalsDebug: params.has('normalsDebug') || chosen.normalsDebug === true }
   }
   const search = c ?? (typeof location === 'undefined' ? '' : location.search)
@@ -147,7 +153,8 @@ export function gameRenderOptions(a: RenderContract | string | null = '', b?: un
   const record = isRecord(b) ? b : {}
   const merged: Record<string, unknown> = {}
   for (const key of PORT_OPTIONS) if (record[key] !== undefined) merged[key] = record[key]
-  if (params.get('normals') === 'vertex') merged.shading = 'vertex'
+  const shading = urlShading(params)
+  if (shading !== null) merged.shading = shading
   for (const spec of a.specs) {
     const v = params.get(spec.key)
     if (v === null || !(PORT_OPTIONS as readonly string[]).includes(spec.key)) continue
@@ -290,7 +297,7 @@ interface SkinSlot { instance: number; part: PosePart }
 // fallbacks: resident vertex-colour copies (index into partNames), hidden once their shading can draw.
 // textured: the baked-texture member per part (addTextured), shown only in 'baked' mode.
 // bakes: the bake of each instance's part (null = not a baked part).
-interface Live { transform?: number[]; scale?: Vec3T; stretched: LiveStretched[]; asset: number; root: number; nodes: number[]; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; textured: LiveTextured[]; bakes: (SdfmBakedPart | null)[]; tint: Vec3T | null }
+interface Live { transform?: number[]; scale?: Vec3T; stretched: LiveStretched[]; asset: number; root: number; nodes: number[]; instances: number[]; partNames: string[]; emptyParts: readonly string[]; filter: ReadonlySet<string> | null; visible: boolean; bones: number; skin: SkinSlot[]; pose: Float32Array | null; fallbacks: LiveFallback[]; textured: LiveTextured[]; bakes: (SdfmBakedPart | null)[]; tint: Vec3T | null; vertexOnly: boolean }
 interface LiveFallback { instance: number; part: PartUpload; index: number; ready: boolean; failed: boolean }
 // A field member: its instance params at unit scale and its part rotation, re-sent with the stretch when the instance scales.
 interface LiveStretched { instance: number; params: number[]; r: QuatT }
@@ -306,7 +313,7 @@ export async function createSdfPort(target: RenderTarget, meshed: ReadonlyMap<st
   const mama = await mamaShading()
   // The chosen port options first, then the player's Graphics settings and the page address.
   const search = typeof location === 'undefined' ? '' : location.search
-  const chosen = typeof options?.shading === 'string' ? { ...(isRecord(given) ? given : {}), shading: shadingToContract(options.shading) } : given
+  const chosen = typeof options?.shading === 'string' ? { ...(isRecord(given) ? given : {}), shading: options.shading } : given
   const render = gameRenderOptions(mama.render, chosen, search)
   const debug = normalsDebug(search) || options?.normalsDebug === true
   const port = new SdfRenderPort(meshed, failed, mama.field, render, mama.render, options?.atlasBytes, debug)
@@ -390,6 +397,7 @@ class SdfRenderPort implements ResizablePort {
   private shading: ShadingMode
   private readonly contract: RenderContract | null
   private readonly debugNormals: boolean
+  private readonly fieldNormals = fieldNormalsMode()
   // The whole-world field plan (fieldAtlas) computed once before any upload, and the budget it was planned with.
   private atlasPlan: FieldAtlasPlan | null = null
   private fieldGridDetails = new Map<string, { resampled: boolean; gridVoxels: number[] }>()
@@ -434,6 +442,9 @@ class SdfRenderPort implements ResizablePort {
     if (!(target.canvas instanceof HTMLCanvasElement)) refuse(AREA, WHERE, `${p}: pass an HTMLCanvasElement as the target canvas`)
     installShaderCache()
     this.engine = await createRaaEngine(target.canvas, { maxInstances: MAX_INSTANCES, maxMaterials: MAX_MATERIALS }) as SdfEngine
+    // This engine's own GPUDevice, read now: engine creations are serialized, so the canvas still maps to it. A later
+    // port on the same canvas (a show's next round) replaces the mapping, and dispose must destroy this one.
+    this.gpuDevice = deviceOfCanvas(target.canvas)
     this.engine.resize(target.width, target.height)
     if (!fullView(rects)) this.engine.setViewports(rects)
     this.engine.setLight(DEFAULT_LIGHT)
@@ -602,7 +613,7 @@ class SdfRenderPort implements ResizablePort {
   private planAtlas(): FieldAtlasPlan {
     if (this.atlasPlan !== null) return this.atlasPlan
     const costs = this.atlasCandidates()
-    this.gridPlan = planFieldPrograms(costs, this.atlasBytes)
+    this.gridPlan = planFieldPrograms(costs, this.atlasBytes, this.fieldNormals === 'smooth')
     this.atlasPlan = this.gridPlan.plan
     for (const part of costs) {
       const program = this.gridPlan.programs.get(part.key)!
@@ -776,9 +787,8 @@ class SdfRenderPort implements ResizablePort {
     return this.recordShadingMaterial(id, key, part, materials, graphMode)
   }
 
-  // The field program path (contract 'mama.field-program'): six central taps for the normal, the mesh normal only
-  // where the field is undefined, and the labels' looks mixed per pixel. The grid texture is added to RAA's atlas; an
-  // atlas_full error demotes this part to vertex and is never thrown.
+  // The field program path (contract 'mama.field-program'): one sample gives the normal and the mixed label looks.
+  // The grid texture is added to RAA's atlas; an atlas_full error demotes this part to vertex.
   private fieldProgramMaterial(key: string, part: PayloadPart, materialsByName: ReadonlyMap<string, SdfmCompiledMaterial>,
     graphMode: boolean): ShadedMaterial | null {
     const check = checkFieldPart(part)
@@ -801,7 +811,43 @@ class SdfRenderPort implements ResizablePort {
     }
     const program = this.gridPlan!.programs.get(key)!
     const engine = this.need()
-    const grid = fieldGridTexture(program)
+    let missing = false
+    const labelGraphs = program.labels.map(label => {
+      if (label.material === null) return null
+      const compiled = materialsByName.get(label.material)
+      if (compiled === undefined) missing = true
+      return compiled ?? null
+    })
+    if (missing) warnOnce(`${key}:missing`, 'a field label names a material not in the saved mesh; its shapes wear the label colour')
+    // One fixed evaluator reads the program from the part's material data (program.wgsl, per-part code up to over 1 MB,
+    // is never registered: RAA refuses a material function over 64 KB); parts with the same label graphs share the text.
+    const normals = this.fieldNormals
+    const prune = normals !== 'taps' && fieldPruningEnabled()
+    const vectorWeights = normals !== 'taps' && fieldVectorWeightsEnabled()
+    let pairGrid = normals !== 'taps' && program.grid !== null && fieldGridPairsEnabled()
+    const smooth = normals === 'smooth' ? smoothFieldGridTexture(program, pairGrid) : null
+    let words = fieldProgramWords(program, prune, smooth?.gradientRanges)
+    let material: { functionName: string; wgsl: string }
+    try {
+      if (!words.ok) throw new Error(words.reason)
+      const source = { program, labelGraphs, debug: this.debugNormals, normals }
+      try {
+        material = fieldMaterialWgsl({ ...source, prune: words.pruned, pairGrid, vectorWeights })
+      } catch (e) {
+        if (!words.pruned && !pairGrid && !vectorWeights) throw e
+        pairGrid = false
+        // A label graph near RAA's source limit can still use the full field evaluator.
+        material = fieldMaterialWgsl(source)
+        words = fieldProgramWords(program, false, smooth?.gradientRanges)
+        if (!words.ok) throw new Error(words.reason)
+      }
+    } catch (e) {
+      warnOnce(key, `vertex normals (${messageOf(e)})`)
+      this.recordPart(key, 'vertex', messageOf(e))
+      return null
+    }
+    // The unpaired smooth shader can read the same texture if the function size limit disabled pairing.
+    const grid = smooth === null ? fieldGridTexture(program, pairGrid) : smooth.grid
     let texture: number | null = null
     if (grid !== null) {
       try {
@@ -813,27 +859,6 @@ class SdfRenderPort implements ResizablePort {
         this.recordPart(key, 'vertex', 'texture.atlas_full')
         return null
       }
-    }
-    let missing = false
-    const labelGraphs = program.labels.map(label => {
-      if (label.material === null) return null
-      const compiled = materialsByName.get(label.material)
-      if (compiled === undefined) missing = true
-      return compiled ?? null
-    })
-    if (missing) warnOnce(`${key}:missing`, 'a field label names a material not in the saved mesh; its shapes wear the label colour')
-    // One fixed evaluator reads the program from the part's material data (program.wgsl, per-part code up to over 1 MB,
-    // is never registered: RAA refuses a material function over 64 KB); parts with the same label graphs share the text.
-    const words = fieldProgramWords(program)
-    let material: { functionName: string; wgsl: string }
-    try {
-      if (!words.ok) throw new Error(words.reason)
-      material = fieldMaterialWgsl({ program, labelGraphs, debug: this.debugNormals })
-    } catch (e) {
-      if (texture !== null) engine.removeTexture(texture)
-      warnOnce(key, `vertex normals (${messageOf(e)})`)
-      this.recordPart(key, 'vertex', messageOf(e))
-      return null
     }
     this.addFunction(material.functionName, material.wgsl)
     const data = engine.addMaterialData(words.words)
@@ -958,18 +983,24 @@ class SdfRenderPort implements ResizablePort {
     return instance
   }
 
-  createInstance(asset: number, tint: Vec3T | null): number {
+  createInstance(asset: number, tint: Vec3T | null, shading?: 'vertex'): number {
     const uploaded = this.uploaded[asset]
     if (uploaded === undefined) refuse(AREA, WHERE, `createInstance: unknown asset handle ${asset}; register the asset first with registerAsset`)
     if (tint !== null && (tint.length !== 3 || !tint.every(Number.isFinite))) refuse(AREA, WHERE, 'tint is not 3 finite numbers; pass [r, g, b] or null')
     const parts = tint === null ? uploaded.parts : this.tintableParts(uploaded)
     const engine = this.need()
     const root = engine.addNode(null)
+    const vertexOnly = shading === 'vertex'
     const live: Live = { stretched: [], asset, root, nodes: [], instances: [], partNames: parts.map(part => part.name), emptyParts: uploaded.emptyParts ?? [],
-      filter: null, visible: true, bones: uploaded.bones ?? 0, skin: [], pose: null, fallbacks: [], textured: [], bakes: [], tint }
+      filter: null, visible: true, bones: uploaded.bones ?? 0, skin: [], pose: null, fallbacks: [], textured: [], bakes: [], tint, vertexOnly }
     parts.forEach((part, index) => {
       const node = engine.addNode(root, part.t, part.r)
       live.nodes.push(node)
+      if (vertexOnly) {
+        const vertex = part.fallback ?? part
+        live.instances.push(this.addMember(live, node, vertex.mesh, vertex.object, part, part, tint))
+        return
+      }
       const member = this.addMember(live, node, part.mesh, part.object, part, part, tint, part.params)
       live.instances.push(member)
       if (part.params !== undefined) live.stretched.push({ instance: member, params: part.params, r: part.r })
@@ -982,7 +1013,7 @@ class SdfRenderPort implements ResizablePort {
         live.textured.push({ instance: this.addMember(live, node, part.textured.mesh, undefined, part, part.textured, tint), part, index })
       }
     })
-    live.bakes = parts.map(part => part.bake ?? null)
+    if (!vertexOnly) live.bakes = parts.map(part => part.bake ?? null)
     this.live.push(live)
     this.updateFallbacks(live)
     this.applyVisibility(live)
@@ -1010,22 +1041,27 @@ class SdfRenderPort implements ResizablePort {
     }
     this.addFunction(TEXTURED_FUNCTION, TEXTURED_MATERIAL_WGSL)
     const payload = payloadOf(assetId, meshed)
+    this.textureErrors.delete(assetId)
     for (const group of payload.groups) {
       for (const part of group.parts) {
         if (part.meshes.length === 0) continue
         const key = fieldKey(assetId, group.group, part.partId)
         const target = uploaded.parts.find(entry => entry.reportKey === key)
         if (target === undefined) continue
-        if (part.bakedRefusal !== undefined) {
-          this.textureErrors.set(key, part.bakedRefusal)
+        const refusal = part.bakedRefusal ?? (target.tint === 'graph' ? 'baked textures lack a player-color mask' : undefined)
+        if (refusal !== undefined || part.baked === undefined) {
+          this.textureErrors.set(key, refusal ?? 'worker returned no baked textures')
           continue
         }
         const baked = part.baked
-        if (baked === undefined) continue
+        if (target.joints !== undefined && baked.joints === undefined) {
+          this.textureErrors.set(key, 'baked mesh has no joint streams')
+          continue
+        }
         if (target.textured === undefined) {
           const textures: number[] = []
           try {
-            textures.push(engine.addTexture(baked.baseColor), engine.addTexture(baked.normal), engine.addTexture(baked.orm))
+            for (const image of [baked.baseColor, baked.normal, baked.orm]) textures.push(engine.addTexture(image))
           } catch (e) {
             for (const texture of textures) engine.removeTexture(texture)
             if (raaCode(e) !== 'texture.atlas_full') throw e
@@ -1056,7 +1092,7 @@ class SdfRenderPort implements ResizablePort {
         if (textured === undefined) continue
         const index = uploaded.parts.indexOf(target)
         for (const live of this.live) {
-          if (live === null || live.asset !== handle || live.textured.some(entry => entry.index === index)) continue
+          if (live === null || live.asset !== handle || live.vertexOnly || live.textured.some(entry => entry.index === index)) continue
           const node = live.nodes[index]
           if (node === undefined) continue
           live.textured.push({ instance: this.addMember(live, node, textured.mesh, undefined, target, textured, live.tint), part: target, index })
@@ -1117,6 +1153,12 @@ class SdfRenderPort implements ResizablePort {
     return [...pending].sort()
   }
 
+  get shadingMode(): ShadingMode { return this.shading }
+  pendingTextureBakes = (): number => 0
+  textureBakeFailed(assetId: string, reason: string): void {
+    this.textureErrors.set(assetId, reason)
+  }
+
   setShading(mode: ShadingMode): void {
     // The choice stays visible and named: a release without the textured route keeps the current mode.
     if (mode === 'baked') {
@@ -1127,6 +1169,7 @@ class SdfRenderPort implements ResizablePort {
         return
       }
     }
+    if (this.shading === mode) return
     this.shading = mode
     this.swapFallbacks(true)
   }
@@ -1179,7 +1222,7 @@ class SdfRenderPort implements ResizablePort {
       if (uploaded === undefined || !requested.has(uploaded.assetId)) continue
       if (!source.partNames.some(name => source.filter === null || source.filter.has(name))) continue
       // Colours and joint matrices are instance data; the presence of tint/pose changes the shader variant.
-      const key = JSON.stringify([this.shading, source.asset, source.tint !== null, source.pose !== null,
+      const key = JSON.stringify([source.vertexOnly ? 'vertex-only' : this.shading, source.asset, source.tint !== null, source.pose !== null,
         source.filter === null ? null : [...source.filter].sort()])
       if (variants.has(key) || this.warming.has(key)) continue
       variants.add(key)
@@ -1218,7 +1261,7 @@ class SdfRenderPort implements ResizablePort {
     const view = this.target!.viewports[0]
     const aspect = view === undefined ? 1 : view.width / Math.max(1, view.height)
     const scale = Math.min(1e-3, ahead * Math.min(1, aspect) * Math.tan(camera.fovYDeg * Math.PI / 360) / (32 * extent * pose))
-    const instance = this.createInstance(source.asset, source.tint)
+    const instance = this.createInstance(source.asset, source.tint, source.vertexOnly ? 'vertex' : undefined)
     try {
       this.setPartFilter(instance, source.filter === null ? null : [...source.filter])
       if (source.pose !== null) this.setPose(instance, source.pose)
@@ -1260,7 +1303,7 @@ class SdfRenderPort implements ResizablePort {
         const copy = live.fallbacks.find(c => c.index === index)
         let mode: ShadingMode = this.shadingOfPart.get(key) ?? 'vertex'
         let reason = this.shadingErrors.get(key)
-        if (this.shading === 'vertex') { mode = 'vertex'; reason = 'vertex mode' }
+        if (this.shading === 'vertex' || live.vertexOnly) { mode = 'vertex'; reason = 'vertex mode' }
         else if (this.shading === 'baked' && live.textured.some(t => t.index === index)) mode = 'baked'
         else if (copy !== undefined && !copy.ready) {
           mode = 'vertex'
@@ -1270,6 +1313,31 @@ class SdfRenderPort implements ResizablePort {
       })
     }
     return drawn
+  }
+
+  // The perf line follows the last port that rendered and counts visible instances, including their resident fallbacks.
+  private readonly shadingLine = (): string => {
+    if (this.engine === null) return ''
+    const counts = { field: 0, baked: 0, vertex: 0 }
+    let refusal: string | undefined
+    let bakeRefusal = this.texturedMissing ? 'RAA has no textured surface material' : undefined
+    for (const part of this.drawnParts()) {
+      counts[part.mode]++
+      if (part.reason !== undefined && part.reason !== 'vertex mode' && part.reason !== 'field pipeline pending') {
+        refusal ??= `${part.key}: ${part.reason}`
+      }
+      const bakeError = this.textureErrors.get(part.key) ?? this.textureErrors.get(part.key.split('#', 1)[0])
+      if (part.mode !== 'baked' && bakeError !== undefined) bakeRefusal ??= `${part.key}: ${bakeError}`
+    }
+    const pending = this.pendingKeys()
+    const bakes = this.pendingTextureBakes()
+    const details = [
+      pending.length > 0 ? `preparing ${pending.length} (${pending[0]})` : undefined,
+      this.shading === 'baked' && bakes > 0 ? `texture bakes pending=${bakes}` : undefined,
+      this.shading === 'baked' ? bakeRefusal : undefined,
+      refusal,
+    ].filter(s => s !== undefined)
+    return [`shading ${this.shading} field=${counts.field} textured=${counts.baked} vertex=${counts.vertex}`, ...details].join(' | ')
   }
 
   // Capture-time only: use the same part frames and skin matrices as the draw.
@@ -1451,9 +1519,12 @@ class SdfRenderPort implements ResizablePort {
     const t0 = performance.now()
     this.swapFallbacks()
     this.flushPoses(engine)
-    renderFrame(this, () => engine.render(t0))
+    renderFrame(this, () => timed('raa Engine.render (CPU encode)', () => engine.render(t0)))
+    if (perfEnabled) perfLine('shading', this.shadingLine)
     const frameMs = performance.now() - t0
     const stats = engine.stats()
+    count('draw calls', stats.drawCalls)
+    count('triangles', stats.triangles)
     let visible = 0
     for (const live of this.live) if (live !== null && live.visible) visible++
     this.lastStats = { frameMs, drawCalls: stats.drawCalls, triangles: stats.triangles, instances: stats.instances, visible }
@@ -1494,6 +1565,12 @@ class SdfRenderPort implements ResizablePort {
     this.scheduler = null
     this.engine?.dispose()
     this.engine = null
+    // Engine.dispose drops raa's handles but the device keeps every texture and buffer until it is collected: each
+    // round's port (a full upload of the course and characters, over a GB on the page) stayed resident behind the
+    // next one. Destroying the device this port created frees them now; nothing else uses it.
+    const device = this.gpuDevice as { destroy?: () => void } | undefined
+    this.gpuDevice = undefined
+    device?.destroy?.()
     this.canvas = null
     this.target = null
     this.posed.clear()

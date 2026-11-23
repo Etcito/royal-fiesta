@@ -59,7 +59,7 @@ export const doorBankEmitter: FeatureEmitter = (spec: FeatureSpec, ctx) => {
         name: `feature/${spec.id}/debris/${3 * index + piece}`,
         components: {
           'ege.transform': { pos: door.t, rot: [0, 0, 0, 1] },
-          'ege.render': { shape: 1, color: visualOf('candy.wall-block', { x: 0, y: 0, z: 0 }).color, params: [0, 0, 0, 0], visible: 0 },
+          'ege.render': { shape: 1, color: visualOf('candy.wall-block', { x: 0, y: 0, z: 0 }).color, params: [door.size[0] * 0.15, door.size[1] * 0.15, door.size[2] * 0.15, 0], visible: 0 },
           feature_door_bank_debris: { owner: ctx.index, door: index, piece: piece - 1 },
         },
       })

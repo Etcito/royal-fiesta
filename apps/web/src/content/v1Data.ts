@@ -108,6 +108,7 @@ export function browserGameAssets(options?: ContentOptions): GameAssetResolver {
   const read = contentReader(options ?? {})
   let index: Promise<ContentIndex> | undefined
   const cache = new Map<string, Promise<ResolvedGameAsset>>()
+  const rigReads = new Map<string, Promise<unknown>>()
 
   async function load(id: string): Promise<ResolvedGameAsset> {
     index ??= read('index.json') as Promise<ContentIndex>
@@ -134,7 +135,10 @@ export function browserGameAssets(options?: ContentOptions): GameAssetResolver {
       if (game !== asset.game) return null
       const source = entries.find(e => e.id === sourceId)
       if (!source) return null
-      return (await parseGameAsset(await read(source.path), source.path)).document
+      // One read of a rig source (the character) for every costume that borrows it; each caller parses its own copy.
+      let raw = rigReads.get(source.path)
+      if (raw === undefined) { raw = read(source.path); rigReads.set(source.path, raw) }
+      return (await parseGameAsset(structuredClone(await raw), source.path)).document
     })
     return { asset, source: { path, json } }
   }

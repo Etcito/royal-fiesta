@@ -24,7 +24,7 @@ export interface RenderPort {
   init(target: RenderTarget): Promise<void>
   registerRoad?(name: string, sweep: import('@royal-fiesta/sim/road').RoadData): number
   registerAsset(name: string, asset: PrimsAsset): number
-  createInstance(asset: number, tint: Vec3T | null): number
+  createInstance(asset: number, tint: Vec3T | null, shading?: 'vertex'): number
   setTransform(instance: number, t: Vec3T, r: QuatT, s: Vec3T): void
   setVisible(instance: number, visible: boolean): void
   destroyInstance(instance: number): void

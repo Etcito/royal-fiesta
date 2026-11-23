@@ -1,4 +1,8 @@
 /// <reference types="vite/client" />
+import { count, end, frameBegin, perfEnabled, span, frameTimings } from '../perf/framePerf.ts'
+import { setStepProbe } from '@royal-fiesta/game/ege/showRuntime'
+if (perfEnabled) setStepProbe({ begin: span, end, count })
+import { renderScale } from '../perf/renderScale.ts'
 import { browserZones } from '../client/sources.ts'
 import { localPlayerCount } from './localPlayers.ts'
 import { localBotCount } from './localBots.ts'
@@ -112,7 +116,7 @@ import { mountCountdown } from '../screens/countdown.ts'
 import { mountElimShow } from '../screens/elimShow.ts'
 import { mountEndScreen } from '../screens/endScreen.ts'
 import { ShowMode } from './showMode.ts'
-import { loadShowContent } from './showContent.ts'
+import { loadShowContent, seasonCourseIds } from './showContent.ts'
 import type { ShowContent } from './showContent.ts'
 import type { ShowModeOptions } from './showMode.ts'
 import type { ShowFrame } from './showDirector.ts'
@@ -341,12 +345,18 @@ function loop(frame: (dtS: number) => void, interval: () => number = () => 0): (
   const tick = (now: number) => {
     id = requestAnimationFrame(tick)
     if (!pacer.shouldRender(now)) return
+    frameBegin()
     const dt = Math.min(0.1, Math.max(0, now - last) / 1000)
     last = now
     frame(dt)
   }
   id = requestAnimationFrame(tick)
   return () => cancelAnimationFrame(id)
+}
+
+// True once an engine has configured the canvas's WebGPU context (the UI overlay draws only on such a canvas).
+function configured(canvas: HTMLCanvasElement): boolean {
+  try { return (canvas.getContext('webgpu') as { getConfiguration(): unknown } | null)?.getConfiguration() != null } catch { return false }
 }
 
 // One canvas per client, appended to the #views grid in client order.
@@ -1146,7 +1156,8 @@ class EngineHubMode implements Mode {
   sim(): null { return null }
   hud(): HudState | null { return null }
   roundStage(): RoundStage | null { return null }
-  lines(): string[] { return [] }
+  // Offline, nothing starts by itself: the show starts when the bean stands on the queue pad or Enter is pressed.
+  lines(): string[] { return ['Walk onto the glowing pad at the far end of the plaza, or press Enter, to start the show.'] }
   enqueue(): void { this.showRequested = true }
   dequeue(): void {}
   leaveMatch(): void {}
@@ -1154,6 +1165,7 @@ class EngineHubMode implements Mode {
 
   frame(f: FrameIn): GameScreen {
     const now = performance.now()
+    for (let i = 0; i < f.deviceCount; i++) if (f.devices[i].joinPressed) this.showRequested = true
     if (f.emote !== 0) this.hub.setEmote(f.emote, now)
     if (!f.paused) {
       this.hubAcc = Math.min(this.hubAcc + f.dt, 8 * STEP_S)
@@ -1814,8 +1826,6 @@ class App {
   // The Graphics page and options (MAMA's render-options contract) and the FPS counter they show.
   private readonly graphics: GraphicsSettings
   private readonly fps: FpsCounter
-  // The shading mode already pushed to the loaded SDF content (the page address applied on top).
-  private liveShading: ShadingMode | null = null
   private rebinding: KeyAction | null = null
   private pendingRebind: KeyAction | null = null
   private mode: Mode | null = null
@@ -1946,7 +1956,6 @@ class App {
     this.graphics = new GraphicsSettings(env.store, options => {
       setRenderOptions(options)
       this.fps.setVisible(options.showFps === true)
-      this.applyShading(options.shading)
     })
     void loadGraphicsContract().then(contract => { if (!this.disposed) this.graphics.attach(contract) })
     // A coarse pointer or ?touch=1 mounts the virtual joystick and buttons over #views; seat 0 is touch.
@@ -1989,7 +1998,7 @@ class App {
       const probe = new EngineShellProbe()
       this.probe = probe
       this.uninstallProbe = installEngineProbe(window as Window & { rfEngine?: EngineShellHandle }, {
-        state: () => probe.state(), signals: () => probe.signals(), play: () => this.enginePlay(),
+        state: () => probe.state(), signals: () => probe.signals(), play: () => this.enginePlay(), frameTimings,
       })
     }
   }
@@ -2248,19 +2257,27 @@ class App {
       }
       this.query = q
       const content = pickContent(new URLSearchParams(this.search))
+      if (this.backend === 'engine' && content instanceof SdfContent) content.limitRaceCourses(seasonCourseIds())
       boot.enter('physics (Rapier wasm)')
       wavedashProgress(0.03)
-      const R = await checkAwait('Rapier initialization', () => initRapier())
+      // Independent boot work starts together: Rapier wasm, the show content and the engine preparation need nothing
+      // from the content load or the renderer. Only the dependencies stay in order: ports need the loaded content,
+      // the hub needs the ports, the start scene heats after the hub exists.
+      const needsShow = q.server !== null || this.nav.onlineOnly || this.backend === 'engine'
+      const rapierP = phase('physics (Rapier wasm)', () => initRapier())
+      const showP = needsShow ? phase('show content', () => loadShowContent('sprint')) : Promise.resolve(null)
+      const engineP = this.backend === 'engine' ? phase('engine backend', () => this.prepareEngine(q)) : Promise.resolve()
+      for (const p of [rapierP, showP, engineP]) p.catch(() => undefined)
       boot.enter('content')
-      let phase = ''
-      await checkAwait('boot content', () => content.load('sprint', progress => {
+      let lastPhase = ''
+      await phase('content', () => checkAwait('boot content', () => content.load('sprint', progress => {
         if (this.disposed) return
-        if (progress.phase !== phase) boot.enter(`content: ${phase = progress.phase}`)
+        if (progress.phase !== lastPhase) boot.enter(`content: ${lastPhase = progress.phase}`)
         wavedashProgress(0.1 + 0.75 * Math.min(1, progress.done / Math.max(1, progress.total)))
         this.loadingOverlay.show(progress.label, progress.done, progress.total)
         loading.update(progress)
         this.run(this.nav.dispatch({ kind: 'progress', progress }))
-      }))
+      })))
       if (this.env.fieldGameplay && content instanceof SdfContent && content.meshData().failed.size) throw new Error(`fieldShading: failed assets: ${[...content.meshData().failed.keys()].join(', ')}`)
       // ?course=<hub> opens the hub itself: the hub is the lobby, not a round (courseSetup refuses hubs).
       const picked = q.course === null ? null : content.course(q.course)
@@ -2268,7 +2285,7 @@ class App {
       this.loadingOverlay.show('Creating renderer')
       boot.enter('renderer')
       wavedashProgress(0.9)
-      const { ports, canvases } = await checkAwait('boot render ports', () => this.mountPorts(content, q))
+      const { ports, canvases } = await phase('renderer ports', () => checkAwait('boot render ports', () => this.mountPorts(content, q)))
       if (this.disposed) {
         // An op took the page during the load: its ports are not ours to keep.
         for (const port of ports) port.dispose()
@@ -2278,7 +2295,7 @@ class App {
       this.stopRoundLoad?.()
       this.stopRoundLoad = observeRoundLoad(label => this.onRoundLoad(label), content.report())
       // The online show plays the in-page show's season maps and zone sidecars.
-      const show = q.server !== null || this.nav.onlineOnly || this.backend === 'engine' ? await checkAwait('online show content', () => loadShowContent('sprint')) : null
+      const [R, show] = await Promise.all([checkAwait('Rapier initialization', () => rapierP), checkAwait('online show content', () => showP)])
       this.loaded = { R, content, ports, canvases, course, show }
       if (ports[0] !== undefined) ports[0] = trackLobbyAssets(ports[0], this.lobbyAssets)
       if (ports[0] !== undefined) {
@@ -2300,7 +2317,7 @@ class App {
       if (this.backend === 'engine') {
         this.loadingOverlay.show('Preparing engine')
         this.host.setLoading(0, 'Preparing engine')
-        await checkAwait('engine backend', () => this.prepareEngine(q))
+        await checkAwait('engine backend', () => engineP)
         this.loadingOverlay.hide()
       }
       // Lands on the start screen (nav's root), or in the hub for ?course= / ?community=.
@@ -2391,7 +2408,7 @@ class App {
   private viewsSize(): { cssW: number; cssH: number; dpr: number; key: string } {
     const cssW = Math.max(1, this.views.clientWidth)
     const cssH = Math.max(1, this.views.clientHeight)
-    const dpr = window.devicePixelRatio || 1
+    const dpr = (window.devicePixelRatio || 1) * renderScale
     return { cssW, cssH, dpr, key: `${cssW}x${cssH}@${dpr}` }
   }
 
@@ -2407,7 +2424,7 @@ class App {
   // resize, in backing pixels. A port without resize (non-sdf content) keeps its initial size.
   private resizeViews(): void {
     const loaded = this.loaded
-    if (loaded === null || loaded.canvases.length !== 1 || this.cells.length === 0) return
+    if (loaded === null || loaded.canvases.length !== 1 || this.cells.length === 0 || this.lobbyParked) return
     const size = this.viewsSize()
     if (size.key === this.viewsSizeKey) return
     this.viewsSizeKey = size.key
@@ -2609,6 +2626,9 @@ class App {
   private preloadShow(): void {
     const loaded = this.loaded
     const q = this.query
+    // The engine backend's Play builds its own show (startEngineShow): a legacy show prepared behind the menu would never be adopted,
+    // only hold a second raa device, its textures and its pipeline compiles.
+    if (this.backend === 'engine') return
     if (!this.startSceneReady || this.showAhead !== null || this.disposed || loaded === null || q === null || this.startView === null) return
     // Only when Play starts the in-page show (LocalMode.startsShow, no build default relay).
     if (q.server !== null || q.clients !== 1 || (q.course !== null && q.bots === null) || this.nav.onlineOnly) return
@@ -2695,7 +2715,11 @@ class App {
     const hub = this.engineHub
     if (hub === null) throw new Error(refusal('engine', 'hub', 'the engine hub is not prepared; retry the load'))
     if (this.engineShown) hub.respawn(hub.spawn)
-    return new EngineHubMode(c, hub)
+    const mode = new EngineHubMode(c, hub)
+    // Parity with the in-page show (LocalMode.startsShow): the first Play leads straight into the show, no pad walking.
+    // A show that ended returns to the hub, where the pad and Enter start the next one.
+    mode.showRequested = !this.engineShown && c.q.server === null && c.q.clients === 1 && (c.q.course === null || c.q.bots !== null)
+    return mode
   }
 
   // Play starts the engine show: an offline runtime over the prepared engine, presented by ShowMode.engine.
@@ -2711,7 +2735,8 @@ class App {
     try {
       const seed = Date.now() >>> 0
       const options = { ...this.showOptions(loaded, q, this.wornLook()), seed }
-      const runtime = await backend.createShow({ seed, humans: q.players ?? 1, seats: options.seats, testMode: q.test })
+      const limitCatchup = new URLSearchParams(this.search).get('simCatchup') !== '0'
+      const runtime = await backend.createShow({ seed, humans: q.players ?? 1, seats: options.seats, testMode: q.test, limitCatchup })
       if (this.disposed || load !== this.showLoad) {
         runtime.dispose()
         return
@@ -2776,6 +2801,16 @@ class App {
 
   // Unmount the start view and free every asset the lobby registered, stop its sound and let the show
   // start from a clean stage port. The start view and hub rebuild on return (draw / startMode).
+  // While a show is on screen the lobby canvas is hidden (display none) but its raa engine keeps G-buffers, depth and MSAA
+  // targets at the page size: park it at 1x1 until the menu comes back (stopMode).
+  private lobbyParked = false
+  private parkLobby(): void {
+    const port = this.loaded?.ports[0] as { resize?: (w: number, h: number, dpr: number, viewports: Viewport[]) => void } | undefined
+    if (this.lobbyParked || port === undefined || typeof port.resize !== 'function') return
+    this.lobbyParked = true
+    port.resize(1, 1, 1, [{ x: 0, y: 0, width: 1, height: 1 }])
+  }
+
   private releaseLobby(): void {
     this.startView?.unmount()
     this.startView = null
@@ -2792,7 +2827,37 @@ class App {
     this.lobbySoundOff = true
   }
 
+  // The one canvas on the page is the one the UI is drawn over: the show's once its engine has configured it, else the
+  // lobby's. The other leaves the DOM (and the lobby parks at 1x1 while it does) so the page never holds two.
+  // The lobby is attached and unparked again before its next frame, whenever the show's canvas is not the target.
+  uiTarget(): HTMLCanvasElement | null {
+    const lobby = this.loaded?.canvases[0] ?? null
+    const mode = this.mode
+    const show = mode instanceof ShowAdapter ? mode.show.lookCanvas : null
+    if (show !== null && configured(show)) return show
+    return lobby
+  }
+
+  private syncUiTarget(): void {
+    const lobby = this.loaded?.canvases[0] ?? null
+    const mode = this.mode
+    const show = mode instanceof ShowAdapter ? mode.show.lookCanvas : null
+    const target = this.uiTarget()
+    if (target === null) return
+    if (target === lobby) {
+      if (!lobby.isConnected) this.views.appendChild(lobby)
+      show?.remove()
+      if (this.lobbyParked) { this.lobbyParked = false; this.viewsSizeKey = ''; this.resizeViews() }
+    } else {
+      show!.style.display = ''
+      if (!show!.isConnected) this.views.appendChild(show!)
+      this.parkLobby()
+      lobby?.remove()
+    }
+  }
+
   private stopMode(): void {
+    if (this.lobbyParked) { this.lobbyParked = false; this.viewsSizeKey = ''; this.resizeViews() }
     this.showLoad++
     this.unmountShowView()
     this.roundLoading = null
@@ -2812,6 +2877,7 @@ class App {
   private frame(dt: number): void {
     const nav = this.nav
     this.uiNowMs += this.env.fieldGameplay ? 1000 : Math.max(0, dt) * 1000
+    const tInput = span()
     const events = this.input.takeEvents()
     // The remap screen reads the keys itself: they must not also move the uaa settings menu.
     if (this.remap === null) {
@@ -2836,7 +2902,10 @@ class App {
     if (nav.screen !== 'settings') this.rebinding = null
     // One poll per device: keyboard, every connected pad, then touch.
     this.devices.bindings = this.settings
+    end('App.input events', tInput)
+    const tPoll = span()
     const deviceCount = this.devices.poll(this.devicePolls)
+    end('InputDevices.poll', tPoll)
     // Pads drive the remap while it is open; their join edges must not reach the local seat table.
     if (this.remap !== null) for (let i = 0; i < deviceCount; i++) this.devicePolls[i].joinPressed = false
     const mode = this.mode
@@ -2878,9 +2947,11 @@ class App {
     if (mode instanceof LocalMode) mode.setVisible(!wardrobe)
     if (mode !== null && nav.live && nav.screen !== 'start') {
       const paused = nav.screen === 'pause' || nav.screen === 'settings'
+      const tMode = span()
       const screen = mode.frame({
         dt, paused, world: this.world, emote: playing ? this.emote : 0, devices: this.devicePolls, deviceCount,
       })
+      end(`Mode.frame ${mode.constructor.name}`, tMode)
       if (mode.failure !== null) return this.fail(mode.failure)
       this.roundGate.frame(screen, mode.roundStage())
       this.run(nav.dispatch({ kind: 'game', screen }))
@@ -2896,9 +2967,15 @@ class App {
     }
     this.emote = 0
     // The show has no MatchSim; skip SoundDriver.frame so it cannot restart the lobby music it stopped.
+    const tSound = span()
     if (!this.lobbySoundOff) this.sound.frame(this.mode?.sim() ?? null, this.mode?.listener?.() ?? undefined)
+    end('SoundDriver.frame', tSound)
+    const tObs = span()
     this.observeEngine()
+    end('App.observeEngine', tObs)
+    const tDraw = span()
     this.draw()
+    end('App.draw (total)', tDraw)
   }
 
   // Persists the wardrobe after a wear or colour change.
@@ -3052,6 +3129,7 @@ class App {
   // Presents nav's screen through the uaa host, with the round HUD on the HUD screens, then renders it.
   private draw(): void {
     const nav = this.nav
+    this.syncUiTarget()
     this.settingsPage = pageAfterScreen(this.drawnScreen, nav.screen, this.settingsPage)
     this.drawnScreen = nav.screen
     if (this.showView?.screen !== nav.screen) this.unmountShowView()
@@ -3075,11 +3153,17 @@ class App {
         this.screens.style.pointerEvents = 'auto'
         this.startView.setVisible(true)
         this.startView.update(this.startModel, null)
+        const tR = span()
         this.resize()
+        end('App.resize', tR)
         // The mode rendered its camera before draw() updated the wardrobe scene.
         // Submit the start camera and newly worn instances before presenting the UI.
+        const tP = span()
         this.loaded?.ports[0]?.render()
+        end('SdfRenderPort.render (start scene)', tP)
+        const tH = span()
         this.host.frame(this.uiNowMs)
+        end('UaaHost.frame', tH)
         this.preloadShow()
         return
       }
@@ -3096,9 +3180,16 @@ class App {
       this.host.frame(this.uiNowMs)
       return
     }
-    if (this.drawShow()) {
+    const tShow = span()
+    const showDrawn = this.drawShow()
+    end('App.drawShow', tShow)
+    if (showDrawn) {
+      const tR = span()
       this.resize()
+      end('App.resize', tR)
+      const tH = span()
       this.host.frame(this.uiNowMs)
+      end('UaaHost.frame', tH)
       if ((this.mode instanceof ShowAdapter || this.mode instanceof OnlineMode) && this.mode.show.models !== null) this.showLoading(this.mode.show.models)
       return
     }
@@ -3117,11 +3208,14 @@ class App {
     const model = menuModel(this.roundLoading === null ? nav.screen : 'loading', this.roundLoading === null ? nav.actions() : [], {
       settings: this.settings, rebinding: this.rebinding, error, info,
       page, items, reducedMotion, note: page === 'graphics' ? this.graphics.notes() : undefined,
+      ...(mode instanceof EngineHubMode ? { hubHint: 'WASD/ZQSD move - mouse or right stick: camera - 1-4 emote - Enter or the pad starts the show - Esc menu' } : {}),
     })
     // Overlays leave the pointer to the views (pointer lock on the game canvas); menus take clicks.
     this.screens.style.pointerEvents = model.overlay ? 'none' : 'auto'
     this.resize()
+    const tPresent = span()
     this.host.present({ ...model, lines: fitLines(model.lines, lineSlots(model.screen)) })
+    end('UaaHost.present', tPresent)
     if (model.screen === 'settings') this.host.setHud(settingsWidgetProps(page, items, this.host.focused(), nav.settingsFrom))
     if (hud !== null && values !== null) this.host.setHud(hudWidgets(values, hud.view))
     // Submit the wardrobe scene's last camera and instances before the panel, so the backdrop is current.
@@ -3144,7 +3238,7 @@ class App {
     this.resizeViews()
     const w = Math.max(1, this.screens.clientWidth)
     const h = Math.max(1, this.screens.clientHeight)
-    const dpr = window.devicePixelRatio || 1
+    const dpr = window.devicePixelRatio || 1 // the real ratio: the uaa host scales its canvas by ?scale itself
     const key = `${w}x${h}@${dpr}`
     if (key === this.size) return
     this.size = key
@@ -3362,18 +3456,6 @@ class App {
     }
   }
 
-  // The Graphics shading row applies to the SDF content already on screen, without reloading it; `?normals=vertex`
-  // still wins for the session. Before the first load the provider reads the same options for its new port.
-  private applyShading(value: unknown): void {
-    const content = this.loaded?.content
-    const chosen: ShadingMode | null = value === 'field' || value === 'vertex' || value === 'baked' ? value : null
-    if (!(content instanceof SdfContent) || chosen === null) return
-    const { shading } = gameRenderOptions(this.search, { shading: chosen })
-    if (shading === this.liveShading) return
-    this.liveShading = shading
-    content.setShading(shading)
-  }
-
   private apply(next: Settings): void {
     this.settings = next
     this.settingsError = null
@@ -3400,12 +3482,14 @@ function pageRoots(): { views: HTMLElement; screens: HTMLElement } {
 // Boot waits for the uaa host: there is no DOM menu, so a GPU, asset or font failure fails the boot.
 // taken: an op took the page while the host was being created; the App then never starts.
 async function start(
-  canvas: HTMLCanvasElement, env: AppEnv, taken: () => boolean, onScreen?: (e: UaaScreenChange) => void, searchOverride?: string,
+  canvas: HTMLCanvasElement | null, env: AppEnv, taken: () => boolean, onScreen?: (e: UaaScreenChange) => void, searchOverride?: string,
 ): Promise<{ app: App; host: UaaHost } | null> {
   const { views, screens } = pageRoots()
   let created: App | null = null
+  // The page draws its UI over the engine's own canvas (no canvas of its own); the ops pages keep canvas#ui.
   const host = await createUaaHost({
-    canvas, width: Math.max(1, screens.clientWidth), height: Math.max(1, screens.clientHeight), dpr: window.devicePixelRatio || 1,
+    ...(canvas === null ? { overlay: { target: () => created?.uiTarget() ?? null } } : { canvas }),
+    width: Math.max(1, screens.clientWidth), height: Math.max(1, screens.clientHeight), dpr: window.devicePixelRatio || 1,
     onCommand: c => created?.command(c), onScreen,
   })
   if (taken()) {
@@ -3494,6 +3578,12 @@ function memoryStore(): SettingsStore {
   return { getItem: key => saved.get(key) ?? null, setItem: (key, value) => void saved.set(key, value) }
 }
 
+// One console line per boot phase: start and end (ms since the page began), phases overlapping where independent.
+async function phase<T>(name: string, run: () => Promise<T>): Promise<T> {
+  const t0 = Math.round(performance.now())
+  try { return await run() } finally { console.log(`[boot] ${name}: ${t0} ms -> ${Math.round(performance.now())} ms`) }
+}
+
 // Started by the page's own boot only (an ops page has no boot to watch).
 let bootStages: BootStages | null = null
 const boot = { enter: (stage: string) => bootStages?.enter(stage), done: () => bootStages?.done() }
@@ -3512,13 +3602,11 @@ try {
     app?.dispose()
   }, startForOp)
   if (!opsMode) {
-    const canvas = document.querySelector<HTMLCanvasElement>('#screens > canvas#ui')
-    if (canvas === null) throw new Error('game.html needs main#views and div#screens holding canvas#ui')
     const storage = pageStorage()
     bootStages = new BootStages(showStall)
     boot.enter('ui host (fonts, images, WebGPU)')
     // The shell stays on its own progress screen until App.load has the complete start scene up (wavedashReady).
-    start(canvas, { store: storage ?? memoryStore(), padStorage: storage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
+    start(null, { store: storage ?? memoryStore(), padStorage: storage, loop }, () => opTookPage).then(s => { app = s?.app ?? null }, bootFailed)
   }
 } catch (e) {
   bootFailed(e)

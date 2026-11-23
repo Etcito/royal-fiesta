@@ -1,3 +1,7 @@
+import { DPR_CAP, pixelViewports, splitLayout } from '@royal-fiesta/game/client/splitLayout'
+import { renderScale } from '../perf/renderScale.ts'
+import { perfEnabled, perfLine, timed } from '../perf/framePerf.ts'
+import type { ShadingMode } from '../sdf/sdfPort.ts'
 import type { WornLook } from '@royal-fiesta/game/render/wornLook'
 import type { OrbitCamera } from '@royal-fiesta/game/render/orbitCamera'
 import { checkAwait } from './checkProgress.ts'
@@ -25,7 +29,7 @@ import type { EngineRoundResult, EngineShowObservation, EngineShowRuntime } from
 import { EngineShowView } from '@royal-fiesta/game/ege/showView'
 import { EngineShowEffects } from '@royal-fiesta/game/ege/showEffects'
 import type { SceneReadView } from '@royal-fiesta/game/render/sceneReadView'
-import { EngineSeatPresenter, engineEffectSinks, farPenguinBridge } from '../engineShow/presentation.ts'
+import { EngineSeatPresenter, engineEffectSinks, farPenguinBridge, seatTierLine } from '../engineShow/presentation.ts'
 import type { CharacterView } from '@royal-fiesta/sim/match/matchSim'
 import type { ResolvedCourse } from '@royal-fiesta/sim/course'
 import { loadShowContent } from './showContent.ts'
@@ -76,6 +80,11 @@ export class ShowMode {
   private disposed = false
   private error: string | null = null
   private readonly canvas: HTMLCanvasElement
+  /** The backing size the show draws at (the lobby canvas cap, times ?scale). */
+  private readonly drawSize: { width: number; height: number }
+  /** The canvas size the current scene's port was created at. */
+  private sceneBacking = { width: 1, height: 1 }
+  private sceneSeats = 1
   private readonly stages: { canvas: HTMLCanvasElement; display: string }[]
   private readonly memories: ReturnType<typeof newModeBotMemory>[]
   private sampleTick = 0
@@ -92,6 +101,8 @@ export class ShowMode {
   private effects: EngineShowEffects | null = null
   private presenter: EngineSeatPresenter | null = null
   private bridge: ReturnType<typeof farPenguinBridge> | null = null
+  private farModel: 'penguin' | 'oldbean' = 'penguin'
+  private tierLine = ''
   private unsubscribe: (() => void) | null = null
   private engineKey = ''
   /**
@@ -108,12 +119,13 @@ export class ShowMode {
     this.memories = []
     this.stages = Array.from(options.views.querySelectorAll('canvas'), canvas => ({ canvas, display: canvas.style.display }))
     this.canvas = options.views.ownerDocument.createElement('canvas')
-    const dpr = options.views.ownerDocument.defaultView?.devicePixelRatio ?? 1
-    this.canvas.width = Math.max(1, Math.round(options.views.clientWidth * dpr))
-    this.canvas.height = Math.max(1, Math.round(options.views.clientHeight * dpr))
+    this.drawSize = ShowMode.fullSize(options.views)
+    // A show prepared behind the start screen never draws until Play adopts it: its canvas (and the raa targets sized from
+    // it) stays 1x1 until then, instead of a full-size swapchain, depth, MSAA and G-buffers nobody sees.
+    this.canvas.width = this.background ? 1 : this.drawSize.width
+    this.canvas.height = this.background ? 1 : this.drawSize.height
     this.canvas.dataset.show = 'true'
-    this.canvas.style.display = 'none'
-    options.views.appendChild(this.canvas)
+    // Not in the DOM yet: the app puts it on the page (the one canvas) once the engine has configured it.
   }
 
   static async create(options: ShowModeOptions): Promise<ShowMode> {
@@ -176,7 +188,7 @@ export class ShowMode {
       show.readView.refresh(1)
       show.presenter = new EngineSeatPresenter()
       show.effects = new EngineShowEffects(runtime, engineEffectSinks(() => ({ play: cue => { show.sounds.push(cue) } }), show.grants))
-      show.unsubscribe = runtime.onPresentation(observation => show.observeEngine(observation))
+      show.unsubscribe = runtime.onPresentation(observation => timed('observe: ShowMode.observeEngine (all)', () => show.observeEngine(observation)))
       show.current = show.director.step(null, 0)
     } catch (error) {
       show.fail(error)
@@ -209,15 +221,36 @@ export class ShowMode {
 
   /** True while this show was sized for `views` as it is now (a preloaded show is discarded when the page resized). */
   fits(views: HTMLElement): boolean {
-    const dpr = views.ownerDocument.defaultView?.devicePixelRatio ?? 1
-    return this.canvas.width === Math.max(1, Math.round(views.clientWidth * dpr))
-      && this.canvas.height === Math.max(1, Math.round(views.clientHeight * dpr))
+    const full = ShowMode.fullSize(views)
+    return this.drawSize.width === full.width && this.drawSize.height === full.height
+  }
+
+  private static fullSize(views: HTMLElement): { width: number; height: number } {
+    const dpr = Math.min(views.ownerDocument.defaultView?.devicePixelRatio ?? 1, DPR_CAP) * renderScale
+    return { width: Math.max(1, Math.round(views.clientWidth * dpr)), height: Math.max(1, Math.round(views.clientHeight * dpr)) }
+  }
+
+  /** Gives the canvas, and the port created while it was 1x1, the size the show draws at. Idempotent. */
+  private grow(): void {
+    if (this.background || this.disposed) return
+    const { width, height } = this.drawSize
+    if (this.scene === null) {
+      this.canvas.width = width
+      this.canvas.height = height
+      return
+    }
+    if (this.sceneBacking.width === width && this.sceneBacking.height === height) return
+    const port = this.scene.port as { resize?: (w: number, h: number, dpr: number, viewports: ReturnType<typeof pixelViewports>) => void }
+    if (typeof port.resize !== 'function') return
+    port.resize(width, height, 1, pixelViewports(splitLayout(this.sceneSeats, false), width, height, 1))
+    this.sceneBacking = { width, height }
   }
 
   /** Play takes the show prepared behind the start screen: the worn look of that moment, the rest warmed at once. */
   adopt(look: WornLook | null): this {
     this.look = look
     this.background = false
+    this.grow()
     return this
   }
 
@@ -295,8 +328,6 @@ export class ShowMode {
         }
       }
       const visible = ['countdown', 'round', 'spectate'].includes(this.screen())
-      this.canvas.style.display = visible ? '' : 'none'
-      for (const stage of this.stages) stage.canvas.style.display = visible ? 'none' : stage.display
       const round = this.activeRound()
       if (visible && this.scene !== null && round !== null && round.plan.index === this.index) {
         this.scene.update(round.match, 1, dt)
@@ -313,19 +344,25 @@ export class ShowMode {
     if (this.disposed || this.error !== null || this.director === null || runtime === null) return
     const dt = Number.isFinite(dtS) ? Math.max(0, dtS) : 0
     try {
-      if (!this.driven) runtime.frame(dt, roomSeat => this.engineCode(roomSeat, human))
-      this.current = this.director.step(action, dt * 1000)
+      if (!this.driven) timed('EngineShowRuntime.frame', () => runtime.frame(dt, roomSeat => this.engineCode(roomSeat, human)))
+      this.current = timed('ShowDirector.step', () => this.director!.step(action, dt * 1000))
       this.sounds.push(...this.current.sounds)
-      this.loadEngine(runtime)
-      this.effects?.pump()
+      timed('observe: flush (once per frame)', () => this.flushObservation())
+      timed('ShowMode.loadEngine', () => this.loadEngine(runtime))
+      timed('EngineShowEffects.pump', () => this.effects?.pump())
       const visible = ['countdown', 'round', 'spectate'].includes(this.screen())
-      this.canvas.style.display = visible ? '' : 'none'
-      for (const stage of this.stages) stage.canvas.style.display = visible ? 'none' : stage.display
+      this.tierLine = ''
       if (visible && this.scene !== null && this.readView !== null && this.presenter !== null) {
-        this.presenter.refill(runtime.presentation(), runtime.snapshot(), this.readView.nearSeats())
-        this.bridge?.sync(this.presenter.submission().view)
-        this.scene.present(this.readView, 1, dt)
-        this.scene.render()
+        const presenter = this.presenter, view = this.readView, scene = this.scene
+        timed('EngineSeatPresenter.refill', () => presenter.refill(runtime.presentation(), runtime.snapshot(), view.nearSeats()))
+        const submission = presenter.submission()
+        timed('RenderBridge.sync', () => this.bridge?.sync(submission.view, view.tick))
+        if (perfEnabled) {
+          const mode = (scene.port as { shadingMode?: ShadingMode }).shadingMode ?? 'scene'
+          this.tierLine = seatTierLine(submission, mode, this.farModel)
+        }
+        timed('ZoneNetScene.present', () => scene.present(view, 1, dt))
+        timed('ZoneNetScene.render', () => scene.render())
       }
     } catch (error) {
       this.fail(error)
@@ -340,16 +377,31 @@ export class ShowMode {
   }
 
   /** Post-tick: refresh the read view, observe the scene once for this tick, feed the far figures. Before-release only invalidates. */
+  // The presented seats are read once per frame, from the last tick's observation: the far view keeps only the latest
+  // snapshot of each domain and the scene is drawn once per frame, so decoding every seat on each of up to 8 catch-up
+  // ticks was most of EngineShowRuntime.frame (measured: ~10 ms per tick with 60 seats). The events lane (EngineShowEffects)
+  // still sees every tick. A release drops the pending observation (its worlds are going away) and applies at once.
+  private pendingObservation: EngineShowObservation | null = null
+
   private observeEngine(observation: EngineShowObservation): void {
-    const view = this.readView
-    if (this.disposed || view === null || this.presenter === null) return
+    if (this.disposed || this.readView === null || this.presenter === null) return
     if (observation.kind === 'before-release') {
+      this.pendingObservation = null
       this.presenter.observe(observation, new Set())
       return
     }
-    view.refresh(1)
-    this.scene?.observe(view)
-    this.presenter.observe(observation, view.nearSeats())
+    this.pendingObservation = observation
+  }
+
+  private flushObservation(): void {
+    const observation = this.pendingObservation
+    this.pendingObservation = null
+    const view = this.readView
+    if (observation === null || this.disposed || view === null || this.presenter === null) return
+    const presenter = this.presenter
+    timed('observe: EngineShowView.refresh', () => view.refresh(1))
+    timed('observe: ZoneNetScene.observe', () => this.scene?.observe(view))
+    timed('observe: EngineSeatPresenter.observe', () => presenter.observe(observation, view.nearSeats()))
   }
 
   /** A new round or course: the scene is rebuilt on the presented course; the director's worldReady follows its load. */
@@ -360,10 +412,10 @@ export class ShowMode {
     const key = `${presentation.round}:${course.id}`
     if (key === this.engineKey) return
     this.engineKey = key
-    this.scene?.dispose()
-    this.scene = null
     this.bridge?.dispose()
     this.bridge = null
+    this.scene?.dispose()
+    this.scene = null
     void this.prepareEngine(key, presentation.round, course)
   }
 
@@ -376,6 +428,8 @@ export class ShowMode {
       const content = await checkAwait(`round ${round}: content ${course.id}`, () => zoneContent('sprint', course.id))
       const seats = runtime.snapshot().seatOf
       const local = Math.max(0, seats.indexOf(this.localSeat))
+      this.sceneSeats = 1
+      const backing = { width: this.canvas.width, height: this.canvas.height }
       const prepared = await checkAwait(`round ${round}: render port`, () => prepareZoneNetScene({
         canvas: this.canvas, crowdCull: seats.length > 8, followSeats: [local], orbit: this.options.orbit, course,
         createPort: content.createPort, assets: content.assets, bean: content.bean, character: content.character,
@@ -384,9 +438,14 @@ export class ShowMode {
       if (!live()) { prepared.dispose(); return }
       const scene = prepared.attach(seats.length, local)
       this.scene = scene
-      this.bridge = farPenguinBridge(scene.port, content.bean)
+      this.sceneBacking = backing
+      this.grow()
+      this.farModel = content.farModel
+      const bridge = this.bridge = farPenguinBridge(scene.port, content.bean, this.farModel === 'penguin'
+        ? { asset: content.character, skinned: content.skinned } : undefined)
+      if (perfEnabled) perfLine('seats', () => this.tierLine)
       if (this.readView !== null) scene.present(this.readView, 1, 0)
-      await checkAwait(`round ${round}: scene paint and animation`, () => scene.ready())
+      await checkAwait(`round ${round}: scene paint and animation`, () => Promise.all([scene.ready(), bridge.ready]))
       await prepareCourse(scene.port, course.id, { cancelled: () => !live() })
       if (live()) this.director?.worldReady(round)
     } catch (error) {
@@ -430,6 +489,8 @@ export class ShowMode {
     const index = round.plan.index
     try {
       const content = await checkAwait(`round ${index}: content ${round.plan.course.id}`, () => zoneContent('sprint', round.plan.course.id))
+      this.sceneSeats = Math.max(1, Math.min(4, this.humanCount))
+      const backing = { width: this.canvas.width, height: this.canvas.height }
       const prepared = await checkAwait(`round ${index}: render port`, () => prepareZoneNetScene({
         canvas: this.canvas, crowdCull: round.seatOf.length > 8,
         followSeats: Array.from({ length: this.humanCount }, (_, k) => {
@@ -444,6 +505,8 @@ export class ShowMode {
       const local = round.seatOf.indexOf(this.localSeat)
       const scene = prepared.attach(round.seatOf.length, local >= 0 ? local : (round.localSeats[0] ?? 0))
       this.scene = scene
+      this.sceneBacking = backing
+      this.grow()
       // Mount the near scene before waiting for its animation assets.
       scene.update(round.match, 1, 0)
       await checkAwait(`round ${index}: scene paint and animation`, () => scene.ready())
@@ -559,6 +622,7 @@ export class ShowMode {
     this.presenter = null
     this.bridge?.dispose()
     this.bridge = null
+    this.tierLine = ''
     if (!this.driven) this.engineRuntime?.dispose()
     this.engineRuntime = null
     this.scene?.dispose()

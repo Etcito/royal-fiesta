@@ -8,7 +8,7 @@ import type { Planar } from '../client/cameraBasis.ts'
 import type { CourseDressing } from '../content.ts'
 import type { FarFeed } from '../net/farFeed.ts'
 import type { ZoneMatch } from '../net/zoneMatch.ts'
-import { FarRenderer } from './farRender.ts'
+import { farFigureMode, FarRenderer } from './farRender.ts'
 import { OrbitCamera } from './orbitCamera.ts'
 import type { RenderPort, Viewport } from './port.ts'
 import { SceneView } from './sceneView.ts'
@@ -107,6 +107,8 @@ export class SplitScreenLayout {
         })
         const far = new FarRenderer({
           port, bean: options.bean, feed: options.feed,
+          penguin: farFigureMode() === 'penguin' && options.character !== undefined
+            ? { asset: options.character, skinned: options.skinned } : undefined,
           holdsLocalSeat: seat => adapter.holdsSeat(seat),
         })
         panes.push({ port, adapter, orbit, scene, far })

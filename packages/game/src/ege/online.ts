@@ -20,7 +20,7 @@ import { EngineVoteBarrier, onlineSeatMap, registerEngineOnlineStats } from './o
 import type { EngineOnlineSeatMap, EngineOnlineStats } from './onlineState.ts'
 import { createEngineShowFactory } from './showFactory.ts'
 import type { EngineShowFactory } from './showFactory.ts'
-import { entityBytes, patchClock, patchLifecycle } from './showRuntime.ts'
+import { entityBytes, patchClock, patchLifecycle, PresentationMemo } from './showRuntime.ts'
 import { readShowSelection, showSchemaLayout } from './showState.ts'
 import type { EngineShowSelection } from './showState.ts'
 import type {
@@ -258,6 +258,7 @@ class OnlineShowRuntime implements EngineShowRuntime {
   private cursorEntity: number | undefined
   private sessionDesyncs = 0
   private physics: RoundPhysics | undefined
+  private readonly worldMemo = new PresentationMemo()
   private disposed = false
 
   constructor(
@@ -305,7 +306,8 @@ class OnlineShowRuntime implements EngineShowRuntime {
     this.assertLive()
     const physics = this.physics
     const sim = physics?.capture.sim
-    const world = sim === undefined ? null : this.factory.presentationWorld(sim)
+    const world = sim === undefined ? null
+      : this.worldMemo.resolve(this.engine, this.layout, sim, () => this.factory.worldRef(sim), () => this.factory.presentationWorld(sim))
     return {
       showId: this.factory.showId,
       tick: this.engine.tick(this.global.world),
@@ -579,6 +581,7 @@ class OnlineShowRuntime implements EngineShowRuntime {
       this.notify('before-release', this.snapshot())
     } finally {
       this.physics = undefined
+      this.worldMemo.clear()
       this.sessionDesyncs += physics.session.stats.desyncs
       physics.session.dispose()
       for (const sim of physics.capture.sims) this.factory.release(sim)

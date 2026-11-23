@@ -1,9 +1,10 @@
-// Far players: one simplified rigid figure per FAR seat, lighter than the near skinned characters.
-// Display only: reads FarFeed's interpolated poses and never touches a simulation.
+// Display-only far players, using the authored penguin in the cheaper shading tier.
 import type { PrimsAsset } from '@royal-fiesta/game/prims'
+import { loadAnimBrick } from '../anim/brick.ts'
 import type { FarFeed } from '../net/farFeed.ts'
-import { PALETTE } from './palette.ts'
+import { PALETTE, seatTint } from './palette.ts'
 import type { QuatT, RenderPort, Vec3T } from './port.ts'
+import { restPoseSkin, type SkinnedCharacter } from './sceneView.ts'
 
 // A far seat borrows its palette colour, pulled towards its own luminance and then towards white, so the
 // bean still reads as the same player without competing with the full skinned figures near the camera.
@@ -24,10 +25,93 @@ export function farTint(seat: number): Vec3T {
   return [r + (1 - r) * LIGHTEN, g + (1 - g) * LIGHTEN, b + (1 - b) * LIGHTEN]
 }
 
+export function farFigureMode(search = typeof location === 'undefined' ? '' : location.search): 'penguin' | 'oldbean' {
+  return new URLSearchParams(search).get('far') === 'oldbean' ? 'oldbean' : 'penguin'
+}
+
+export interface FarPenguinAsset { asset: PrimsAsset; skinned?: SkinnedCharacter }
+
+/** Share idle and waddle clip samples across far seats at 15 Hz. The pose feed supplies
+ * displacement for the choice of clip, while the root transform still follows every frame. */
+export class FarPenguins {
+  private readonly port: RenderPort
+  private readonly asset: number
+  private readonly rest: Float32Array | null
+  private readonly last = new Map<number, { tick: number; position: Vec3T }>()
+  private clips: Awaited<ReturnType<typeof loadFarClips>> | null = null
+  private poses: readonly Float32Array[] = []
+  private sampledTick = -1
+  private disposed = false
+  readonly ready: Promise<void>
+
+  constructor(port: RenderPort, figure: FarPenguinAsset) {
+    this.port = port
+    const skinned = port.registerSkinned && port.setPose ? figure.skinned : undefined
+    this.asset = skinned === undefined ? port.registerAsset(figure.asset.id, figure.asset) : port.registerSkinned!(skinned.assetId, skinned.skin)
+    this.rest = skinned === undefined ? null : restPoseSkin(skinned.skin.rig as unknown as Parameters<typeof restPoseSkin>[0])
+    this.ready = skinned === undefined ? Promise.resolve() : loadFarClips(skinned).then(clips => {
+      if (this.disposed) clips.dispose()
+      else this.clips = clips
+    }).catch(error => console.error('[far penguins] idle and waddle clips unavailable', error))
+  }
+
+  create(tint: Vec3T | null): number {
+    const instance = this.port.createInstance(this.asset, tint, 'vertex')
+    if (this.rest !== null) this.port.setPose!(instance, this.rest)
+    return instance
+  }
+
+  move(instance: number, position: Vec3T, tick: number): void {
+    if (this.clips === null) return
+    const sampleTick = 4 * Math.floor(tick / 4)
+    const before = this.last.get(instance)
+    if (before?.tick === sampleTick) return
+    if (sampleTick !== this.sampledTick) {
+      this.poses = this.clips.sample(sampleTick)
+      this.sampledTick = sampleTick
+    }
+    const elapsed = before === undefined ? 0 : (sampleTick - before.tick) / 60
+    const distance = before === undefined ? 0 : Math.hypot(position[0] - before.position[0], position[2] - before.position[2])
+    const walking = elapsed > 0 && distance > 0.35 * elapsed && distance < 18 * elapsed
+    this.port.setPose!(instance, this.poses[walking ? 1 : 0])
+    this.last.set(instance, { tick: sampleTick, position })
+  }
+
+  forget(instance: number): void { this.last.delete(instance) }
+
+  dispose(): void {
+    this.disposed = true
+    this.clips?.dispose()
+    this.clips = null
+    this.last.clear()
+  }
+}
+
+async function loadFarClips(character: SkinnedCharacter) {
+  const api = await loadAnimBrick()
+  const { bindings: _b, smooth: _s, ...rigSource } = character.skin.rig as typeof character.skin.rig & { bindings?: unknown; smooth?: unknown }
+  const rig = api.loadRig(JSON.stringify(rigSource))
+  const clips: { clip: ReturnType<typeof api.loadClip>; ticks: number }[] = []
+  const dispose = () => { for (const { clip } of clips) clip.free(); rig.free() }
+  try {
+    const sources = character.skin.clips as readonly { name: string; lengthTicks: number }[] | undefined
+    for (const name of ['idle', 'waddle']) {
+      const source = sources?.find(clip => clip.name === name)
+      if (source === undefined || !(source.lengthTicks > 0)) throw new Error(`missing ${name} clip for ${character.assetId}`)
+      clips.push({ clip: api.loadClip(rig, JSON.stringify(source)), ticks: source.lengthTicks })
+    }
+    return { sample: (tick: number) => clips.map(({ clip, ticks }) => api.sampleClip(clip, tick % ticks).skin), dispose }
+  } catch (error) {
+    dispose()
+    throw error
+  }
+}
+
 export interface FarRendererOptions {
   port: RenderPort
   // The zone content supplies a separate low-poly, unskinned character asset.
   bean: PrimsAsset
+  penguin?: FarPenguinAsset
   feed: FarFeed
   // Seats this peer simulates in a NEAR domain are drawn by the near scene, never here.
   holdsLocalSeat: (seat: number) => boolean
@@ -45,7 +129,8 @@ export class FarRenderer {
   private readonly port: RenderPort
   private readonly feed: FarFeed
   private readonly holdsLocalSeat: (seat: number) => boolean
-  private readonly beanAsset: number
+  private readonly beanAsset: number | null
+  private readonly penguins: FarPenguins | null
   // Indexed by seat; an entry survives while the seat is absent so its instance is reused on return.
   private readonly bySeat: (FarInstance | undefined)[] = []
   private readonly created: FarInstance[] = []
@@ -55,8 +140,8 @@ export class FarRenderer {
     this.port = opts.port
     this.feed = opts.feed
     this.holdsLocalSeat = opts.holdsLocalSeat
-    // A separate name prevents the near scene's skinned registration from replacing this LOD.
-    this.beanAsset = opts.port.registerAsset('zone-far-bean', opts.bean)
+    this.penguins = opts.penguin === undefined ? null : new FarPenguins(opts.port, opts.penguin)
+    this.beanAsset = this.penguins === null ? opts.port.registerAsset('zone-far-bean', opts.bean) : null
   }
 
   get instanceCount(): number {
@@ -73,23 +158,31 @@ export class FarRenderer {
         !Number.isFinite(entity.z) || !Number.isFinite(entity.yaw)) continue
       let entry = this.bySeat[entity.seat]
       if (entry === undefined) {
-        entry = { seat: entity.seat, instance: this.port.createInstance(this.beanAsset, farTint(entity.seat)), visible: true, frame }
+        const instance = this.penguins === null
+          ? this.port.createInstance(this.beanAsset!, farTint(entity.seat)) : this.penguins.create(seatTint(entity.seat))
+        entry = { seat: entity.seat, instance, visible: true, frame }
         this.bySeat[entity.seat] = entry
         this.created.push(entry)
       }
       entry.frame = frame
       const half = entity.yaw / 2
       const q: QuatT = [0, Math.sin(half), 0, Math.cos(half)]
-      this.port.setTransform(entry.instance, [entity.x, entity.y, entity.z], q, UNIT)
+      const position: Vec3T = [entity.x, entity.y, entity.z]
+      this.port.setTransform(entry.instance, position, q, UNIT)
+      this.penguins?.move(entry.instance, position, displayTick)
       this.show(entry, true)
     }
     for (let i = 0; i < this.created.length; i++) {
       const entry = this.created[i]
-      if (entry.frame !== frame) this.show(entry, false)
+      if (entry.frame !== frame && entry.visible) {
+        this.show(entry, false)
+        this.penguins?.forget(entry.instance)
+      }
     }
   }
 
   dispose(): void {
+    this.penguins?.dispose()
     for (let i = 0; i < this.created.length; i++) this.port.destroyInstance(this.created[i].instance)
     this.created.length = 0
     this.bySeat.length = 0

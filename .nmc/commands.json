@@ -281,5 +281,47 @@
     "command": "node --experimental-strip-types tools/engineShowCapture.ts judge --stage online --page apps/web/dist --out out/engine-show/online --budget-s 3300",
     "timeout_s": 3600,
     "after": ["g7-online-render", "g7-online-fresh"]
+  },
+  {
+    "name": "g7-swap-unit-check",
+    "command": "node --experimental-strip-types --test packages/game/test/egeLocalSwap.test.ts apps/web/test/engineShowReload.test.ts apps/web/test/engineShowDevStatus.test.ts apps/web/test/engineSwapInventory.test.ts tools/test/savedScriptSave.test.ts",
+    "timeout_s": 3600,
+    "after": ["g7-offline-web-build"]
+  },
+  {
+    "name": "g7-swap-save",
+    "command": "node --experimental-strip-types tools/savedScriptSave.ts --page apps/web/dist",
+    "timeout_s": 1800,
+    "after": ["g7-offline-web-build"]
+  },
+  {
+    "name": "g7-swap-check",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts check --stage swap --page apps/web/dist --out out/engine-show/swap",
+    "timeout_s": 900,
+    "after": ["g7-offline-typecheck", "g7-offline-guard", "g7-swap-unit-check", "g7-swap-save"]
+  },
+  {
+    "name": "g7-swap-clean",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts clean --stage swap --page apps/web/dist --out out/engine-show/swap",
+    "timeout_s": 60,
+    "after": ["g7-swap-check"]
+  },
+  {
+    "name": "g7-swap-render",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts render --stage swap --page apps/web/dist --out out/engine-show/swap",
+    "timeout_s": 3600,
+    "after": ["g7-swap-clean"]
+  },
+  {
+    "name": "g7-swap-fresh",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts fresh --stage swap --page apps/web/dist --out out/engine-show/swap",
+    "timeout_s": 300,
+    "after": ["g7-swap-render"]
+  },
+  {
+    "name": "g7-swap-judge",
+    "command": "node --experimental-strip-types tools/engineShowCapture.ts judge --stage swap --page apps/web/dist --out out/engine-show/swap --budget-s 3300",
+    "timeout_s": 3600,
+    "after": ["g7-swap-render", "g7-swap-fresh"]
   }
 ]

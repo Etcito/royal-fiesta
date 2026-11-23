@@ -1,0 +1,39 @@
+[
+  {
+    "id": "engine-saved-script-applied",
+    "stage": "swap",
+    "filename": "engine-saved-script-applied.png",
+    "args": {
+      "scenario": "engine-saved-script-applied",
+      "testMode": true,
+      "seed": 7,
+      "humans": 1
+    },
+    "require": [
+      "backend eq \"engine\"",
+      "gpuErrors empty",
+      "faults eq 0",
+      "local.sampledTicks gt 0",
+      "effects.droppedRecords eq 0",
+      "effects.repeatedSoundDeliveries eq 0",
+      "effects.repeatedGrantDeliveries eq 0",
+      "swap.rejectedKept eq true",
+      "swap.rejectedDiagnostics gt 0",
+      "swap.applied eq true",
+      "swap.generation eq 2",
+      "swap.moduleChanged eq true",
+      "swap.tickPreserved eq true",
+      "swap.roundPreserved eq true",
+      "swap.behaviorChanged eq true",
+      "swap.signals eq 1",
+      "swap.faults eq 0"
+    ],
+    "description": "A running local engine round after a saved script change: the round HUD is legible, the camera-followed local penguin is visibly airborne high above the course floor and the surrounding penguins after a jump, and a script status panel at the top right reads script: applied with generation 2 and a module key",
+    "held_constant": [
+      "seed-7 first-round show course geometry, decor and lighting",
+      "penguin character model and costumes",
+      "1920x1080 show follow camera",
+      "round HUD layout"
+    ]
+  }
+]

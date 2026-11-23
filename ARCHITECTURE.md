@@ -3,11 +3,10 @@
 The deliverable is the existing Royal Fiesta game running on the Etcito engine behind `?engine=1`: start, hub, an offline or online 60-seat show, qualification, podium and return to the hub. `engine-show.html` is its dedicated demonstration page. The existing simulation remains available and its mandatory checks remain intact.
 
 ## Project configuration
-Creation settings: mode `repo`, clarify_answerer `jev`, autorun true, regressions `each_milestone`, milestone merge enabled, gpu false. Do not set model_routes or task_limits_json. Writable aliases are `engine` and `royal-fiesta`, each with a changed-scope branch check. Merge engine before royal-fiesta. All supplied studied repositories remain read-only; do not link haa or NodeGraph for changes. RAA, MAMA and SDF Modeler are consumed through their existing APIs. This project does not change rollback or add a command-message protocol.
 
-The primary repository owns the single project contract, `ARCHITECTURE.md`. During execution this contract lives in the graph. Final consolidation replaces that file with the current contract, without introductory conversation, duplicate sections, obsolete assignments or change-history prose.
+Royal Fiesta owns this project contract. Modules belong to exactly one repository; the generated ownership table identifies their tracked files and owners. Shared registrations have one producer and preserve existing consumers.
 
-Every module owns files in exactly one repository. Owner 0 means existing implementation retained. A milestone implements all exports of the modules it owns. Subsequent milestones consume those exports and add their own files; cross-owner edits require a minimal defect fix explicitly authorized by the milestone lead. Shared manifest and command registration remains additive, with one named registration producer per milestone. Tasks are created only when a milestone starts, against its actual predecessor commit; this plan creates none.
+Creation settings are repo mode, clarify_answerer jev, autorun true, regressions each_milestone, milestone merge enabled and GPU false. Writable repository aliases are engine and royal-fiesta, with changed-scope branch checks; merge engine first. Studied repositories remain read-only. RAA, MAMA and SDF Modeler are consumed through existing APIs. The integration preserves the rollback dependency and transport protocols.
 
 ## Implementation conventions
 Node >=22.18; ESM; TypeScript imports end in `.ts`; erasable syntax only. Use two spaces, single quotes, no semicolons and named exports, except Vite's configuration default export. TypeScript is loading, transport, serialization and presentation glue. New computation belongs in Rust/WASM or WebGPU; game logic belongs in AssemblyScript. Existing TypeScript simulation and presentation implementations are retained as existing coverage, not copied into the engine path. Normals and materials for SDF content come from the SDF in shaders; do not bake them.
@@ -36,63 +35,49 @@ Commands files are lists of objects using only name, command, timeout_s, optiona
 Browser flows use one explicit test mode: minimum presentation durations, skipped decorative transitions and readiness/state signals instead of fixed sleeps. Simulation ticks, real mesh ordering and confirmation semantics remain real. Preparation stays loading while pending and visibly failed on rejection. Preparation is cached outside fresh checkouts. The online Chrome harness is executed once by the host on the browser machine; no preceding local-browser duplicate is planned.
 
 ## Quality bar
-Deliverable type: a playable scripted game integration with an unchanged renderer and transport stack.
 
-- QB1 Determinism: restore and replay reproduce engine state; transferred seats retain controller, bot, route and scoring state. Controlled by subject tests, without hash comparisons.
-- QB2 Existing performance coverage remains green. This chain adds no performance measurements or new timing threshold.
-- QB3 Movement and corrections: near/far transitions preserve identity, parked seats disappear and returning seats do not duplicate. Controlled by adapter tests and judged transition captures.
-- QB4 Existing input-latency coverage remains green; the engine path does not add a presentation-controlled simulation delay.
-- QB5 Complete play: every supported round kind, playoffs, final winner, podium and hub return work. Controlled by script/runtime tests and the actual demo flow.
-- QB6 Presentation: recognizable upright penguins, legible round/timer/qualification HUD, visible moving mechanisms, correct costumes and movement poses, winner visibly above the other podium places, and walking/emoting hub occupants. Controlled by saved captures judged against these descriptions.
-- QB7 Refusals: invalid schema, script, content, module identity or preparation produces a visible actionable error. Controlled by refusal and pending/failed-readiness tests.
-- QB8 Repository hygiene: existing guards pass; generated WASM, captures, fonts and assets remain outside tracked source.
-- QB9 Runtime correctness replaces the obsolete requirement to produce performance reports. Sound and rewards are delivered once, only from eligible confirmed effects, and are silent during resimulation. Controlled by event-sink tests, including replay and domain replacement.
-- QB10 Each engine-round and new engine-show visual result uses its own working page and applicable judged capture, score at least 6.
-- QB11 Scripts compile against the actual schema, load successfully and report zero runtime faults in completed scenarios.
-- QB12 Running, jumping, diving, sliding/strokes, grabbing, stunning, swimming, carrying and surface behavior remain functional, including their view fields.
-- QB13 Gates, laps, finish, kill plane, respawn slots/protection, elimination and round closure follow the rules contract.
-- QB14 All 22 existing feature kinds remain supported; scaling the show does not leave eight-seat arrays or ownership assumptions on its path.
-- QB15 Equal engine inputs produce equal engine state; no legacy simulation acts as an oracle.
-- QB16 Existing flows and repository checks remain valid. The normal shipped flow is not used as an experimental verification surface; exercises use the dedicated page or an explicit engine=1 development URL.
-- QB17 Online acceptance: "two clients and 58 bots play one full round with `?engine=1` and no desync is reported". Controlled by the extended online harness and host-recorded functional verification. It exercises new wiring, not a new validation campaign for rollback.
-- QB18 Authoring: a modeler-saved script changes the next local simulation ticks without resetting the current round, while a rejected edit leaves the running module and state intact. Controlled by swap tests and the judged saved-script scenario, which composes the dev reload/status modules in a local engine-show.html round fed by the modeler-saved staged publications; engine-show-dev.html is the interactive authoring page.
+These are acceptance requirements, not assertions that every scenario has passed. Current integration limitations are documented in the relevant modules.
+
+- QB1: deterministic restore/replay and transferable controller, bot, route and scoring state, checked through functional assertions without new hash comparisons.
+- QB2: preserve existing performance coverage; add no measurement deliverable or timing threshold.
+- QB3: preserve stable identity across near/far transitions, parking, return and domain replacement, without duplicate penguins.
+- QB4: preserve existing input-latency coverage and avoid presentation-controlled simulation delay.
+- QB5: support round kinds, playoffs, qualification, confirmed winner, podium and hub return through authoritative scripts.
+- QB6: render upright penguins, legible round/timer/qualification HUD, visible mechanisms, costumes, movement poses, an elevated winner and walking/emoting hub occupants.
+- QB7: invalid schema, scripts, content, identity and preparation fail visibly with actionable errors; pending or failed preparation never reports ready.
+- QB8: repository guards pass; generated WASM, captures, fonts and assets remain untracked.
+- QB9: eligible confirmed effects deliver sound and rewards once, remain silent during replay and retain receipts across world replacement.
+- QB10: required visual results use their working page and managed GPU captures judged at least 6.
+- QB11: scripts compile against the actual schema, load successfully and report zero runtime faults in completed scenarios.
+- QB12: movement, jumping, diving, sliding/strokes, grabbing, stunning, swimming, carrying and surface behavior include their presentation fields.
+- QB13: gates, laps, finish, kill plane, respawn slots/protection, elimination and closure obey the rules contract.
+- QB14: all 22 feature kinds remain supported, with roster-sized seat storage on the show path.
+- QB15: equal engine inputs produce equal engine state; the legacy simulation is not an execution oracle.
+- QB16: preserve existing flows and mandatory checks; browser exercises use dedicated pages or explicit engine=1 URLs.
+- QB17: host online acceptance requires two clients and 58 bots, one completed confirmed round, zero reported desyncs and zero script faults.
+- QB18: a modeler-saved script changes subsequent local ticks without resetting the round; rejected edits preserve the running module and state. The interactive page is engine-show-dev.html; the judged saved-script scenario composes reload/status modules in engine-show.html.
 
 ## 1. Conventions (every module follows these)
 
 ### 1.1 Runtime and language
-Node >=22.18 executes `.ts` through `node --experimental-strip-types`. ESM, erasable TypeScript, strict checking and `.ts` import extensions remain mandatory. `npm run typecheck` uses tools/typecheck.ts and the existing root/workspace projects; AssemblyScript is compiled separately. Tests use node:test and node:assert/strict in tools/test, packages/*/test, apps/headless/test and apps/web/test. Vite discovers every root HTML page in apps/web and emits apps/web/dist.
+Node >=22.18, ESM, strict erasable TypeScript and .ts import extensions. Tests use node:test and node:assert/strict through node --experimental-strip-types. tools/typecheck.ts checks the workspace projects; AssemblyScript compiles separately. Vite discovers root HTML pages in apps/web and emits apps/web/dist. Implementation conventions specify language ownership and deterministic restrictions.
 
-### 1.2 Dependencies and bricks
-Manifest/lockfile pins remain authoritative. Rollback release packages and deterministic Rapier remain dependencies of the existing path. Engine/compiler bricks use the existing local links; tools/egeBricks.ts prepares or checks them. RAA and MAMA are built read-only siblings. SnapWriter/SnapReader use explicit lengths and raw/u32 words for blobs. Existing rollback confirmation and transport APIs are retained. The relay introduces mesh peers and carries lobby presence/signaling; G7 game inputs, snapshots, results and zone traffic use WebRTC data channels.
+### 1.2 Dependencies and layout
+Manifest/lockfile pins are authoritative. Kong links engine/compiler bricks; tools/egeBricks.ts checks their outputs. RAA and MAMA are read-only dependencies. packages/sim contains the existing simulation; packages/game contains browser-safe adapters; apps/headless contains Node runners; apps/web contains pages; scripts/ege contains game scripts; ege.schema.json declares their state; tools contains build/capture jobs. Dependency direction is sim <- game <- apps. No Node imports enter packages/game.
 
-### 1.3 Layout
-packages/sim retains the existing deterministic implementation; packages/game contains browser-safe loading/network/view adapters; apps/headless contains Node tools; apps/web contains Vite pages; scripts/ege contains AssemblyScript; ege.schema.json contains game declarations; tools contains build/capture jobs; fixtures contains small JSON; out contains ignored generated output. Dependency direction remains sim <- game <- apps. No Node imports enter packages/game.
+### 1.3 State and ownership
+The module table governs shared registrations. Schema declarations and generated accessors have one owner; consumers do not invent offsets. Simulation state uses deterministic math, ordered operations and snapshotted RNG. Engine scripts own authoritative show rules and bot decisions. TypeScript loads, transports and decodes state, including copying declared lifecycle/protocol inputs at deterministic boundaries; presentation does not decide qualification or run bot brains.
 
-### 1.4 Module ownership and shared files
-The module table is authoritative. Package scripts/dependencies, tsconfig registrations, ignore entries and commands may be appended only by the milestone's named registration owner. Preserve earlier command entries exactly. Schema declarations and generated accessors have one owner; no consumer invents field offsets.
+### 1.4 Units and fixed values
+Metres, seconds, radians; Y up, forward +Z, 60 Hz and gravity (0,-20,0). Legacy matches and engine-round use eight seats. Shows support sixty stable room seats; human input slots are 0..7 and bots use -1. Engine worlds retain the 32-input-player limit. Unused engine slots are zero; S1 neutral is 32639.
 
-### 1.5 Determinism (sim scope = packages/sim/src)
-Existing purity restrictions, deterministic math, ordered arrays, snapshotted RNG and ordered Rapier lifecycle remain. View/network code never writes simulation state. G7 authoritative state, including bots and season decisions, resides in engine records. TypeScript transports or decodes that state; it does not calculate qualification, choose routes or execute bot brains.
+FIESTA_TUNING retains tickRate 60, maxSubsteps 8, maxPrediction 16, snapshotRing 40, minDelay/maxDelay 2, delayHiddenTicks 6, lostAfterMs 3000 and dropWaitMs 1500. Zone sessions retain their tuning. Group bits are STATIC 1, MOVING 2, CHAR 4, DEBRIS 8 and PROBE 16. Captures are 1920x1080; camera FOV 60 degrees, near .1, far 500. Hub rates are 5 Hz or 1 Hz during matches, hello every five seconds, 360 frames/minute and ten/second; remote delay 300 ms and maximum extrapolation 200 ms. Standard/sprint profiles remain available.
 
-### 1.6 Units and fixed values
-Metres, seconds, radians; Y up and course-forward +Z. Fixed simulation rate 60 Hz and gravity (0,-20,0). Existing eight-seat matches and G6 rounds retain their sizes. G7 show capacity is 60 seats. A seat is not an engine input player: human slots are 0..7, bots have slot -1, and unused input slots contain engine neutral zero. The frozen engine limit of 32 players is unchanged. Input ownership follows stable room-seat identity even when round seats compact.
+### 1.5 Errors and storage
+RefusalError identifies area, path and repairable reason; engine errors retain their codes. Engine preparation/content failures never silently select the legacy simulation. JSON is UTF-8 with two-space indentation and a trailing newline. SnapWriter/SnapReader use explicit lengths and raw/u32 words for blobs. Content-address fields remain product data. Generated scripts, declarations, manifests and captures are untracked.
 
-Existing FIESTA_TUNING values remain tickRate 60, maxSubsteps 8, maxPrediction 16, snapshotRing 40, minDelay/maxDelay 2, delayHiddenTicks 6, lostAfterMs 3000 and dropWaitMs 1500. Zone sessions use their existing zone tuning. Group bits remain STATIC 1, MOVING 2, CHAR 4, DEBRIS 8, PROBE 16. Palette values, camera framing and hub rates remain the existing values: 1920x1080 captures; FOV 60 degrees, near .1, far 500; hub 5 Hz or 1 Hz during a match, hello every five seconds, 360 frames/minute and ten/second, remote delay 300 ms and maximum extrapolation 200 ms. Existing standard/sprint profiles remain available.
-
-### 1.7 Errors and refusals
-RefusalError messages identify area, path, problem and fix. Engine errors retain their codes. Invalid required input, absent content and unavailable preparation fail visibly; no silent substitution of the old simulation on engine=1.
-
-### 1.8 Data on disk
-UTF-8 JSON, two-space indentation and trailing newline. Existing content-address fields remain data. Compiled scripts, generated declarations, build manifests and captures are untracked outputs.
-
-### 1.9 Git guard (no binary or asset in git)
-Existing tools/guard.ts and hooks remain authoritative: general limit 262144 bytes, fixture limit 65536 bytes, forbidden binary extensions including WASM. Existing content-storage policy remains.
-
-### 1.10 Proofs
-Existing proof modules/files remain available without being scheduled as new milestone closeout work. G7 closes through repository checks, capped project smoke and its functional demo execution. Existing mandatory checks are not weakened. Browser rendering uses the managed GPU client; real online harness execution is a host operation on the browser machine.
-
-### 1.11 Quality bar
-The Quality bar at the end of conventions applies to every module and milestone. Existing functional and perceptual obligations are retained; obsolete report-producing obligations are explicitly replaced there.
+### 1.6 Guard and verification
+The guard enforces binary/UTF-8/NUL rules, a 262144-byte general limit and a 65536-byte fixture limit, with its existing lockfile exemption. Existing proof modules, golden files and mandatory checks remain runnable. New engine coverage asserts behavior, restore and delivered effects without adding benchmarks, golden images or legacy-oracle comparisons. The Quality bar governs acceptance. Managed physical-GPU captures and the host browser harness provide their respective visual and online evidence.
 
 ## 2. Shared data shapes and formats
 
@@ -164,155 +149,152 @@ Preserve ege.body.props (28-byte record), ege.contact.track (132-byte record wit
 
 ## 4. G7 show, zone and presentation contracts
 
-### G7.1 Identity, inputs and world construction
-RoomSeat is an integer 0..59, stable for the show. RoundSeat is an index into seatOf, the ascending surviving RoomSeat list. InputSlot is -1 for a scripted bot or 0..7 for a human. No API treats RoomSeat as an engine player index. The engine validator is engine:crates/ege-core/src/schema.rs:506, players range 0..32; G7 does not change it.
+### G7.1 Identity, control and worlds
+RoomSeat is a stable integer 0..59. RoundSeat indexes the ascending surviving seatOf roster. InputSlot is -1 for bots or 0..7 for humans; RoomSeat is never an engine player index. show_seat/show_field have eight inputs, show_rules zero and show_hub one. The engine limit remains 32.
 
-Add world kinds show_seat and show_field with eight input slots, show_rules with zero, and show_hub with one. All names obey the existing engine name rule [a-z][a-z0-9_.]*. Seat/field schedules use the existing G6 systems, with show control/bot preparation before character pre, and cumulative ledger publication after seat/feature rules. The rules world has no physics, consumes ege.zone.inbox and runs scripted ledger/qualification. Hub uses the same character/features and scripted fall recovery without competitive round closure.
+show_seat_identity stores room_seat, round_seat, input_slot and bot. show_control.code uses S1 offset-byte encoding, neutral 32639. SDK inputCode, traversal, behavior and reaction queues use signed engine-axis bytes, neutral zero. Controls convert SDK/reaction output to S1 before character pre; retained S1 control converts back before entering the reaction path. Both conversions preserve only button mask 0x70000 and clamp axes as E2 specifies. Missing human slots are neutral; invalid or duplicate mappings refuse.
 
-Every show seat carries show_seat_identity {room_seat:u32,round_seat:u32,input_slot:i32,bot:u32}, show_control {code:u32}, cumulative result records and bot state where applicable. Character pre reads show_control when present and otherwise retains the G6 axis/button path. Human control copies the assigned SDK slot. Bot control is calculated in AssemblyScript before character pre. Missing slots are neutral; duplicate/out-of-range human mappings refuse before world creation.
+Seat/field schedules prepare controls before character pre and publish cumulative results after seat/feature rules. show_rules consumes ege.zone.inbox without physics. show_hub provides character control, wandering and fall recovery without competitive closure. Entity-owned route, controller, respawn, bot/reaction and cumulative state transfers with its seat; entity references are remapped by the engine. Rules handoff restores the complete rules snapshot. Course/static ownership follows zone construction.
 
-Scene emission places seat, character, route, respawn, bot memory, reaction chunks and cumulative counters under the same zone owner. Additional child records have entity-typed owner references so the engine's existing transfer remapping applies. Static/course content follows existing zone ownership; do not instantiate every interactive feature independently in every island. On merge/split, entity-owned state transfers once; immutable authored data is reconstructed from the scene. Rules-domain rebuild restores its complete world snapshot, including season, ranks and processed inbound ticks.
+The script bot implementation and its serializers exist, but playable show scene emission currently omits bot_seat, bot_behaviour and show_nav_* rows. Consequently those emitted show bots remain neutral. Route lookup and cursor limitations are documented in ege-show-bots; runtime bot counts do not establish successful navigation.
 
-### G7.2 Rules, season and results
-Use the existing rules as the behavior specification, not as a runtime oracle: packages/sim/src/zones/ledger.ts, season/plan.ts, qualify.ts, points.ts, scheduler.ts, teams.ts, respawn.ts and route.ts. Round-kind rank: race=0,survival=1,team=2,collection=3,hunt=4,logic=5,final=6. Final-rule rank: none=0,crown=1,lastStanding=2. Reason rank: target=0,timeCap=1,lastStanding=2,allFell=3,overtime=4,teamWin=5,score=6,crown=7,playoff=8.
+### G7.2 Scripted rules and results
+The behavior specification is packages/sim/src/zones/ledger.ts and season/plan, qualify, points, scheduler, teams, respawn and route; these are not runtime oracles. Kind ranks are race 0, survival 1, team 2, collection 3, hunt 4, logic 5, final 6. Final rules are none 0, crown 1, lastStanding 2. Reasons are target 0, timeCap 1, lastStanding 2, allFell 3, overtime 4, teamWin 5, score 6, crown 7, playoff 8.
 
-Default show plan is [60,40,24,12,6,1]; long plan [60,48,36,24,12,6,1]. Next target is clamp(ceil(alive*nextNominal/currentNominal),1,alive-1). A prospective final above twelve survivors inserts a cut to twelve; final target is one. A team round is allowed only for an even roster, a half cut and no previous team round. Playoffs/cuts do not advance the nominal plan step. Preserve preselected final, unused-map preference, kind alternation preference, no H->I or D->G adjacency, candidate voting and deterministic tie order. Catalog iteration order is the committed season order; final/cut/playoff offer one candidate, ordinary slots up to three.
+Default plan is [60,40,24,12,6,1], long plan [60,48,36,24,12,6,1]. The next target is clamp(ceil(alive*nextNominal/currentNominal),1,alive-1). Finals above twelve survivors insert a cut to twelve; final target is one. Team rounds require an even roster, half cut and no preceding team round in the show. Cuts/playoffs do not advance the nominal step. Selection preserves the reserved final, unused-map and kind preferences, voting and deterministic ties. Final/cut/playoff offers one candidate; ordinary slots offer up to three. Catalog order is committed season order. NO_BACK_TO_BACK is mapped by map identity: show_catalog_entry.cut packs cut in bit 0 and banned-predecessor catalog index plus one in bits 8..31, zero for none. Multiple banned predecessors refuse.
 
-SeatRecord has seat,status,finishTick,finishSub,lap,stage,routeMm,falls,score,lastScoreTick,holdTicks,possessing,lastAcquireTick,matches,crossTicks,outTick,outSub,team,openingRank. All numeric counters/ids are i32 except possessing represented as u32 0/1. Split this into fixed records: show_result_a {seat,status,finish_tick,finish_sub,lap,stage,route_mm,falls,score,last_score_tick}; show_result_b {hold_ticks,possessing,last_acquire_tick,matches,cross_ticks,out_tick,out_sub,team,opening_rank}. Initialize ticks/stage/team absence to -1, other counters to zero, status alive.
+SeatRecord fields are seat,status,finishTick,finishSub,lap,stage,routeMm,falls,score,lastScoreTick,holdTicks,possessing,lastAcquireTick,matches,crossTicks,outTick,outSub,team,openingRank. show_result_a stores the first ten; show_result_b the remaining nine. Numeric fields are i32 except possessing as u32 0/1. Missing tick/stage/team values initialize to -1; counters to zero and status alive.
 
-Race ranking: finishers first by finish tick/subtick; unfinished by lap descending, stage descending, remaining route millimetres ascending, falls ascending. Survival: living first, then latest exit tick/subtick. Collection: score descending then last score tick ascending. Hunt: hold ticks descending, possession first, acquisition tick ascending. Logic: matches descending, crossing penalty ascending. Crown uses finish order; last-standing uses survival order. Remaining ties use the existing seedOrder algorithm and numeric seat ascending. That algorithm is gameplay ordering, never a verification hash.
+Race orders finishers by tick/subtick, then unfinished seats by descending lap/stage, ascending remaining route distance and falls. Survival puts living seats first, then latest exit. Collection sorts descending score then earliest last score; hunt descending hold, possession first then earliest acquisition; logic descending matches then ascending crossing penalty. Crown uses finish order and last-standing uses survival order. Remaining ties use seedOrder and numeric seat.
 
-Race closes at target or cap; survival enters overtime at cap and closes at target/all-fell or overtime end; team closes on a non-tied score at cap, a score change during overtime, or overtime end; collection/hunt/logic close at cap; finals close on crown/last-standing or overtime. A survival/crown tie across the quota boundary produces a playoff instead of awarding by presentation rank. A tied replay settles disputed seats by positive opening rank, then seed order, then seat. Qualified round points are entrants-rank+1; eliminated seats score zero. Team winners receive their existing winning-team rank treatment. Preserve opening race ranks and points across rounds.
+Race closes at target/cap; survival at target/all-fell or overtime end after its cap; team on a non-tied cap score, overtime score change or overtime end; collection/hunt/logic at cap; finals on their winning condition or overtime. Survival/crown quota-boundary ties create playoffs; tied replays use positive opening rank, seed order and seat. Qualified points are entrants-rank+1, eliminated points zero, with winning-team rank treatment. Opening ranks and cumulative points persist.
 
-Route state starts stage=-1,lap=0,finished=0. Ordered gates admit only the next stage, unordered gates only a later checkpoint. A finish before the last ordered stage is ignored; earlier laps reset stage. Remaining route distance projects onto authored path segments between current/next gates; nearest segment ties retain first index. Subtick is round(clamp((previousY-plane)/(previousY-y),0,1)*65535), zero when equal heights. Respawn uses wait/protection ticks, 1..12 spread slots in the existing four-column/three-row grid, deterministic anchor cursor and source facing; placement clears stale ground/jump/grab state.
+Routes start stage=-1, lap=0, finished=0. Ordered gates require the next stage; unordered gates a later checkpoint. Premature finishes are ignored and earlier laps reset stage. Remaining distance projects onto authored path segments with first-index nearest ties. Subtick is round(clamp((previousY-plane)/(previousY-y),0,1)*65535), zero for equal heights. Respawn uses waits/protection, 1..12 slots in a four-column/three-row grid, deterministic anchor cursors and source facing, clearing stale movement/grab state.
 
-Public EngineRoundResult is {index:number,map:string,course:string,kind:RoundKind,final:boolean,playoff:boolean,endTick:number,reason:LedgerReason,ranking:readonly number[],qualified:readonly number[],eliminated:readonly number[],points:readonly number[],teamScores:readonly number[],champion:number}. Seat lists use stable RoomSeat ids; points align with ranking. Champion -1 means absent. Results publish only after the authoritative step producing endTick is confirmed; the existing zone snapshot boundary requires confirmedTick > endTick. Empty/pending ledger is null, never a fabricated result.
+EngineRoundResult contains index,map,course,kind,final,playoff,endTick,reason,ranking,qualified,eliminated,points,teamScores,champion. Seat lists use RoomSeat; points align with ranking; champion -1 is absent. Results require confirmedTick > endTick. Pending ledger is null. Callers vote only on the vote screen with candidates and an active seatOf membership; runtime validation additionally rejects bots, invalid indices and out-of-phase votes.
 
-### G7.3 Bots and cumulative domain messages
-Port the actual brain, route and behavior semantics from packages/sim/src/bots/brain.ts, routes.ts, behaviour.ts, courseRead.ts, crossing.ts and ramps.ts. Behavior data remains royal-fiesta.bot version 0; short/safe are route preferences; predicates are always,obstacleAhead,hazardNear,stuck,nearNode,nearFinish; actions jump,dive,grab,useLever. Reuse parseBehaviour/bindBehaviour for data validation and serialize their validated values into records. Do not evaluate behaviors in TypeScript on the engine path.
+Runtime physics construction follows the script-committed selected map and surviving roster, preserving human slots. It applies authored cap/overtime consistently to rules and physics; missing/inconsistent content refuses. testMode shortens presentation waits, not gameplay settings.
 
-Preserve integer route costs: safe = exposure*1000000+distanceMm+1; short = (distanceMm+1)*64+exposure. Directed shortest paths settle equal distances by region id; equal predecessor costs use the existing tieKey. Unreachable routes fall back to authored path. Preserve decision cadence, reaction delay, wobble, stuck detection, wait/pull nodes, jump/dive pulses, survival retargeting and support-aware hex targets. Carry memory and RNG state with the seat; reaction rings use linked chunks of at most sixteen codes and support the validator's 0..120 reaction ticks. Bot traversal/geometry queries use engine WASM queries. Runtime bots are never injected as synthetic human network input.
+### G7.3 Bots and cumulative messages
+Behavior data is royal-fiesta.bot v0, validated with parseBehaviour/bindBehaviour and serialized into records. Route preferences are short/safe; predicates always, obstacleAhead, hazardNear, stuck, nearNode, nearFinish; actions jump, dive, grab, useLever. Scripts own decisions, cadence, reaction queues and traversal queries. Safe cost is exposure*1000000+distanceMm+1; short cost (distanceMm+1)*64+exposure. Equal distances settle by region id and equal predecessor costs by tieKey. Unreachable routes fall back to authored paths. Reaction chunks hold at most sixteen engine-format codes and support delays 0..120. Transfer retains initialization, RNG and pending reactions. Scene integration limitations are stated in G7.1.
 
-Use the existing zone outbox format rather than changing rollback packets. Its source is engine:crates/ege-physics/src/zone.rs:1361 outbox and :1693 parse_outbox_payload: u16 count followed by {key:u32,kind:u32,value:u32,tick:u32}. Inbound records are ege.zone.inbox {source,key,kind,value,tick}. The implicit global link is implemented by gamesaloon-rollback:packages/core/src/zones/session.ts:1244 and captureShadows at :1254; resimulation replaces that tick's payload.
+Zone outbox encoding is u16 count followed by {key:u32,kind:u32,value:u32,tick:u32}; inbox adds source. Resimulation replaces that tick's payload. Seat publishers use stable ids 65536+roomSeat*32+fieldRank, owner=roundSeat, kind=fieldRank and cumulative i32 bit-pattern values. Field ranks 0..18 follow SeatRecord order. Team contribution ids begin at 131072 and use authored feature/team identity. Construction refuses collisions.
 
-Publish cumulative seat counters, not grant-producing event deltas. Field rank is seat=0,status=1,finishTick=2,finishSub=3,lap=4,stage=5,routeMm=6,falls=7,score=8,lastScoreTick=9,holdTicks=10,possessing=11,lastAcquireTick=12,matches=13,crossTicks=14,outTick=15,outSub=16,team=17,openingRank=18. Each field uses a nonphysical outbox child with stable zone id 65536+roomSeat*32+fieldRank, owner=roundSeat, kind=fieldRank, value=the field's i32 bit pattern and tick=the produced simulation tick. Team contribution publishers use a separate range beginning 131072, indexed by authored feature index and team; contributions are cumulative and summed once per publisher. Refuse colliding ids at scene construction.
+Rules assemble complete records by stable key and produced tick. New complete records replace old cumulative state; older/repeated records do nothing and incomplete records wait. Conflicting complete values for the same key/tick refuse. Source domain is provenance, not identity. Accepted ticks and contributions are snapshotted. Presentation events never directly invoke sound or persistence from scripts.
 
-The rules script assembles complete records by stable key and produced tick. A complete newer record replaces the stored cumulative record; an older/repeated record changes nothing. Incomplete records wait without partial application. Conflicting complete values for the same key/tick refuse rather than awarding twice. Source-domain id is provenance, not seat identity. Last accepted ticks and cumulative contributions live in the rules snapshot. Presentation events remain separate engine events; replaying rules never invokes sound or persistence.
+### G7.4 Presentation and effects
+SceneReadView exposes tick, setup.playerCount, phase(out), character(player,out), course(), obstacleCount/spec/pose, mechanismItemCount/item/bodyPose/events and signal(id). It has no step method. CharacterView includes optional strokeTimer, strokePhase, strokeStart, slideSpeed, carry, surface and slideAir. Missing seats park and clear detail; invalid non-seat indices refuse; absent mechanism bodies return false without changing out.
 
-### G7.4 Read-only presentation boundary
-Define SceneReadView in packages/game/src/render/sceneReadView.ts. It exposes readonly tick:number; readonly setup:{readonly playerCount:number}; phase(out:MatchViewState):MatchViewState; character(player:number,out:CharacterView):CharacterView; course():ResolvedCourse|null; obstacleCount():number; obstacleSpec(index:number):ObstacleSpec; obstaclePose(index:number,out:Pose):Pose; mechanismItemCount():number; mechanismItem(index:number):MechItem; mechanismBodyPose(ref:BodyRef,out:Pose):boolean; mechanismEvents(fromTick:number,out:MechEvent[]):number; signal(id:string):boolean. CharacterView retains pos,vel,facing,mode,status,parked,teleportTick and optional strokeTimer,strokePhase,strokeStart,slideSpeed,carry,surface,slideAir. MatchViewState retains its existing phase/count/timer/winner/podium fields. Missing seats are explicitly parked and clear optional detail. Invalid non-seat indices refuse; absent mechanism body returns false without changing out.
+EngineShowRuntime.presentation() returns the selected course and live entity mappings for seats, obstacles, mechanisms, features and publishers. Incarnations distinguish reused handles. Borrowed data expires at tick/replacement/release boundaries; absent physics exposes no stale world. farSnapshot() returns a fresh copy of the live domain's raw far poses and refuses after invalidation.
 
-SceneView.update accepts SceneReadView. Simulation stepping is not part of that interface. Engine hosts explicitly call observeTick once after each presented tick. The legacy step observer is isolated behind a legacy adapter, preserving existing animation cadence tests. No as unknown as MatchSim cast occurs on the engine path.
+onPresentation emits synchronous post-tick observations after every executed tick, including rules-only ticks, and before-release while the event source remains readable. SceneView.observeTick runs once for each presented post-tick, never again for before-release. Listener errors surface without replaying executed ticks or bypassing cleanup. Legacy tick wrapping is isolated in legacySceneTicks.
 
-EngineShowView.refresh reads component views, entity poses, RenderBridge view buffers and confirmed results. Near membership uses stable seat identity; far members are excluded whenever near owns the seat. Domain replacement invalidates borrowed views before refresh. Existing SDF assets, skin/animation data, costumes, podium layout and audio pack are reused. The RAA API is consumed unchanged: raa:packages/raa/index.d.ts:227 primitiveMesh, :260 addNode, :287 setTransforms and :300 addInstance. No RAA source edit is planned.
+EngineShowView selects at most eight active near seats: humans by inputSlot/roomSeat, then bots by roomSeat. Other active seats remain far candidates; near exclusion prevents duplication without changing authority. EngineFarView decodes engine far bytes; incarnation replacement clears stale snapshots. Existing RAA/SDF, skins, costumes, camera, podium and audio assets remain in use.
 
-For effects, create EventBridge per world with isResimulating bound to the binding/domain. Sound and persistent grants register confirmed delivery, never both. Preserve one external-effect receipt per (show identity,round,stable publisher,event sequence,effect kind) across domain replacement; clear only when the show identity changes. Engine result components are the sole reward authority. Receipt tracking belongs outside rollback; authoritative awards belong inside it. A dropped event-ring record fails the functional scenario visibly. HUD/camera/animation may read predicted poses but do not commit grants.
+EngineShowEffects drains per-world EventBridge sources after ticks and before release, using confirmation/resimulation state. Sound and grants deliver only when eligible and confirmed; replay is silent. Receipts survive world replacement and are keyed by show, round, stable publisher, sequence and effect kind. Only authoritative results authorize grants. Dropped ring records fail visibly; deliveryStats reports actual dropped records and repeated sink deliveries. HUD/camera/animation may read prediction without committing grants.
 
-### G7.5 Lobby and transport admission
-EngineModuleIdentity is {backend:'engine',schemaKey:number,moduleKey:string}. schemaKey is the actual loaded engine schema key; moduleKey is an opaque build-publication identity, generated once for a successful compiler result and distributed with those exact bytes. It is not a hash and not the schema key. Persist the association in the build/cache record so page, lobby and local reload use the same identity. A newly compiled edit obtains a new moduleKey; unchanged cached compile results retain theirs. A separately published build may intentionally have a different identity.
+### G7.5 Admission and transport
+EngineModuleIdentity is {backend:'engine',schemaKey:number,moduleKey:string}. schemaKey identifies the loaded schema; moduleKey is an opaque publication identity associated with exact compiled bytes and retained in cache, not a verification hash. Successful new compilation receives a new key.
 
-Add optional engine identity to the existing opaque lobby payload. For engine=1 it is mandatory in the local offer and every participating opponent payload; backend/schemaKey/moduleKey must match exactly before creating a zone session. Missing, malformed or mismatched identity yields a visible mismatch and leaves/declines the match. Never silently downgrade to the legacy path. The legacy payload remains accepted only by the legacy path. Check pending and failed admission in unit tests. Do not send script sources/WASM through the relay.
+Engine lobby offers and all participating peer payloads must match backend/schemaKey/moduleKey before session creation. Missing, malformed or mismatched identities refuse visibly; legacy peers are admitted only on the legacy path. The relay carries presence/signaling, never scripts/WASM or show game data. ZoneMeshTransport, RoundTransport and ZoneSession carry WebRTC traffic without relay fallback. Factory script preparation completes before constructing a session; rejection exposes no partially ready runtime. A late client joins before roster sealing; delayed session readiness is separate from live roster insertion.
 
-Reuse ZoneMeshTransport, RoundTransport and ZoneSession. The relay remains signaling/presence only; there is no game-data relay fallback. Lobby waiting, late-started clients, spectator state and recovery remain the existing transport behavior. A late-started second harness client must enter the same lobby before its roster seals; separately exercise the existing delayed session readiness/rejoin path without inventing live roster insertion.
+### G7.6 Saved script reload
+rfEgeScripts observes saved .as.ts files, compiles the complete set and publishes revision,moduleKey,schemaKey,wasmUrl,diagnostics. Latest requested revision wins; failure retains runnable bytes and exposes diagnostics. SDF Modeler uses its existing registered-game writeGameFile path.
 
-### G7.6 Local script reload
-SDF Modeler already writes the registered game's script file through writeGameFile at sdfm:src/node/games/files.ts:301. compileName/compileSet at sdfm:src/core/code/scripts.ts:29 and :38 strip the scripts-folder prefix and collect the compile set. No modeler change or guessed output folder is required.
+Local reload validates every live world before swapping timelines. It preserves tick, round, records, scores, runtime identity and effect receipts; refusals leave old timelines intact. Online swaps refuse and schema changes require restart. Later-created worlds adopt the applied runner at their first post-tick observation. engine-show-dev.html attaches the reload/status UI; ege-dev-swap specifies the saved-file capture path and module lifetime.
 
-The existing rfEgeScripts Vite plugin observes saved .as.ts files under the manifest's scripts folder, compiles the complete set once through compileRfScripts and publishes {revision,moduleKey,schemaKey,wasmUrl,diagnostics}. Changes are coalesced; an older asynchronous result cannot replace a newer revision. The engine-show-dev.html interactive authoring page uses that successful publication, not an unsaved editor buffer. A compile failure publishes diagnostics and keeps the previous runnable bytes.
+### G7.7 Pages and captures
+mountEngineShow(root,options) returns a page with ready, state() and dispose(). Options are mode local/online, testMode, seed, humans and optional onRuntime. State reports screen,ready,error,backend,seats,humans,bots,round,tick,moduleKey,faults,completedRounds,desyncs. Pending/failed preparation is not ready. engine-show.html defaults to local, sixty seats, one human and starts in the engine hub; online shows attach through remountWith.
 
-Local show worlds use SwapTimeline. At a frame boundary validate the replacement against every live local world before swapping any. Preserve world tick, current round, component state, scores and presentation effect receipts. Swap every affected timeline atomically; on any refusal retain all old timelines. Dispose superseded modules only after no timeline references them. Local offline execution has no network history to preserve. Online swaps refuse explicitly. Schema changes require a deliberate local restart and never migrate a running world implicitly.
+Operations register before loading. Signals are page-ready, hub-ready, round-ready, round-ended, podium-ready, hub-returned and script-applied. Missing transitions fail. Capture inventories use id,stage,filename,args,require,description,held_constant, with unique lowercase hyphenated PNG filenames. Shared jobs own check/clean/render/fresh/judge and resumable storage.
 
-### G7.7 Functional page and capture registration
-The page bootstrap exports mountEngineShow(root:HTMLElement,options:EngineShowPageOptions):Promise<EngineShowPage>; options are {mode:'local'|'online',testMode:boolean,seed:number,humans:number,onRuntime?:(runtime:EngineShowRuntime)=>void}. EngineShowPage has ready:Promise<void>, state():EnginePageState, dispose():void. EnginePageState is {screen:string,ready:boolean,error:string|null,backend:'engine',seats:number,humans:number,bots:number,round:number,tick:number,moduleKey:string,faults:number,completedRounds:number,desyncs:number}. readiness remains false during pending/failed preparation.
+Offline images are simple-engine-character.png, sixty-seat-engine-round.png and engine-show-winner-podium.png. Hub images are engine-hub-walking-and-emotes.png and engine-show-returned-to-hub.png. The online inventory contains only engine-online-late-client-round.png, seed 7 and two humans, with twelve requirements for engine identity, errors/faults, clients/humans/bots, same round, delayed start, desyncs and membership. It does not require podium or effect facts. The background-client-podium scenario remains registered but is not an inventory requirement. Swap uses engine-saved-script-applied.png. Selection validates content before managed GPU execution; required moving features must be visible. The page budget is 270 seconds.
 
-engine-show.html defaults to local, sixty seats and one human; online scenarios require two human clients and fifty-eight bots. The engine-show-dev.html interactive authoring page mounts the same page in local mode for authoring. All page operations are registered before asynchronous loading and await the actual implementation. Stable signals are page-ready,hub-ready,round-ready,round-ended,podium-ready,hub-returned and script-applied. Missing expected transitions fail, not pass on zero observations.
-
-The capture adapter extends the existing validator rather than using its engine-round argument parser for show arguments. Inventory fields retain id,stage,filename,args,require,description,held_constant. Filename rule remains ^[a-z0-9-]+[.]png$, unique within the selected inventory; source is royal-fiesta:tools/engineRoundCapture.ts:327 loadInventory, bound to its current store through storeFor in the same file. Extraction preserves that validator/store relationship under named symbols.
-
-Required image pairs are simple-engine-character.png / one upright engine-controlled character on a fixed plain floor; sixty-seat-engine-round.png / a readable active show with near and far penguins and HUD; engine-show-winner-podium.png / the confirmed winner on the highest podium place; engine-hub-walking-and-emotes.png / engine-driven local movement and visible remote emote; engine-show-returned-to-hub.png / the completed show back in its hub; engine-online-late-client-round.png / both connected clients in the same engine round; engine-online-background-client-podium.png / the background client returned to a confirmed result; engine-saved-script-applied.png / the running local round after the saved script change with module status visible. Each stage's producer owns its inventory rows and runs them through the shared validator. Content ids come from the build's selection list and are resolved before GPU execution. Required moving features must intersect the chosen view volume.
-
-### G7.8 Host demonstration
-Extend tools/onlineChromes.mjs, not a second launcher. Build URLs using URL/searchParams so engine=1 survives. Preserve ownership and cleanup of only its spawned Chromes, including failures, signals and deadline. Add state-driven start, delayed second launch, real tab visibility/background exercise, and terminal round-result assertions. A process remaining alive or printed diagnostics alone is not success. The result requires two admitted human clients, fifty-eight scripted bots, a completed confirmed round, zero reported desyncs and zero script faults. The harness reports missing/stalled/error transitions and exits nonzero. It runs on the host browser machine against a locally served built development page; it does not run inside the model sandbox. No public deployment is requested.
-
+### G7.8 Host online demonstration
+The existing tools/onlineChromes.mjs supports engine, late-client, background-client and until round-ended/show-ended options. URLSearchParams preserves engine=1. State-driven CDP waits cover lobby entry, a second client before sealing, actual background visibility and terminal assertions. Round acceptance requires two humans, fifty-eight bots, a confirmed round and zero desyncs/faults; process survival alone is insufficient. Failures/stalls exit nonzero. Cleanup affects only owned Chromes. The harness runs on the host browser machine against a locally served build; no public deployment or sandbox-browser substitute is part of this contract.
 
 ## Module ownership
 
-Each module's repository, owner, files and consumes are listed here; the sections that follow give the module's exports and the rules it owns.
-
-| Module | Repository | Owner | Files | Consumes |
-|---|---|---|---|---|
-| workspace | royal-fiesta | 0 | `package.json`<br>`tsconfig.json`<br>`tsconfig.base.json`<br>`.gitignore`<br>`README.md`<br>`packages/sim/package.json`<br>`packages/sim/tsconfig.json`<br>`packages/game/package.json`<br>`packages/game/tsconfig.json`<br>`apps/headless/package.json`<br>`apps/headless/tsconfig.json`<br>`apps/web/package.json`<br>`apps/web/tsconfig.json` | — |
-| guard | royal-fiesta | 0 | `tools/guard.ts`<br>`tools/test/guard.test.ts`<br>`.githooks/pre-commit`<br>`docs/private-assets.md` | workspace |
-| bricks | royal-fiesta | 0 | `tools/bricks.ts`<br>`tools/test/bricks.test.ts` | workspace |
-| refusal | royal-fiesta | 0 | `packages/sim/src/refusal.ts`<br>`packages/sim/test/refusal.test.ts` | workspace |
-| detmath | royal-fiesta | 0 | `packages/sim/src/detmath.ts`<br>`packages/sim/src/vec.ts`<br>`packages/sim/test/detmath.test.ts`<br>`packages/sim/test/vec.test.ts`<br>`packages/sim/test/purity.test.ts` | workspace |
-| world | royal-fiesta | 0 | `packages/sim/src/world.ts`<br>`packages/sim/src/groups.ts`<br>`packages/sim/test/world.test.ts` | detmath, refusal |
-| flat-floor | royal-fiesta | 0 | `packages/sim/src/scenarios/flatFloor.ts`<br>`packages/sim/test/flatFloor.test.ts` | world |
-| proofkit | royal-fiesta | 0 | `apps/headless/src/proofkit.ts`<br>`apps/headless/test/proofkit.test.ts` | bricks |
-| m1-proof | royal-fiesta | 0 | `apps/headless/src/smoke.ts`<br>`apps/headless/proofs/m1-foundations.ts` | flat-floor, proofkit, guard, web-boot |
-| web-boot | royal-fiesta | 0 | `apps/web/vite.config.ts`<br>`apps/web/index.html`<br>`apps/web/src/boot.ts` | flat-floor, bricks, ege-build |
-| course-model | royal-fiesta | 0 | `packages/sim/src/course.ts`<br>`packages/sim/test/course.test.ts` | detmath |
-| motion | royal-fiesta | 0 | `packages/sim/src/obstacles/motion.ts`<br>`packages/sim/test/motion.test.ts` | course-model |
-| obstacles | royal-fiesta | 0 | `packages/sim/src/obstacles/system.ts`<br>`packages/sim/src/obstacles/colliders.ts`<br>`packages/sim/test/obstacles.test.ts` | motion, world |
-| prims | royal-fiesta | 0 | `packages/game/src/prims.ts`<br>`packages/game/test/prims.test.ts` | course-model, refusal |
-| assets | royal-fiesta | 0 | `packages/game/src/assets.ts`<br>`packages/game/test/assets.test.ts`<br>`fixtures/assets/floor-tile.prims.json`<br>`fixtures/assets/floor-disc.prims.json`<br>`fixtures/assets/wall-block.prims.json`<br>`fixtures/assets/spinner-bar.prims.json`<br>`fixtures/assets/pendulum-hammer.prims.json`<br>`fixtures/assets/seesaw-plank.prims.json`<br>`fixtures/assets/rotating-door.prims.json`<br>`fixtures/assets/conveyor-belt.prims.json`<br>`fixtures/assets/bounce-pad.prims.json`<br>`fixtures/assets/moving-platform.prims.json`<br>`fixtures/assets/finish-arch.prims.json`<br>`fixtures/assets/checkpoint-gate.prims.json` | prims |
-| course-loader | royal-fiesta | 0 | `packages/game/src/course.ts`<br>`packages/game/test/course.test.ts`<br>`fixtures/courses/obstacle-gallery.course.json`<br>`fixtures/courses/invalid/trimesh-collider.course.json`<br>`fixtures/courses/invalid/bad-motion.course.json`<br>`fixtures/courses/invalid/unknown-asset.course.json`<br>`fixtures/courses/invalid/race-without-finish.course.json` | assets, obstacles |
-| node-files | royal-fiesta | 0 | `apps/headless/src/files.ts`<br>`apps/headless/test/files.test.ts` | course-loader, bricks |
-| m2-proof | royal-fiesta | 0 | `apps/headless/proofs/m2-obstacles.ts`<br>`fixtures/golden/m2-obstacle-poses.json` | node-files, obstacles, proofkit |
-| input | royal-fiesta | 0 | `packages/sim/src/input.ts`<br>`packages/sim/test/input.test.ts` | world |
-| character | royal-fiesta | 0 | `packages/sim/src/character/capsule.ts`<br>`packages/sim/src/character/constants.ts`<br>`packages/sim/src/character/controller.ts`<br>`packages/sim/src/character/system.ts`<br>`packages/sim/test/character.test.ts`<br>`packages/sim/test/characterCapsule.test.ts` | input, obstacles, detmath |
-| input-scripts | royal-fiesta | 0 | `apps/headless/src/scripts.ts`<br>`apps/headless/test/scripts.test.ts` | character, input, node-files |
-| m3-proof | royal-fiesta | 0 | `apps/headless/proofs/m3-character.ts`<br>`fixtures/golden/m3-replay.json` | input-scripts, node-files, proofkit |
-| match-rules | royal-fiesta | 0 | `packages/sim/src/match/setup.ts`<br>`packages/sim/src/match/rules.ts`<br>`packages/sim/test/rules.test.ts` | course-model, world |
-| round-system | royal-fiesta | 0 | `packages/sim/src/match/roundSystem.ts`<br>`packages/sim/test/round.test.ts` | match-rules, character, obstacles |
-| bots | royal-fiesta | 0 | `packages/sim/src/bots/brain.ts`<br>`packages/sim/src/bots/botSystem.ts`<br>`packages/sim/test/bots.test.ts` | round-system, character, match-rules |
-| match-sim | royal-fiesta | 0 | `packages/sim/src/match/matchSim.ts`<br>`packages/sim/src/match/log.ts`<br>`packages/sim/src/match/offline.ts`<br>`packages/sim/test/matchSim.test.ts` | bots, round-system, obstacles, character |
-| course-set | royal-fiesta | 0 | `packages/game/src/courseSet.ts`<br>`packages/game/test/courseSet.test.ts`<br>`fixtures/courses/race-bean-dash.course.json`<br>`fixtures/courses/race-hammer-hill.course.json`<br>`fixtures/courses/survival-spin-zone.course.json`<br>`fixtures/courses/survival-hammer-ring.course.json`<br>`fixtures/courses/race-sprint.course.json`<br>`fixtures/courses/survival-sprint.course.json` | course-loader, match-rules |
-| m4-proof | royal-fiesta | 0 | `apps/headless/src/cli.ts`<br>`apps/headless/proofs/m4-rounds.ts` | match-sim, course-set, node-files, proofkit |
-| net-match | royal-fiesta | 0 | `packages/game/src/net/tuning.ts`<br>`packages/game/src/net/netMatch.ts`<br>`packages/game/src/net/pilot.ts`<br>`packages/game/test/netMatch.test.ts` | match-sim, input |
-| net-metrics | royal-fiesta | 0 | `packages/game/src/net/metrics.ts`<br>`packages/game/test/metrics.test.ts` | net-match |
-| m5-proof | royal-fiesta | 0 | `apps/headless/src/netsimMatch.ts`<br>`apps/headless/proofs/m5-netsim.ts` | net-metrics, net-match, course-set, node-files, proofkit |
-| relay-client | royal-fiesta | 0 | `packages/game/src/net/ws.ts`<br>`packages/game/src/net/relayProtocol.ts`<br>`packages/game/src/net/relayClient.ts`<br>`packages/game/src/net/relayTransport.ts`<br>`packages/game/test/relayTransport.test.ts` | refusal, net-match |
-| loopback-relay | royal-fiesta | 0 | `packages/game/src/net/loopbackRelay.ts`<br>`packages/game/test/loopbackRelay.test.ts` | relay-client |
-| rooms-client | royal-fiesta | 0 | `packages/game/src/net/roomsProtocol.ts`<br>`packages/game/src/net/roomsClient.ts`<br>`packages/game/test/roomsClient.test.ts` | relay-client |
-| webrtc | royal-fiesta | 0 | `packages/game/src/net/rtcBackend.ts`<br>`packages/game/src/net/webrtcTransport.ts`<br>`packages/game/test/webrtcTransport.test.ts` | rooms-client |
-| rtc-node | royal-fiesta | 0 | `apps/headless/src/rtcNode.ts`<br>`apps/headless/test/rtcNode.test.ts` | webrtc |
-| gamesaloon-local | royal-fiesta | 0 | `apps/headless/src/gamesaloon.ts`<br>`apps/headless/test/gamesaloon.test.ts` | bricks |
-| m6-proof | royal-fiesta | 0 | `apps/headless/src/realMatch.ts`<br>`apps/headless/proofs/m6-transports.ts`<br>`docs/network.md`<br>`docs/gamesaloon-gaps.md` | relay-client, loopback-relay, webrtc, rtc-node, gamesaloon-local, m5-proof |
-| render-port | royal-fiesta | 0 | `packages/game/src/render/port.ts`<br>`packages/game/src/render/nullPort.ts`<br>`packages/game/test/nullPort.test.ts` | prims |
-| scene-view | royal-fiesta | 0 | `packages/game/src/render/palette.ts`<br>`packages/game/src/render/camera.ts`<br>`packages/game/src/render/sceneView.ts`<br>`packages/game/test/sceneView.test.ts`<br>`fixtures/assets/bean.prims.json` | render-port, match-sim, net-match |
-| client-core | royal-fiesta | 0 | `packages/game/src/client/inputMap.ts`<br>`packages/game/src/client/inpageMatch.ts`<br>`packages/game/test/inpageMatch.test.ts` | scene-view, net-match, net-metrics |
-| web-client | royal-fiesta | 0 | `apps/web/client.html`<br>`apps/web/src/client/main.ts`<br>`apps/web/src/client/hud.ts`<br>`apps/web/src/client/sources.ts`<br>`apps/web/src/nmc/ops.ts`<br>`apps/web/public/nmc.gpu.json` | client-core, raa-port, relay-client, webrtc, rooms-client |
-| raa-port | royal-fiesta | 0 | `apps/web/src/render/raaStatus.ts`<br>`apps/web/src/render/raaPort.ts` | render-port, bricks |
-| m7-proof | royal-fiesta | 0 | `apps/headless/proofs/m7-web.ts`<br>`proofs/m7/raa-status.json` | web-client, client-core, node-files, proofkit |
-| hub-protocol | royal-fiesta | 0 | `packages/game/src/hub/protocol.ts`<br>`packages/game/test/hubProtocol.test.ts` | relay-client |
-| hub-world | royal-fiesta | 0 | `packages/game/src/hub/hubWorld.ts`<br>`packages/game/src/hub/remotes.ts`<br>`packages/game/src/hub/queuePad.ts`<br>`packages/game/test/hubWorld.test.ts`<br>`fixtures/courses/hub-plaza.course.json`<br>`fixtures/assets/queue-pad.prims.json`<br>`fixtures/assets/plaza-fountain.prims.json` | hub-protocol, character, obstacles, course-loader |
-| play-flow | royal-fiesta | 0 | `packages/game/src/hub/flow.ts`<br>`packages/game/src/hub/hubPilot.ts`<br>`packages/game/test/flow.test.ts` | hub-world, net-match, relay-client, client-core |
-| web-play | royal-fiesta | 0 | `apps/web/play.html`<br>`apps/web/src/play/main.ts`<br>`apps/web/src/play/hubView.ts`<br>`apps/web/src/play/inpageHub.ts`<br>`apps/web/src/play/ops.ts` | play-flow, loopback-relay, scene-view, web-client |
-| m8-proof | royal-fiesta | 0 | `apps/headless/src/hubLoop.ts`<br>`apps/headless/proofs/m8-hub.ts`<br>`proofs/m8/raa-status.json` | play-flow, gamesaloon-local, web-play, proofkit |
-| ege-body-contacts | engine | 0 | `crates/ege-physics/src/body_props.rs`<br>`crates/ege-physics/src/contacts.rs`<br>`crates/ege-physics/tests/body_props.rs`<br>`crates/ege-physics/tests/contacts.rs` | — |
-| ege-schema | royal-fiesta | 0 | `ege.schema.json`<br>`tools/test/egeSchema.test.ts` | ege-body-contacts, ege-box-collider |
-| ege-build | royal-fiesta | 0 | `tools/egeScripts.ts`<br>`tools/egeBricks.ts`<br>`apps/web/src/engineRound/scriptsPlugin.ts`<br>`tools/test/egeScripts.test.ts`<br>`tools/test/egeBricks.test.ts` | ege-schema, bricks |
-| ege-scene | royal-fiesta | 0 | `packages/game/src/ege/files.ts`<br>`packages/game/src/ege/inputCodes.ts`<br>`packages/game/src/ege/colliders.ts`<br>`packages/game/src/ege/featureEmitters.ts`<br>`packages/game/src/ege/sceneEmitter.ts`<br>`packages/game/test/egeInputCodes.test.ts`<br>`packages/game/test/egeScene.test.ts` | course-loader, course-model, character, match-rules, world, input |
-| ege-round | royal-fiesta | 0 | `packages/game/src/ege/round.ts`<br>`packages/game/src/ege/observe.ts`<br>`packages/game/test/egeObserve.test.ts` | ege-scene, bots, character, round-system |
-| ege-script-core | royal-fiesta | 0 | `scripts/ege/lib/vec.as.ts`<br>`scripts/ege/lib/seats.as.ts`<br>`scripts/ege/lib/boxes.as.ts`<br>`scripts/ege/lib/units.as.ts`<br>`scripts/ege/round/clock.as.ts` | ege-schema |
-| ege-harness | royal-fiesta | 0 | `apps/headless/src/egeHarness.ts`<br>`apps/headless/test/egeRound.test.ts` | ege-round, ege-scene, ege-build, ege-script-core, node-files |
-| ege-view | royal-fiesta | 0 | `packages/game/src/ege/sceneSim.ts`<br>`packages/game/test/egeSceneSim.test.ts` | ege-round, scene-view, match-sim |
-| ege-page | royal-fiesta | 0 | `apps/web/engine-round.html`<br>`apps/web/src/engineRound/main.ts`<br>`apps/web/src/engineRound/run.ts`<br>`apps/web/src/engineRound/hud.ts`<br>`apps/web/src/engineRound/ready.ts`<br>`apps/web/src/engineRound/ops.ts`<br>`apps/web/public/engine-round/inventory.json`<br>`apps/web/test/engineRoundRun.test.ts`<br>`apps/web/test/engineRoundPage.test.ts` | ege-view, ege-round, ege-scene, scene-view, web-client, render-port |
-| ege-capture | royal-fiesta | 0 | `tools/engineRoundCapture.ts`<br>`tools/test/engineRoundCapture.test.ts` | ege-harness, ege-page |
-| ege-manifest | royal-fiesta | 0 | `packages/game/src/gameManifest.ts`<br>`sdfm.game.json`<br>`packages/game/test/gameManifestEge.test.ts` | course-model |
-| ege-character | royal-fiesta | 0 | `scripts/ege/character/constants.as.ts`<br>`scripts/ege/character/pre.as.ts`<br>`scripts/ege/character/post.as.ts`<br>`scripts/ege/character/ground.as.ts`<br>`scripts/ege/character/moves.as.ts`<br>`scripts/ege/character/grab.as.ts`<br>`scripts/ege/character/bump.as.ts`<br>`apps/headless/test/egeCharacter.test.ts` | ege-script-core, ege-schema, ege-harness, ege-body-contacts, character |
-| ege-seat-rules | royal-fiesta | 0 | `scripts/ege/seat/rules.as.ts`<br>`scripts/ege/seat/route.as.ts`<br>`scripts/ege/seat/respawn.as.ts`<br>`fixtures/ege/ege-strip.course.json`<br>`apps/headless/test/egeSeatRules.test.ts` | ege-character, ege-script-core, ege-harness |
-| ege-features-race | royal-fiesta | 0 | `scripts/ege/features/marker.as.ts`<br>`scripts/ege/features/boost_lane.as.ts`<br>`scripts/ege/features/launch_pad.as.ts`<br>`scripts/ege/features/catch_volume.as.ts`<br>`scripts/ege/features/rolling_log.as.ts`<br>`scripts/ege/features/door_bank.as.ts`<br>`scripts/ege/features/swim_volume.as.ts`<br>`scripts/ege/features/tile_field.as.ts`<br>`packages/game/src/ege/features/marker.ts`<br>`packages/game/src/ege/features/boostLane.ts`<br>`packages/game/src/ege/features/launchPad.ts`<br>`packages/game/src/ege/features/catchVolume.ts`<br>`packages/game/src/ege/features/rollingLog.ts`<br>`packages/game/src/ege/features/doorBank.ts`<br>`packages/game/src/ege/features/swimVolume.ts`<br>`packages/game/src/ege/features/tileField.ts`<br>`packages/game/src/ege/features/road.ts`<br>`fixtures/ege/ege-yard-a.course.json`<br>`packages/game/test/egeFeatureEmitRace.test.ts`<br>`apps/headless/test/egeFeaturesRace.test.ts` | ege-scene, ege-seat-rules, ege-character, ege-harness |
-| ege-features-hazard | royal-fiesta | 0 | `scripts/ege/features/hex_field.as.ts`<br>`scripts/ege/features/memory_tiles.as.ts`<br>`scripts/ege/features/annulus.as.ts`<br>`scripts/ege/features/sweep.as.ts`<br>`scripts/ege/features/rising_kill.as.ts`<br>`packages/game/src/ege/features/hexField.ts`<br>`packages/game/src/ege/features/memoryTiles.ts`<br>`packages/game/src/ege/features/annulus.ts`<br>`packages/game/src/ege/features/sweep.ts`<br>`packages/game/src/ege/features/risingKill.ts`<br>`fixtures/ege/ege-yard-b.course.json`<br>`packages/game/test/egeFeatureEmitHazard.test.ts`<br>`apps/headless/test/egeFeaturesHazard.test.ts` | ege-features-race, ege-box-collider, ege-schema |
-| ege-features-objective | royal-fiesta | 0 | `scripts/ege/features/carry_item.as.ts`<br>`scripts/ege/features/ball.as.ts`<br>`scripts/ege/features/goal.as.ts`<br>`scripts/ege/features/collectible.as.ts`<br>`scripts/ege/features/bank.as.ts`<br>`scripts/ege/features/capture_zone.as.ts`<br>`scripts/ege/features/tail_set.as.ts`<br>`scripts/ege/features/crown.as.ts`<br>`packages/game/src/ege/features/carryItem.ts`<br>`packages/game/src/ege/features/ball.ts`<br>`packages/game/src/ege/features/goal.ts`<br>`packages/game/src/ege/features/collectible.ts`<br>`packages/game/src/ege/features/bank.ts`<br>`packages/game/src/ege/features/captureZone.ts`<br>`packages/game/src/ege/features/tailSet.ts`<br>`packages/game/src/ege/features/crown.ts`<br>`fixtures/ege/ege-yard-c.course.json`<br>`packages/game/test/egeFeatureEmitObjective.test.ts`<br>`apps/headless/test/egeFeaturesObjective.test.ts` | ege-features-hazard, ege-script-body-type |
-| ege-box-collider | engine | 0 | `crates/ege-physics/src/box_collider.rs`<br>`crates/ege-physics/src/lib.rs`<br>`crates/ege-physics/tests/box_collider.rs`<br>`ARCHITECTURE.md`<br>`AGENTS.md` | — |
-| ege-script-body-type | engine | 0 | `crates/ege-wasm/src/abi_script.rs`<br>`crates/ege-wasm/tests/abi_script.rs`<br>`packages/game-engine/src/abi.ts`<br>`packages/game-engine/src/script.ts`<br>`packages/game-engine/test/script.test.ts`<br>`sdk/assembly/engine.ts`<br>`sdk/assembly/physics.ts`<br>`sdk/sdk.json`<br>`packages/game-engine/compile/test/compile.test.ts` | — |
-| ege-show-runtime | royal-fiesta | M1 | `packages/game/src/ege/admission.ts`<br>`packages/game/src/ege/botData.ts`<br>`packages/game/src/ege/hub.ts`<br>`packages/game/src/ege/hubFlow.ts`<br>`packages/game/src/ege/online.ts`<br>`packages/game/src/ege/onlineState.ts`<br>`packages/game/src/ege/showEffects.ts`<br>`packages/game/src/ege/showFactory.ts`<br>`packages/game/src/ege/showRuntime.ts`<br>`packages/game/src/ege/showScene.ts`<br>`packages/game/src/ege/showState.ts`<br>`packages/game/src/ege/showTypes.ts`<br>`packages/game/src/ege/worldRead.ts`<br>`scripts/ege/bots/behaviour.as.ts`<br>`scripts/ege/bots/brain.as.ts`<br>`scripts/ege/bots/routes.as.ts`<br>`scripts/ege/bots/traversal.as.ts`<br>`scripts/ege/show/clock.as.ts`<br>`scripts/ege/show/hub.as.ts`<br>`scripts/ege/show/ledger.as.ts`<br>`scripts/ege/show/publish.as.ts`<br>`scripts/ege/show/qualification.as.ts`<br>`scripts/ege/show/scheduler.as.ts`<br>`scripts/ege/show/season.as.ts`<br>`scripts/ege/show/teams.as.ts`<br>`scripts/ege/lib/show_events.as.ts` | ege-build, ege-schema, ege-scene, ege-round, ege-script-core, ege-manifest |
-| ege-show-view | royal-fiesta | M2 | `packages/game/src/ege/showView.ts`<br>`packages/game/src/ege/showFar.ts` | ege-show-runtime, ege-view, scene-view |
-| ege-show-page | royal-fiesta | M2 | `apps/web/engine-show.html`<br>`apps/web/src/engineShow/main.ts`<br>`apps/web/src/engineShow/ops.ts`<br>`apps/web/src/engineShow/page.ts`<br>`apps/web/src/engineShow/presentation.ts`<br>`apps/web/src/engineShow/ready.ts`<br>`apps/web/src/engineShow/testMode.ts`<br>`apps/web/src/engineShow/scenarios/hub.ts`<br>`apps/web/src/engineShow/scenarios/online.ts`<br>`apps/web/public/engine-show/hub.inventory.json`<br>`apps/web/public/engine-show/offline.inventory.json`<br>`apps/web/public/engine-show/online.inventory.json` | ege-show-runtime, ege-show-view, ege-view, ege-round, ege-capture, ege-manifest, scene-view, web-client, render-port |
-| ege-dev-swap | royal-fiesta | M5 | `packages/game/src/ege/localSwap.ts`<br>`apps/web/src/engineShowDev/reload.ts`<br>`apps/web/src/engineShowDev/status.ts`<br>`apps/web/src/engineShowDev/main.ts`<br>`apps/web/engine-show-dev.html`<br>`apps/web/src/engineShow/scenarios/savedScript.ts`<br>`apps/web/public/engine-show/swap.inventory.json`<br>`tools/savedScriptSave.ts` | ege-build, ege-show-runtime, ege-show-page, ege-show-view, ege-manifest, ege-capture |
-
+| Module | Files | Consumes |
+|---|---|---|
+| workspace | `package.json`<br>`tsconfig.json`<br>`tsconfig.base.json`<br>`.gitignore`<br>`README.md`<br>`packages/sim/package.json`<br>`packages/sim/tsconfig.json`<br>`packages/game/package.json`<br>`packages/game/tsconfig.json`<br>`apps/headless/package.json`<br>`apps/headless/tsconfig.json`<br>`apps/web/package.json`<br>`apps/web/tsconfig.json`<br>`package-lock.json` | — |
+| guard | `tools/guard.ts`<br>`tools/test/guard.test.ts`<br>`.githooks/pre-commit`<br>`docs/private-assets.md` | workspace |
+| bricks | `tools/bricks.ts`<br>`tools/test/bricks.test.ts` | workspace |
+| refusal | `packages/sim/src/refusal.ts`<br>`packages/sim/test/refusal.test.ts` | workspace |
+| detmath | `packages/sim/src/detmath.ts`<br>`packages/sim/src/vec.ts`<br>`packages/sim/test/detmath.test.ts`<br>`packages/sim/test/vec.test.ts`<br>`packages/sim/test/purity.test.ts` | workspace |
+| world | `packages/sim/src/world.ts`<br>`packages/sim/src/groups.ts`<br>`packages/sim/test/world.test.ts` | detmath, refusal |
+| flat-floor | `packages/sim/src/scenarios/flatFloor.ts`<br>`packages/sim/test/flatFloor.test.ts` | world |
+| proofkit | `apps/headless/src/proofkit.ts`<br>`apps/headless/test/proofkit.test.ts` | bricks |
+| m1-proof | `apps/headless/src/smoke.ts`<br>`apps/headless/proofs/m1-foundations.ts` | flat-floor, proofkit, guard, web-boot |
+| web-boot | `apps/web/vite.config.ts`<br>`apps/web/index.html`<br>`apps/web/src/boot.ts` | flat-floor, bricks, ege-build |
+| course-model | `packages/sim/src/course.ts`<br>`packages/sim/test/course.test.ts` | detmath |
+| motion | `packages/sim/src/obstacles/motion.ts`<br>`packages/sim/test/motion.test.ts` | course-model |
+| obstacles | `packages/sim/src/obstacles/system.ts`<br>`packages/sim/src/obstacles/colliders.ts`<br>`packages/sim/test/obstacles.test.ts` | motion, world |
+| prims | `packages/game/src/prims.ts`<br>`packages/game/test/prims.test.ts` | course-model, refusal |
+| assets | `packages/game/src/assets.ts`<br>`packages/game/test/assets.test.ts`<br>`fixtures/assets/floor-tile.prims.json`<br>`fixtures/assets/floor-disc.prims.json`<br>`fixtures/assets/wall-block.prims.json`<br>`fixtures/assets/spinner-bar.prims.json`<br>`fixtures/assets/pendulum-hammer.prims.json`<br>`fixtures/assets/seesaw-plank.prims.json`<br>`fixtures/assets/rotating-door.prims.json`<br>`fixtures/assets/conveyor-belt.prims.json`<br>`fixtures/assets/bounce-pad.prims.json`<br>`fixtures/assets/moving-platform.prims.json`<br>`fixtures/assets/finish-arch.prims.json`<br>`fixtures/assets/checkpoint-gate.prims.json` | prims |
+| course-loader | `packages/game/src/course.ts`<br>`packages/game/test/course.test.ts`<br>`fixtures/courses/obstacle-gallery.course.json`<br>`fixtures/courses/invalid/trimesh-collider.course.json`<br>`fixtures/courses/invalid/bad-motion.course.json`<br>`fixtures/courses/invalid/unknown-asset.course.json`<br>`fixtures/courses/invalid/race-without-finish.course.json` | assets, obstacles |
+| node-files | `apps/headless/src/files.ts`<br>`apps/headless/test/files.test.ts` | course-loader, bricks |
+| m2-proof | `apps/headless/proofs/m2-obstacles.ts`<br>`fixtures/golden/m2-obstacle-poses.json` | node-files, obstacles, proofkit |
+| input | `packages/sim/src/input.ts`<br>`packages/sim/test/input.test.ts` | world |
+| character | `packages/sim/src/character/capsule.ts`<br>`packages/sim/src/character/constants.ts`<br>`packages/sim/src/character/controller.ts`<br>`packages/sim/src/character/system.ts`<br>`packages/sim/test/character.test.ts`<br>`packages/sim/test/characterCapsule.test.ts` | input, obstacles, detmath |
+| input-scripts | `apps/headless/src/scripts.ts`<br>`apps/headless/test/scripts.test.ts` | character, input, node-files |
+| m3-proof | `apps/headless/proofs/m3-character.ts`<br>`fixtures/golden/m3-replay.json` | input-scripts, node-files, proofkit |
+| match-rules | `packages/sim/src/match/setup.ts`<br>`packages/sim/src/match/rules.ts`<br>`packages/sim/test/rules.test.ts` | course-model, world |
+| round-system | `packages/sim/src/match/roundSystem.ts`<br>`packages/sim/test/round.test.ts` | match-rules, character, obstacles |
+| bots | `packages/sim/src/bots/brain.ts`<br>`packages/sim/src/bots/botSystem.ts`<br>`packages/sim/test/bots.test.ts` | round-system, character, match-rules |
+| match-sim | `packages/sim/src/match/matchSim.ts`<br>`packages/sim/src/match/log.ts`<br>`packages/sim/src/match/offline.ts`<br>`packages/sim/test/matchSim.test.ts` | bots, round-system, obstacles, character |
+| course-set | `packages/game/src/courseSet.ts`<br>`packages/game/test/courseSet.test.ts`<br>`fixtures/courses/race-bean-dash.course.json`<br>`fixtures/courses/race-hammer-hill.course.json`<br>`fixtures/courses/survival-spin-zone.course.json`<br>`fixtures/courses/survival-hammer-ring.course.json`<br>`fixtures/courses/race-sprint.course.json`<br>`fixtures/courses/survival-sprint.course.json` | course-loader, match-rules |
+| m4-proof | `apps/headless/src/cli.ts`<br>`apps/headless/proofs/m4-rounds.ts` | match-sim, course-set, node-files, proofkit |
+| net-match | `packages/game/src/net/tuning.ts`<br>`packages/game/src/net/netMatch.ts`<br>`packages/game/src/net/pilot.ts`<br>`packages/game/test/netMatch.test.ts` | match-sim, input |
+| net-metrics | `packages/game/src/net/metrics.ts`<br>`packages/game/test/metrics.test.ts` | net-match |
+| m5-proof | `apps/headless/src/netsimMatch.ts`<br>`apps/headless/proofs/m5-netsim.ts` | net-metrics, net-match, course-set, node-files, proofkit |
+| relay-client | `packages/game/src/net/ws.ts`<br>`packages/game/src/net/relayProtocol.ts`<br>`packages/game/src/net/relayClient.ts`<br>`packages/game/src/net/relayTransport.ts`<br>`packages/game/test/relayTransport.test.ts` | refusal, net-match |
+| loopback-relay | `packages/game/src/net/loopbackRelay.ts`<br>`packages/game/test/loopbackRelay.test.ts` | relay-client |
+| rooms-client | `packages/game/src/net/roomsProtocol.ts`<br>`packages/game/src/net/roomsClient.ts`<br>`packages/game/test/roomsClient.test.ts` | relay-client |
+| webrtc | `packages/game/src/net/rtcBackend.ts`<br>`packages/game/src/net/webrtcTransport.ts`<br>`packages/game/test/webrtcTransport.test.ts` | rooms-client |
+| rtc-node | `apps/headless/src/rtcNode.ts`<br>`apps/headless/test/rtcNode.test.ts` | webrtc |
+| gamesaloon-local | `apps/headless/src/gamesaloon.ts`<br>`apps/headless/test/gamesaloon.test.ts` | bricks |
+| m6-proof | `apps/headless/src/realMatch.ts`<br>`apps/headless/proofs/m6-transports.ts`<br>`docs/network.md`<br>`docs/gamesaloon-gaps.md` | relay-client, loopback-relay, webrtc, rtc-node, gamesaloon-local, m5-proof |
+| render-port | `packages/game/src/render/port.ts`<br>`packages/game/src/render/nullPort.ts`<br>`packages/game/test/nullPort.test.ts` | prims |
+| scene-view | `packages/game/src/render/palette.ts`<br>`packages/game/src/render/camera.ts`<br>`packages/game/src/render/sceneView.ts`<br>`packages/game/test/sceneView.test.ts`<br>`fixtures/assets/bean.prims.json`<br>`packages/game/src/render/sceneReadView.ts`<br>`packages/game/src/render/legacySceneTicks.ts`<br>`packages/game/test/sceneViewAnimRate.test.ts`<br>`packages/game/test/sceneViewNetAnimRate.test.ts`<br>`packages/game/test/sceneReadView.test.ts` | render-port, match-sim, net-match |
+| client-core | `packages/game/src/client/inputMap.ts`<br>`packages/game/src/client/inpageMatch.ts`<br>`packages/game/test/inpageMatch.test.ts` | scene-view, net-match, net-metrics |
+| web-client | `apps/web/client.html`<br>`apps/web/src/client/main.ts`<br>`apps/web/src/client/hud.ts`<br>`apps/web/src/client/sources.ts`<br>`apps/web/src/nmc/ops.ts`<br>`apps/web/public/nmc.gpu.json` | client-core, raa-port, relay-client, webrtc, rooms-client |
+| raa-port | `apps/web/src/render/raaStatus.ts`<br>`apps/web/src/render/raaPort.ts` | render-port, bricks |
+| m7-proof | `apps/headless/proofs/m7-web.ts`<br>`proofs/m7/raa-status.json` | web-client, client-core, node-files, proofkit |
+| hub-protocol | `packages/game/src/hub/protocol.ts`<br>`packages/game/test/hubProtocol.test.ts` | relay-client |
+| hub-world | `packages/game/src/hub/hubWorld.ts`<br>`packages/game/src/hub/remotes.ts`<br>`packages/game/src/hub/queuePad.ts`<br>`packages/game/test/hubWorld.test.ts`<br>`fixtures/courses/hub-plaza.course.json`<br>`fixtures/assets/queue-pad.prims.json`<br>`fixtures/assets/plaza-fountain.prims.json` | hub-protocol, character, obstacles, course-loader |
+| play-flow | `packages/game/src/hub/flow.ts`<br>`packages/game/src/hub/hubPilot.ts`<br>`packages/game/test/flow.test.ts` | hub-world, net-match, relay-client, client-core, ege-hub, ege-show-runtime, ege-online |
+| web-play | `apps/web/play.html`<br>`apps/web/src/play/main.ts`<br>`apps/web/src/play/hubView.ts`<br>`apps/web/src/play/inpageHub.ts`<br>`apps/web/src/play/ops.ts` | play-flow, loopback-relay, scene-view, web-client |
+| m8-proof | `apps/headless/src/hubLoop.ts`<br>`apps/headless/proofs/m8-hub.ts`<br>`proofs/m8/raa-status.json` | play-flow, gamesaloon-local, web-play, proofkit |
+| ege-body-contacts | `crates/ege-physics/src/body_props.rs`<br>`crates/ege-physics/src/contacts.rs`<br>`crates/ege-physics/tests/body_props.rs`<br>`crates/ege-physics/tests/contacts.rs`<br>`engine:crates/ege-physics/src/body_props.rs`<br>`engine:crates/ege-physics/src/contacts.rs`<br>`engine:crates/ege-physics/tests/body_props.rs`<br>`engine:crates/ege-physics/tests/contacts.rs` | — |
+| ege-schema | `ege.schema.json`<br>`tools/test/egeSchema.test.ts` | ege-body-contacts, ege-box-collider |
+| ege-build | `tools/egeScripts.ts`<br>`tools/egeBricks.ts`<br>`apps/web/src/engineRound/scriptsPlugin.ts`<br>`tools/test/egeScripts.test.ts`<br>`tools/test/egeBricks.test.ts`<br>`tools/test/egePublication.test.ts` | ege-schema, bricks |
+| ege-scene | `packages/game/src/ege/files.ts`<br>`packages/game/src/ege/inputCodes.ts`<br>`packages/game/src/ege/colliders.ts`<br>`packages/game/src/ege/featureEmitters.ts`<br>`packages/game/src/ege/sceneEmitter.ts`<br>`packages/game/test/egeInputCodes.test.ts`<br>`packages/game/test/egeScene.test.ts` | course-loader, course-model, character, match-rules, world, input, ege-schema |
+| ege-round | `packages/game/src/ege/round.ts`<br>`packages/game/src/ege/observe.ts`<br>`packages/game/test/egeObserve.test.ts` | ege-scene, bots, character, round-system |
+| ege-script-core | `scripts/ege/lib/vec.as.ts`<br>`scripts/ege/lib/seats.as.ts`<br>`scripts/ege/lib/boxes.as.ts`<br>`scripts/ege/lib/units.as.ts`<br>`scripts/ege/round/clock.as.ts`<br>`scripts/ege/lib/show_events.as.ts` | ege-schema |
+| ege-harness | `apps/headless/src/egeHarness.ts`<br>`apps/headless/test/egeRound.test.ts` | ege-round, ege-scene, ege-build, ege-script-core, node-files |
+| ege-view | `packages/game/src/ege/sceneSim.ts`<br>`packages/game/test/egeSceneSim.test.ts` | ege-round, scene-view, match-sim |
+| ege-page | `apps/web/engine-round.html`<br>`apps/web/src/engineRound/main.ts`<br>`apps/web/src/engineRound/run.ts`<br>`apps/web/src/engineRound/hud.ts`<br>`apps/web/src/engineRound/ready.ts`<br>`apps/web/src/engineRound/ops.ts`<br>`apps/web/public/engine-round/inventory.json`<br>`apps/web/test/engineRoundRun.test.ts`<br>`apps/web/test/engineRoundPage.test.ts`<br>`apps/web/src/engineRound/pace.ts`<br>`apps/web/src/engineRound/hexTiles.ts` | ege-view, ege-round, ege-scene, scene-view, web-client, render-port |
+| ege-capture | `tools/engineRoundCapture.ts`<br>`tools/test/engineRoundCapture.test.ts`<br>`tools/engineCaptureJob.ts`<br>`tools/test/engineCaptureJob.test.ts` | ege-harness, ege-page |
+| ege-manifest | `packages/game/src/gameManifest.ts`<br>`sdfm.game.json`<br>`packages/game/test/gameManifestEge.test.ts` | course-model |
+| ege-character | `scripts/ege/character/constants.as.ts`<br>`scripts/ege/character/pre.as.ts`<br>`scripts/ege/character/post.as.ts`<br>`scripts/ege/character/ground.as.ts`<br>`scripts/ege/character/moves.as.ts`<br>`scripts/ege/character/grab.as.ts`<br>`scripts/ege/character/bump.as.ts`<br>`apps/headless/test/egeCharacter.test.ts` | ege-script-core, ege-schema, ege-harness, ege-body-contacts, character |
+| ege-seat-rules | `scripts/ege/seat/rules.as.ts`<br>`scripts/ege/seat/route.as.ts`<br>`scripts/ege/seat/respawn.as.ts`<br>`fixtures/ege/ege-strip.course.json`<br>`apps/headless/test/egeSeatRules.test.ts` | ege-character, ege-script-core, ege-harness |
+| ege-features-race | `scripts/ege/features/marker.as.ts`<br>`scripts/ege/features/boost_lane.as.ts`<br>`scripts/ege/features/launch_pad.as.ts`<br>`scripts/ege/features/catch_volume.as.ts`<br>`scripts/ege/features/rolling_log.as.ts`<br>`scripts/ege/features/door_bank.as.ts`<br>`scripts/ege/features/swim_volume.as.ts`<br>`scripts/ege/features/tile_field.as.ts`<br>`packages/game/src/ege/features/marker.ts`<br>`packages/game/src/ege/features/boostLane.ts`<br>`packages/game/src/ege/features/launchPad.ts`<br>`packages/game/src/ege/features/catchVolume.ts`<br>`packages/game/src/ege/features/rollingLog.ts`<br>`packages/game/src/ege/features/doorBank.ts`<br>`packages/game/src/ege/features/swimVolume.ts`<br>`packages/game/src/ege/features/tileField.ts`<br>`packages/game/src/ege/features/road.ts`<br>`fixtures/ege/ege-yard-a.course.json`<br>`packages/game/test/egeFeatureEmitRace.test.ts`<br>`apps/headless/test/egeFeaturesRace.test.ts` | ege-scene, ege-seat-rules, ege-character, ege-harness |
+| ege-features-hazard | `scripts/ege/features/hex_field.as.ts`<br>`scripts/ege/features/memory_tiles.as.ts`<br>`scripts/ege/features/annulus.as.ts`<br>`scripts/ege/features/sweep.as.ts`<br>`scripts/ege/features/rising_kill.as.ts`<br>`packages/game/src/ege/features/hexField.ts`<br>`packages/game/src/ege/features/memoryTiles.ts`<br>`packages/game/src/ege/features/annulus.ts`<br>`packages/game/src/ege/features/sweep.ts`<br>`packages/game/src/ege/features/risingKill.ts`<br>`fixtures/ege/ege-yard-b.course.json`<br>`packages/game/test/egeFeatureEmitHazard.test.ts`<br>`apps/headless/test/egeFeaturesHazard.test.ts` | ege-features-race, ege-box-collider, ege-schema |
+| ege-features-objective | `scripts/ege/features/carry_item.as.ts`<br>`scripts/ege/features/ball.as.ts`<br>`scripts/ege/features/goal.as.ts`<br>`scripts/ege/features/collectible.as.ts`<br>`scripts/ege/features/bank.as.ts`<br>`scripts/ege/features/capture_zone.as.ts`<br>`scripts/ege/features/tail_set.as.ts`<br>`scripts/ege/features/crown.as.ts`<br>`packages/game/src/ege/features/carryItem.ts`<br>`packages/game/src/ege/features/ball.ts`<br>`packages/game/src/ege/features/goal.ts`<br>`packages/game/src/ege/features/collectible.ts`<br>`packages/game/src/ege/features/bank.ts`<br>`packages/game/src/ege/features/captureZone.ts`<br>`packages/game/src/ege/features/tailSet.ts`<br>`packages/game/src/ege/features/crown.ts`<br>`fixtures/ege/ege-yard-c.course.json`<br>`packages/game/test/egeFeatureEmitObjective.test.ts`<br>`apps/headless/test/egeFeaturesObjective.test.ts` | ege-features-hazard, ege-script-body-type |
+| ege-box-collider | `crates/ege-physics/src/box_collider.rs`<br>`crates/ege-physics/src/lib.rs`<br>`crates/ege-physics/tests/box_collider.rs`<br>`ARCHITECTURE.md`<br>`AGENTS.md`<br>`engine:crates/ege-physics/src/box_collider.rs`<br>`engine:crates/ege-physics/src/lib.rs`<br>`engine:crates/ege-physics/tests/box_collider.rs`<br>`engine:ARCHITECTURE.md`<br>`engine:AGENTS.md` | — |
+| ege-script-body-type | `crates/ege-wasm/src/abi_script.rs`<br>`crates/ege-wasm/tests/abi_script.rs`<br>`packages/game-engine/src/abi.ts`<br>`packages/game-engine/src/script.ts`<br>`packages/game-engine/test/script.test.ts`<br>`sdk/assembly/engine.ts`<br>`sdk/assembly/physics.ts`<br>`sdk/sdk.json`<br>`packages/game-engine/compile/test/compile.test.ts`<br>`engine:crates/ege-wasm/src/abi_script.rs`<br>`engine:crates/ege-wasm/tests/abi_script.rs`<br>`engine:packages/game-engine/src/abi.ts`<br>`engine:packages/game-engine/src/script.ts`<br>`engine:packages/game-engine/test/script.test.ts`<br>`engine:sdk/assembly/engine.ts`<br>`engine:sdk/assembly/physics.ts`<br>`engine:sdk/sdk.json`<br>`engine:packages/game-engine/compile/test/compile.test.ts` | — |
+| ege-show-runtime | `packages/game/src/ege/showFactory.ts`<br>`packages/game/src/ege/showRuntime.ts`<br>`packages/game/src/ege/showScene.ts`<br>`packages/game/src/ege/showState.ts`<br>`packages/game/src/ege/showTypes.ts`<br>`packages/game/src/ege/worldRead.ts`<br>`apps/headless/src/engineShow.ts`<br>`packages/game/test/egeShowFactory.test.ts`<br>`apps/headless/test/egeShow.test.ts` | ege-domain-binding, ege-show-rules, ege-show-bots, ege-scene, ege-build |
+| ege-show-view | `packages/game/src/ege/showView.ts`<br>`packages/game/src/ege/showFar.ts`<br>`packages/game/src/ege/showEffects.ts`<br>`packages/game/test/egeShowView.test.ts`<br>`packages/game/test/egeShowEffects.test.ts`<br>`packages/game/test/egeShowFar.test.ts` | scene-view, ege-show-runtime, render-port |
+| ege-show-page | `apps/web/engine-show.html`<br>`apps/web/src/engineShow/main.ts`<br>`apps/web/src/engineShow/ops.ts`<br>`apps/web/src/engineShow/page.ts`<br>`apps/web/src/engineShow/presentation.ts`<br>`apps/web/src/engineShow/ready.ts`<br>`apps/web/src/engineShow/testMode.ts`<br>`apps/web/public/engine-show/offline.inventory.json`<br>`apps/web/test/engineShowPage.test.ts`<br>`apps/web/test/engineShowReady.test.ts`<br>`apps/web/test/engineShowPresentation.test.ts`<br>`tools/engineShowCapture.ts` | ege-show-view, ege-capture, ege-page, web-client, render-port, ege-online |
+| ege-dev-swap | `packages/game/src/ege/localSwap.ts`<br>`apps/web/src/engineShowDev/reload.ts`<br>`apps/web/src/engineShowDev/status.ts`<br>`apps/web/src/engineShowDev/main.ts`<br>`apps/web/engine-show-dev.html`<br>`apps/web/src/engineShow/scenarios/savedScript.ts`<br>`apps/web/public/engine-show/swap.inventory.json`<br>`tools/savedScriptSave.ts`<br>`packages/game/test/egeLocalSwap.test.ts`<br>`apps/web/test/engineShowReload.test.ts`<br>`apps/web/test/engineShowDevStatus.test.ts`<br>`apps/web/test/engineSwapInventory.test.ts`<br>`tools/test/savedScriptSave.test.ts` | ege-build, ege-show-runtime, ege-show-page, ege-show-view, ege-manifest, ege-capture |
+| ege-domain-binding | `engine:packages/game-engine/src/rollback.ts`<br>`engine:packages/game-engine/src/zones.ts`<br>`engine:packages/game-engine/test/rollback.test.ts`<br>`engine:packages/game-engine/test/rollback-script.test.ts`<br>`engine:packages/game-engine/test/hotswap.test.ts`<br>`engine:packages/game-engine/test/zones.test.ts`<br>`engine:packages/game-engine/test/events.test.ts` | ege-script-body-type |
+| ege-show-rules | `scripts/ege/show/ledger.as.ts`<br>`scripts/ege/show/qualification.as.ts`<br>`scripts/ege/show/season.as.ts`<br>`scripts/ege/show/scheduler.as.ts`<br>`scripts/ege/show/teams.as.ts`<br>`scripts/ege/show/clock.as.ts`<br>`scripts/ege/show/publish.as.ts`<br>`scripts/ege/show/hub.as.ts`<br>`apps/headless/test/egeLedger.test.ts`<br>`apps/headless/test/egeSeason.test.ts`<br>`apps/headless/test/egeShowTransfer.test.ts` | ege-schema, ege-script-core, ege-seat-rules, ege-features-objective |
+| ege-show-bots | `scripts/ege/bots/brain.as.ts`<br>`scripts/ege/bots/routes.as.ts`<br>`scripts/ege/bots/behaviour.as.ts`<br>`scripts/ege/bots/traversal.as.ts`<br>`packages/game/src/ege/botData.ts`<br>`packages/game/test/egeBotData.test.ts`<br>`apps/headless/test/egeBots.test.ts` | ege-schema, ege-character, ege-show-rules |
+| ege-hub | `packages/game/src/ege/hub.ts`<br>`packages/game/src/ege/hubFlow.ts`<br>`packages/game/test/egeHub.test.ts`<br>`apps/web/src/engineShow/scenarios/hub.ts`<br>`apps/web/public/engine-show/hub.inventory.json`<br>`apps/web/test/engineHubFlow.test.ts` | ege-show-runtime, ege-show-page, ege-show-rules, hub-protocol, hub-world |
+| ege-online | `packages/game/src/ege/online.ts`<br>`packages/game/src/ege/admission.ts`<br>`packages/game/src/ege/onlineState.ts`<br>`packages/game/test/egeAdmission.test.ts`<br>`packages/game/test/egeOnline.test.ts`<br>`packages/game/test/egeOnlineState.test.ts`<br>`packages/game/test/egeOnlineRound.test.ts`<br>`packages/game/src/net/zoneRelayProtocol.ts`<br>`packages/game/test/zoneRelayProtocol.test.ts`<br>`apps/web/src/engineShow/scenarios/online.ts`<br>`apps/web/public/engine-show/online.inventory.json`<br>`apps/web/test/engineOnlineInventory.test.ts` | ege-show-runtime, ege-hub, ege-show-view, webrtc, relay-client, ege-show-page, net-match |
+| ege-game-switch | `apps/web/src/game/main.ts`<br>`apps/web/src/game/showMode.ts`<br>`apps/web/src/game/showDirector.ts`<br>`apps/web/src/game/entry.ts`<br>`apps/web/src/game/engineBackend.ts`<br>`apps/web/src/game/engineProbe.ts`<br>`apps/web/src/client/sound.ts`<br>`apps/web/src/play/sound.ts`<br>`packages/game/src/audio/events.ts`<br>`packages/game/src/flow/endScreen.ts`<br>`apps/web/src/zone/zoneNetScene.ts`<br>`apps/web/test/engineGameSwitch.test.ts`<br>`apps/web/test/gameSound.test.ts`<br>`apps/web/test/zoneSceneReady.test.ts`<br>`apps/web/test/zonePenguin.test.ts`<br>`apps/web/test/showMode.test.ts`<br>`apps/web/test/showDirector.test.ts`<br>`apps/web/test/engineProbe.test.ts` | play-flow, ege-online, ege-hub, ege-show-page, scene-view, ege-show-view, ege-show-runtime |
+| ege-online-harness | `tools/onlineChromes.mjs`<br>`tools/test/onlineChromes.test.ts`<br>`docs/engine-show.md` | ege-game-switch, ege-online |
 
 ## Module: workspace
 Consumes: none.
@@ -322,7 +304,6 @@ Owns root/workspace package manifests, tsconfigs, `.gitignore` and README. Works
 Root scripts define test, multi-project typecheck, guard, bricks, smoke and build entry points. `build` calls `web:build`, which bakes audio, bundles UI fonts, builds the Vite workspace and generates cosmetic thumbnails. `ege:build` runs `tools/egeScripts.ts build --out out/ege`; `ege:bricks` runs `tools/egeBricks.ts build`. Engine/compiler dependencies are local built-brick links and AssemblyScript is pinned to 0.28.20. Package-lock records the dependency graph.
 
 AssemblyScript is excluded from TypeScript project compilation and ordinary test discovery. Generated out/dist files, captures and Kong rules are untracked. See section 1 for language, dependency, layout and guard rules.
-
 
 ## Module: guard
 Consumes: workspace.
@@ -362,7 +343,6 @@ CLI and hook:
 
 Tests cover each rule on in-memory bytes and a clean pass of the current tree.
 
-
 ## Module: bricks
 Consumes: workspace.
 
@@ -371,7 +351,6 @@ Files: `tools/bricks.ts`, `tools/test/bricks.test.ts`.
 `repoRoot()` locates the real repository root. `brickDir()` supports gamesaloon-public, raa-assets-tools, raa and MAMA, consulting the applicable environment override, RF_BRICKS_DIR and siblings; absence returns null. `checkBricks()` checks workspace resolution, rollback dependencies and Rapier initialization, and reports available content/render sources. `bricksRequired()` recognizes RF_REQUIRE_BRICKS and NMC_PUSH_GATE.
 
 Source/pin helpers include `mamaSource`, `raaLocal`, `raaSdfmVersion`, UAA/RAA source inspection and pin/status operations. CLI commands are `check`, `status`, `pins`, `where <name>` and `fetch mama|uaa|raa`. Fetch operations prepare the appropriate pinned checkout/link and build prerequisites. Credentials are redacted. Engine brick preparation is owned separately by ege-build.
-
 
 ## Module: refusal
 Consumes: workspace.
@@ -392,7 +371,6 @@ export function isRefusal(e: unknown): e is RefusalError
 - The message is `[${area}] ${path}: ${reason}`, and `name` = 'RefusalError'.
 - `refuse` throws a new RefusalError.
 - This is the only error type that data validation and impossible requests throw, in every package.
-
 
 ## Module: detmath
 Consumes: workspace.
@@ -455,7 +433,6 @@ export function yawFacing(yaw: number, out: { x: number; z: number }): { x: numb
 Tests:
 - purity.test.ts scans every file under packages/sim/src for the forbidden tokens of 1.5 and fails with file:line.
 - detmath.test.ts pins bit-exact golden values (hex of the f64 bits) for 12 inputs per function, and checks |d - Math| <= 1e-15 relative on V8.
-
 
 ## Module: world
 Consumes: detmath, refusal.
@@ -542,7 +519,6 @@ Other rules:
 - `playerDropped` forwards to every system that implements it.
 - Blob: u32 length, then ceil(len/4) u32 LE words, with the last word zero-padded.
 
-
 ## Module: flat-floor
 Consumes: world.
 
@@ -572,7 +548,6 @@ System 'flatFloor':
 - the jump bit is set when ((h >>> 16) & 7) === 0.
 
 `createFlatFloorWorld` builds a FiestaWorld<number> with this single system. It drives the M1 proof, the smoke and the boot page.
-
 
 ## Module: proofkit
 Consumes: bricks.
@@ -609,7 +584,6 @@ export function percentile(values: readonly number[], p: number): number
 - `outDir` creates `<repo>/out/<milestone>`.
 - `percentile` uses the nearest rank and refuses an empty input.
 
-
 ## Module: m1-proof
 Consumes: flat-floor, proofkit, guard, web-boot.
 
@@ -633,7 +607,6 @@ m1-foundations.ts has 5 checks, all in quick mode:
 
 The report prints the snapshot bytes and the mean step+snapshot ms for 8 characters.
 
-
 ## Module: web-boot
 Consumes: flat-floor, bricks, ege-build.
 
@@ -644,7 +617,6 @@ Vite discovers every root HTML page, builds to dist with relative base URLs, dis
 Aliases resolve game/sim source, available MAMA dependencies and configured local RAA packages. Build defines expose MAMA identity and raa-sdfm version for content caching. UAA WebGPU is excluded from dependency optimization.
 
 The boot page initializes Rapier, steps an eight-player flat-floor world for 600 ticks and exposes its tick/hash result in the page and `window.rfBoot`.
-
 
 ## Module: course-model
 Consumes: detmath.
@@ -698,7 +670,6 @@ export function regionOf(c: ResolvedCourse, p: Vec3): number
 - `regionOf` returns the first region id whose box contains p, or -1.
 - `contentHash` = fnv1a32 of the canonical course JSON mixed with each referenced asset's hash. It is part of the match setup hash.
 
-
 ## Module: motion
 Consumes: course-model.
 
@@ -734,7 +705,6 @@ Helpers:
 - seesaw0 and seesaw1 are the see-saw angles at L and L+1.
 
 Tests pin the poses at ticks 0, 1, 59, 60 and 3599 for each kind, and check that a spinner rim's pointVelocity equals ω×r within 1e-3.
-
 
 ## Module: obstacles
 Consumes: motion, world.
@@ -798,7 +768,6 @@ Snapshot:
 - i32 courseIndex, u32 loadTick, u32 count, count × u32 bodyId;
 - then per see-saw, in index order: f64 angle, f64 prevAngle, f64 angVel, u32 nLoads, and nLoads × (f64 x, y, z, mass).
 
-
 ## Module: prims
 Consumes: course-model, refusal.
 
@@ -825,7 +794,6 @@ export function assetHash(text: string): number
 - `scaleColliders` applies the S2 scale rules.
 - `assetHash` = fnv1a32 of the UTF-8 file text.
 
-
 ## Module: assets
 Consumes: prims.
 
@@ -851,7 +819,6 @@ export function storeResolver(manifestSha256: string, fetchBytes: (url: string) 
   - fetches each object and verifies its sha256 and size, refusing a mismatch with both values;
   - parses the object with parsePrims.
 - The 15 fixtures are small raa.prims v0 files (<= 8 KiB each). Each has explicit `collision.colliders` of Rapier primitives and a bright flat palette.
-
 
 ## Module: course-loader
 Consumes: assets, obstacles.
@@ -883,7 +850,6 @@ obstacle-gallery (kind 'gallery'):
 
 Each invalid/ fixture triggers exactly one refusal.
 
-
 ## Module: node-files
 Consumes: course-loader, bricks.
 
@@ -900,7 +866,6 @@ export async function loadAllCourses(filter?: (c: ResolvedCourse) => boolean): P
 - `repoPath` resolves against repoRoot() and refuses a path that escapes it.
 - `loadCourseFile` caches per process.
 - `loadAllCourses` reads `fixtures/courses/*.course.json` (not `invalid/`), sorted by id. Load order is part of determinism.
-
 
 ## Module: m2-proof
 Consumes: node-files, obstacles, proofkit.
@@ -919,7 +884,6 @@ Files: `apps/headless/proofs/m2-obstacles.ts`, `fixtures/golden/m2-obstacle-pose
 - `poses-golden`: a proof-local system loads the gallery and drops 12 dynamic DEBRIS boxes onto the see-saws, conveyors and platforms, so see-saw rows come from real loads.
 - Golden regeneration: `node --experimental-strip-types apps/headless/proofs/m2-obstacles.ts --only poses-golden --write-golden`.
 - The report prints the snapshot bytes and the mean step+snapshot ms for 40 obstacles + 12 debris.
-
 
 ## Module: input
 Consumes: world.
@@ -941,7 +905,6 @@ export const inputCodec: InputCodec<PlayerInput>
 - `inputCodec` = { create: neutralInput, encode: encodeInput, decode: decodeInput, neutral: NEUTRAL_CODE }.
 - Tests: decode(encode(decode(c))) is stable for all 2^19 codes, neutral decodes to zero, and the clamping rules hold.
 
-
 ## Module: character
 Consumes: input, obstacles, detmath.
 
@@ -956,7 +919,6 @@ Files: `packages/sim/src/character/{capsule,constants,controller,system}.ts`, `p
 Pre-step handles input edges, ground support and carried velocity, surface steering, jump buffering/coyote time, dive/slide/stroke transitions, swimming, player/lever grabs and protection. Post-step resolves landing, contact knockback and support loads. Placement uses feet + stand + .01; parked bodies use the configured off-course slots. Persistent mode, timers, facing, support, grab, carry, slide, swim and protection state are serialized by the implementation.
 
 CharState includes position, velocity, facing, mode, grounded/support information, knockbacks and teleport tick, with optional mechanism, protection, slide, carry and stroke presentation fields. Engine gameplay consumes these definitions and constants through its separate script port.
-
 
 ## Module: input-scripts
 Consumes: character, input, node-files.
@@ -998,7 +960,6 @@ export function behaviourScenarios(): BehaviourScenario[]
   - moving platform: stays on for a full period;
   - grab: the target's speed while grabbed <= 0.6*maxRun.
 
-
 ## Module: m3-proof
 Consumes: input-scripts, node-files, proofkit.
 
@@ -1016,7 +977,6 @@ First, alone, a `[report:cost]` line (no threshold): step, snapshot and restore 
 | `determinism` | two instances for 3600 ticks, plus a restore every 61 ticks into a fresh world | 0 mismatches |
 
 Golden regeneration: `node --experimental-strip-types apps/headless/proofs/m3-character.ts --only replay-golden --write-golden`.
-
 
 ## Module: match-rules
 Consumes: course-model, world.
@@ -1062,7 +1022,6 @@ export function pickCourse(pool: readonly number[], lastCourse: number, rng: Rng
 - `roundTicks` = round(min(course.timeLimitS, cap ?? Infinity)*60).
 - `coursePool` returns the indices of courses of that kind whose profiles include the profile, in index order.
 - `pickCourse` = pool[rng.int(0, n-1)], over the pool without lastCourse when n > 1.
-
 
 ## Module: round-system
 Consumes: match-rules, character, obstacles.
@@ -1113,7 +1072,6 @@ Survival:
 - At the cap, all alive qualify (`timeCap`). In a final with more than 1 alive, the winner has the fewest knockbacks, then the lowest index.
 
 Snapshot: active u8, plan fields, courseIndex i32, startTick u32, capTicks u32, per-player status u8 and checkpoint i16, then the finish order, the fall order and the per-tick fall list.
-
 
 ## Module: bots
 Consumes: round-system, character, match-rules.
@@ -1166,7 +1124,6 @@ export class BotSystem implements SimSystem<PlayerInput> {
   - pushes the code through a reaction ring of length reactionTicks;
   - calls characters.override(p, delayedCode).
 - Snapshot per bot: rng state u32, the BrainMemory fields and the reaction ring.
-
 
 ## Module: match-sim
 Consumes: bots, round-system, obstacles, character.
@@ -1248,7 +1205,6 @@ export function runMatchOffline(R: RapierModule, setup: MatchSetup, opts?: Offli
 - forcedRollback keeps a ring of snapshot bytes. Every `every` ticks it restores the state of `back` ticks ago (into a fresh MatchSim when `fresh`) and resimulates with the same inputs.
 - It refuses past maxTicks (default 108000): "match did not finish in N ticks".
 
-
 ## Module: course-set
 Consumes: course-loader, match-rules.
 
@@ -1269,7 +1225,6 @@ Playlist:
 - race-sprint and survival-sprint: sprint and standard, short (a bot finishes the race in under 15 s, and the hazards eliminate within 20 s).
 
 Race paths flag jump/dive nodes where needed.
-
 
 ## Module: m4-proof
 Consumes: match-sim, course-set, node-files, proofkit.
@@ -1296,7 +1251,6 @@ m4-rounds.ts, 4 checks:
   - seeds [1, 2] with sprint in quick mode; seeds [1..4] with standard in full mode; each case runs in parallel;
   - at least one race and one survival round are played across the run;
   - in standard mode, every non-final race ends by `target`.
-
 
 ## Module: net-match
 Consumes: match-sim, input.
@@ -1340,7 +1294,6 @@ export class Pilot {
 - It reads only the local sim's view API and has its own Rng(seed).fork(0x9170 + player), skill and memory.
 - It calls raceBrain/survivalBrain for the current round kind and decodes into out. It never writes the sim.
 
-
 ## Module: net-metrics
 Consumes: net-match.
 
@@ -1376,7 +1329,6 @@ export class CostStats {
   - displayed position = sim position + smoother.applyEntity offset;
   - a jump is the per-frame |Δdisplayed|, skipping parked players and players with teleportTick >= tick - 2;
   - a visible snap is a jump > SNAP_THRESHOLD_M.
-
 
 ## Module: m5-proof
 Consumes: net-metrics, net-match, course-set, node-files, proofkit.
@@ -1415,7 +1367,6 @@ m5-netsim.ts, 5 checks:
 | `smoothing` | the 100 ms cases | visibleSnaps 0, with maxDisplayJump reported (QB3) |
 
 Report lines per case: rollbacks, maxRollback, resimTicks, resim per tick, and frame ms mean/p99.
-
 
 ## Module: relay-client
 Consumes: refusal, net-match.
@@ -1483,7 +1434,6 @@ export class RelayTransport implements NetTransport {
 - `send` copies the data.
 - `endFrame` is called once per rendered frame after the session frame, and flushes on its cadence.
 
-
 ## Module: loopback-relay
 Consumes: relay-client.
 
@@ -1514,7 +1464,6 @@ Limits it enforces:
 Frames are JSON-stringified both ways. Delivery is queued and flushed by `pump()` or a microtask.
 
 Used by tests, by the in-page browser hub and by the M6 conformance check.
-
 
 ## Module: rooms-client
 Consumes: relay-client.
@@ -1550,7 +1499,6 @@ export class RoomsClient {
 - `room` is the latest `room` message: the create/join reply or any later broadcast.
   - It is set before the pending create/join promise resolves and before the onRoom listeners run.
   - leave(), close() and a socket close reset it to null.
-
 
 ## Module: webrtc
 Consumes: rooms-client.
@@ -1590,7 +1538,6 @@ export function playerOfPeer(started: Started, peer: number): number
 - `connect` resolves when every channel to every member is open. After timeoutMs (default 15000) it refuses, listing the missing peers.
 - Tests use a fake in-memory backend.
 
-
 ## Module: rtc-node
 Consumes: webrtc.
 
@@ -1604,7 +1551,6 @@ export function closeNodeRtc(): void
 - It implements RtcBackend with `node-datachannel` (exact version): PeerConnection, createDataChannel, onLocalDescription/onLocalCandidate, and binary Buffer messages converted to Uint8Array. The default bind is 127.0.0.1.
 - `closeNodeRtc` calls the library's cleanup.
 - The test runs two loopback peers with iceServers [] and exchanges 100 messages per channel. If node-datachannel cannot open on loopback, the test fails with a refusal naming the bindAddress tried. It never skips.
-
 
 ## Module: gamesaloon-local
 Consumes: bricks.
@@ -1627,7 +1573,6 @@ export async function helloHandshake(server: LocalServer): Promise<string>
 `helloHandshake` runs `node examples/hello-client.mjs <url>` in dir and returns its `OK: created room` line, or refuses with its output.
 
 The test is skipped with a message ONLY when the dir is absent. In proofs that case counts as failed.
-
 
 ## Module: m6-proof
 Consumes: relay-client, loopback-relay, webrtc, rtc-node, gamesaloon-local, m5-proof.
@@ -1666,7 +1611,6 @@ Docs:
   - no hub directory;
   - no 5-8 player matchmaking.
 
-
 ## Module: render-port
 Consumes: prims.
 
@@ -1703,36 +1647,15 @@ export class NullRenderPort implements RenderPort {
 - `capture` returns PNG bytes, or null for the null port.
 - NullRenderPort refuses unknown handles and non-finite transforms, counts the calls and reports triangles 0.
 
-
 ## Module: scene-view
+
 Consumes: render-port, match-sim, net-match.
 
-Files: `packages/game/src/render/palette.ts`, `packages/game/src/render/camera.ts`, `packages/game/src/render/sceneView.ts`, `packages/game/test/sceneView.test.ts`, `fixtures/assets/bean.prims.json`.
+Files: packages/game/src/render/{palette,camera,sceneView,sceneReadView,legacySceneTicks}.ts; sceneView, sceneViewAnimRate, sceneViewNetAnimRate and sceneReadView tests; fixtures/assets/bean.prims.json.
 
-```ts
-export const PALETTE: readonly (readonly [number, number, number])[]
-export const PALETTE_NAMES: readonly string[]
-export function followCamera(prev: CameraPose | null, player: Vec3, facing: { x: number; z: number }, dtS: number): CameraPose
-export interface SceneViewOptions { port: RenderPort; viewport: number; localPlayer: number; assets: (name: string) => PrimsAsset; bean: PrimsAsset }
-export class SceneView {
-  constructor(opts: SceneViewOptions)
-  update(sim: MatchSim, smoother: CorrectionSmoother | null, alpha: number, frameDtS: number): void
-  readonly camera: CameraPose | null
-  readonly instanceCount: number
-  readonly courseIndex: number
-  dispose(): void
-}
-```
+SceneView.update(view:SceneReadView,smoother,alpha,frameDtS) presents the read-only interface in G7.4. observeTick(view) advances animation from executed ticks. attachLegacySceneTicks(sim,observe) returns an unsubscribe function; engine hosts observe explicitly. SceneView retains camera, instanceCount, courseIndex, readiness and disposal APIs, course rebuilding, correction smoothing, camera obstruction, skins, animation, costumes and environments.
 
-- PALETTE is the 8 colours of 1.6.
-- `followCamera` uses the framing of 1.6 and an exponential follow (1 - Math.exp(-8*dt)).
-- `update`:
-  - when sim.course() changes, it rebuilds the obstacle instances (asset from spec.asset, scale spec.s);
-  - each frame, obstacles are posed between the previous and current tick by alpha (lerp + nlerp);
-  - one bean instance per player, tinted PALETTE[p], hidden when parked, at lerp(prev, cur, alpha) + the smoother offset, with yaw from facing;
-  - the camera follows localPlayer.
-- bean.prims.json is the jelly-bean: a capsule body, two eye spheres with pupils and a mouth, under 1500 triangles, with one capsule collider matching CAPSULE.
-
+Exports also include PALETTE, PALETTE_NAMES, seatTint, followCamera, ikInputs, characterObservation, restPoseSkin and costume/skinned-character types. SceneViewOptions includes its full implemented rendering and animation options; the bean fixture remains a fallback asset rather than the complete penguin presentation contract.
 
 ## Module: client-core
 Consumes: scene-view, net-match, net-metrics.
@@ -1764,7 +1687,6 @@ InPageMatch:
 - client k renders in ports[k], or in viewport k of one shared port;
 - humans are driven by a Pilot when pilots[k] is set, else by `local`;
 - it is DOM-free, so Node runs it with NullRenderPort.
-
 
 ## Module: web-client
 Consumes: client-core, raa-port, relay-client, webrtc, rooms-client.
@@ -1831,7 +1753,6 @@ Behaviour:
 - `mode=ops` installs the ops only.
 - It uses the RAA port when available, else the null port with a banner.
 
-
 ## Module: raa-port
 Consumes: render-port, bricks.
 
@@ -1848,7 +1769,6 @@ export async function createRaaPort(): Promise<RenderPort>
 - `raaStatus`: available iff `navigator.gpu` exists (RAA draws with WebGPU only). Otherwise reason = RAA_REASON_PREFIX + the missing piece.
 - `createRaaPort` implements RenderPort on `@etcito/raa` 0.1.1: `loadRaa()` then `createEngine(canvas)`. Each registered prims asset goes to `loadPrimsAsset(JSON)` once, by name. An instance without tint is `spawnAsset`; with a tint, each mesh gets one cached tint material. The port draws one full-canvas viewport (RAA has one camera and no scissor); more viewports refuse. The client page never asks one port for more: `client/canvases.ts` gives each in-page client its own canvas with its own port. Captures are `canvas.toBlob('image/png')`. When RAA is unavailable it refuses with RefusalError('render', 'raa', status.reason).
 - No stub and no alias: a missing package is a build failure, not a runtime fallback.
-
 
 ## Module: m7-proof
 Consumes: web-client, client-core, node-files, proofkit.
@@ -1868,7 +1788,6 @@ Files: `apps/headless/proofs/m7-web.ts`, `proofs/m7/raa-status.json`, `proofs/m7
 - Absent: prints `RAA API v0 absent: RAA port and browser captures not produced (brief: stop at the null port)` with value=absent threshold=n/a, and PASS.
 
 The proof records follow S10. They are written by the task that publishes the build to the GPU client, or records the absence.
-
 
 ## Module: hub-protocol
 Consumes: relay-client.
@@ -1892,7 +1811,6 @@ export function stateToPose(s: HubState, out: { pos: Vec3; yaw: number }): { pos
 - The shapes are S9: integer centimetres, and a facing byte from Math.atan2.
 - `decodeHubAct` validates types and ranges (name 1..24 characters, colour 0..7) and returns null for anything else.
 - Why 5 Hz and 360/min: the hub socket is a non-cadence private room, capped by the relay at 400 frames/min and 20/s. 360 covers 300 states/min, 12 hellos/min and the control frames, with headroom. The tests assert these values.
-
 
 ## Module: hub-world
 Consumes: hub-protocol, character, obstacles, course-loader.
@@ -1944,76 +1862,17 @@ hub-plaza.course.json (kind hub):
 - a queuePad box near the north side;
 - 8 spawns, kill plane -10.
 
-
 ## Module: play-flow
-Consumes: hub-world, net-match, relay-client, client-core.
 
-Files: `packages/game/src/hub/flow.ts`, `packages/game/src/hub/hubPilot.ts`, `packages/game/test/flow.test.ts`.
+Consumes: hub-world, net-match, relay-client, client-core, ege-hub, ege-show-runtime, ege-online.
 
-```ts
-export type FlowState = 'connecting' | 'hub' | 'queued' | 'match' | 'podium' | 'returning' | 'failed'
-export interface FlowEvent { ms: number; client: string; state: FlowState; detail: Record<string, string | number | boolean | number[]> }
-export interface FlowDeps {
-  R: RapierModule; relayUrl: string; ws: WsFactory; hubCode: string | 'new'; name: string; colour: number
-  courses: readonly ResolvedCourse[]; plaza: ResolvedCourse; partySize: 2 | 3 | 4; now: () => number
-  pilot: boolean; log: (ev: FlowEvent) => void
-}
-export class PlayFlow {
-  constructor(d: FlowDeps)
-  start(): Promise<void>
-  frame(dtS: number, controls: RawControls | null, emote: number): void
-  readonly state: FlowState
-  readonly hubCode: string | null
-  readonly hub: HubWorld
-  readonly match: NetMatch | null
-  remotes(nowMs: number): RemoteView[]
-  readonly lastLog: MatchLog | null
-  close(): void
-}
-export class HubPilot {
-  constructor(plaza: ResolvedCourse, seat: number, partySize: number)
-  sample(nowMs: number, x: number, z: number, othersInHub: number, queueAllowed: boolean, out: PlayerInput): PlayerInput
-  takeEmote(nowMs: number): number
-}
-```
+Files: packages/game/src/hub/{flow,hubPilot}.ts and packages/game/test/flow.test.ts.
 
-States:
-- `connecting`:
-  - validates partySize (2..4) and the hello identity;
-  - connects the hub RelayClient, then create(4) for 'new' or join(code);
-  - sends hello.
-- `hub`: steps HubWorld at 60 Hz from controls, or from HubPilot when `pilot` is set, and broadcasts state at HUB_RATE_HZ.
-  - When QueuePad becomes armed: opens a second RelayClient, calls queue(partySize, payload), and moves to `queued` (q = 1).
-  - 'cancel' sends unqueue.
-- On `matched`:
-  - netSetup(matched.seed, partySize, 'sprint', courses) and createNetMatch with a RelayTransport on the match socket;
-  - moves to `match`. The hub socket stays open, sending st with x = 1 at HUB_MATCH_RATE_HZ.
-- `match` -> `podium` when the phase is podium.
-- `podium` -> `returning` when the match is done: the match socket says bye, the NetMatch is disposed and lastLog is kept.
-- `returning` -> `hub`: placed back at the hub spawn, with x = 0.
-- Any refusal or a hub socket close -> `failed`, with the message logged.
-- Every transition calls log().
+PlayFlow supports connecting, hub, queued, choosing, watching, match, podium, returning and failed states. FlowDeps includes zones/season, lobby or pad matchmaking, RTC/mesh settings, seat count, vote/intermission durations, presentationDone and optional backend. FlowHub is the common hub-facing surface implemented by HubWorld and HubRuntime.
 
-Hub socket budget:
-- PlayFlow is the only sender on the hub socket. It keeps a sliding 60 s window of every frame it sends there (create/join, hi and st acts, ping, bye).
-- It sends at most HUB_MAX_ACTS_PER_MIN (360) per 60 s and 10 per 1 s.
-- A send that would exceed the window is skipped:
-  - a st is dropped without using up a seq;
-  - a hi is retried at the next state slot;
-  - bye is always sent.
-- hi goes out every HUB_HELLO_EVERY_MS and at the next state slot after a new seat is seen.
-- The matchmaking socket is separate and keeps the RelayClient/RelayTransport budgets.
+FlowBackend contains identity, asynchronous createHub(plaza,spawn) and createMatch(matched,transport). Absent backend preserves legacy factories. Engine admission precedes match creation; pending loads remain pending and cancellation disposes stale completions. Engine failures do not fall back. ZoneRelayClient supplies lobby/signaling and ZoneMeshTransport carries game traffic.
 
-HubPilot:
-- It is view-side (Math allowed).
-- Until the party is full, it circles its seat's spawn (radius 2.5 m, 6 s lap).
-- Once the other partySize-1 players have been seen in the hub for 3 s, and queueing is allowed (no match played yet), it walks onto the queue pad and stays.
-- `takeEmote` returns wave once when the party fills, and cheer once when queueing stops being allowed.
-
-Tests, on a virtual clock with LoopbackRelay:
-- no 60 s window of hub-socket frames exceeds 360 and no 1 s window exceeds 10;
-- a hub held for 3 minutes and a full queue -> match -> podium -> hub loop both run without 'rate limited'.
-
+The flow preserves lobby reentry, watcher/presentation completion, spawn return, remote presence and disposal. The hub sender retains 360 frames/minute and ten/second budgets, hello cadence, dropped-state handling and bye behavior. HubPilot supplies presentation-side movement/emotes for its existing automated callers. Tests cover flow/budgets and backend preparation/admission failures.
 
 ## Module: web-play
 Consumes: play-flow, loopback-relay, scene-view, web-client.
@@ -2052,7 +1911,6 @@ main.ts (the play.html entry):
 
 ops.ts sets `window.nmcGpu.ops.hubLoopCapture({ clients: 4, width: 1920, height: 1080, captureAt: ['hub', 'match', 'podium', 'back-in-hub'] })`. It runs InPageHubLoop in the 2x2 grid and returns the captures plus the event log. It refuses when RAA is unavailable.
 
-
 ## Module: m8-proof
 Consumes: play-flow, gamesaloon-local, web-play, proofkit.
 
@@ -2084,7 +1942,6 @@ m8-hub.ts, 4 checks:
 - Available: >= 4 non-empty 4-client captures (hub-loop-hub, hub-loop-match, hub-loop-podium, hub-loop-back-in-hub).
 - Absent: prints `RAA API v0 absent: RAA port and browser hub captures not produced (brief: stop at the null port)`, PASS n/a.
 
-
 ## Module: ege-body-contacts
 
 - Repository: engine
@@ -2094,40 +1951,39 @@ m8-hub.ts, 4 checks:
 
 Engine-owned `ege.body.props` (28-byte record) applies validated rotation locks, additional mass and gravity/buoyancy properties; `ege.contact.track` is a 132-byte record with four sorted contacts. `bodyType` is fixed 0, dynamic 1, position-kinematic 2, velocity-kinematic 3 and absent -1; the host enforces transform-read access, phase/world validity and pointer bounds. These systems and records are owned and tested in the engine repository. See E9.
 
-
 ## Module: ege-schema
-Consumes: engine body-properties, contact and box-collider declarations.
 
-Files: `ege.schema.json`, `tools/test/egeSchema.test.ts`.
+Consumes: ege-body-contacts, ege-box-collider.
 
-Defines the complete eight-player round schema and schedule in E2/E3, including all feature records and ten events. Engine-prefixed records come from engine registration, not duplicate game declarations. Tests inspect real engine schemaLayout for input packing, groups, system order and record layouts.
+Files: ege.schema.json and tools/test/egeSchema.test.ts.
 
-Memory cells store twenty symbols as u32[16] plus u32[4]. Offsets are owner 0, index 4, t 8, half 32, state 56, timer 60, symbol 64, cycle_symbols 68, cycle_symbols_tail 132; total size 152 bytes. Consumers use each generated accessor within its declared bounds. Layout tests also cover sweep records, the 12-byte engine box record and match payload.
+Declares round plus show_seat, show_field, show_rules and show_hub, their input counts, real script schedules and access lists. Game records include shared control, stable seat identity, transferable bot/reaction state, cumulative publication and ledger state, season/catalog/candidate/vote/used-map rows and hub state. Engine-prefixed declarations come from engine registration. Counts per field are at most sixteen and records at most 256 bytes; larger state uses child rows.
 
+G6 ordering/events remain as E3. Memory cells retain twenty symbols split as u32[16] and u32[4], with total size 152 bytes; seat crossing rows scale with the emitted roster. Tests inspect actual schema layouts, schedules, groups, input packing and construction of all world kinds.
 
 ## Module: ege-build
+
 Consumes: ege-schema, bricks.
 
-Files: `tools/egeScripts.ts`, `tools/egeBricks.ts`, `apps/web/src/engineRound/scriptsPlugin.ts`, corresponding tools tests.
+Files: tools/{egeScripts,egeBricks}.ts, apps/web/src/engineRound/scriptsPlugin.ts and egeScripts/egeBricks/egePublication tests.
 
-`collectRfScripts(root?)` returns sorted `{name,text}` sources. `rfCompiler()` caches a compiler promise, resetting it after rejection; the compiler uses AssemblyScript, the brick SDK, engine-derived schema layout and memoryCache. `compileRfScripts({root?,overrides?})` returns wasm, diagnostics and file names. `formatRfDiagnostic` maps source paths. CLI check/build reports diagnostics; build writes rf-scripts.wasm and build.json.
+collectRfScripts returns sorted {name,text} sources. rfCompiler caches compilation services and resets after rejection. compileRfScripts({root?,overrides?}) compiles against engine schema/SDK and returns bytes, diagnostics and source names; formatRfDiagnostic maps paths. CLI check/build and engine brick discovery remain available.
 
-`engineDir()` uses RF_ENGINE_DIR or sibling etcito-game-engine. `engineBricksMissing()` checks the engine WASM/JS and compiler package/SDK/entry outputs. Build runs the engine's two brick scripts when writable; otherwise it requires the provided outputs. `where` prints the directory.
+createRfPublicationManager and readRfPublication manage ScriptPublication and PublicationEvent, revision ordering, cached exact bytes and EngineModuleIdentity. RF_PUBLICATION_EVENT is rf:script-publication; output files are rf-publication.json and rf-scripts.wasm. A successful compilation receives an opaque moduleKey; unchanged cached results retain it. Failed edits expose diagnostics while preserving the runnable publication.
 
-`rfEgeScripts()` loads the compiler with Node, emits ege/rf-scripts.wasm during Vite builds and serves it in development with a cache keyed by schema and source text. Compile errors fail the build/request. Tests cover collection, diagnostics, real compile/load, forbidden mutable globals and brick lookup.
-
+rfEgeScripts serves/emits the schema, WASM and publication, watches saved sources, coalesces requests and prevents older asynchronous completions from replacing newer revisions. Tests cover compilation/load, diagnostics, publication ordering/cache and brick lookup.
 
 ## Module: ege-scene
-Consumes: course loading/model, character, match rules, world, input.
 
-Files: `packages/game/src/ege/{files,inputCodes,colliders,featureEmitters,sceneEmitter}.ts`; `packages/game/test/egeInputCodes.test.ts`, `egeScene.test.ts`.
+Consumes: course-loader, course-model, character, match-rules, world, input, ege-schema.
 
-Exports E1 constants, ENGINE_NEUTRAL_CODE and both E2 codecs, engineColliders/assetColliders, and buildEngineAssembly/emitEngineScene. EmitInput contains CourseV1, resolved assets, optional capsule and profile/seed. EmittedScene exposes assembly, scene text/document, resolved seat/obstacle/feature IDs, item-body IDs keyed by item/body and index(name).
+Files: packages/game/src/ege/{files,inputCodes,colliders,featureEmitters,sceneEmitter}.ts and egeInputCodes/egeScene tests.
 
-FeatureEmitter maps `(FeatureSpec, FeatureEmitContext)` to `{root,children}` RawEntity records. Context supplies course, feature index, path and assets. FEATURE_EMITTERS registers all 22 catalog kinds. FEATURE_KIND_RANK, featureSnake, featureSalt, visualOf and tintColor centralize ordering, naming, RNG and visual conversion. E4 defines emission and refusal behavior.
+Exports RF_EGE constants, E2 codecs, collider conversion, FEATURE_EMITTERS, buildEngineAssembly and emitEngineScene. EmitInput adds optional show {worldKind,seatOf,inputSlots,humans}; omission preserves G6. EmittedScene retains assembly/document/text, named entity lookup and seat/obstacle/feature/item-body mappings, plus show seat and zone ownership metadata.
 
-Tests cover codec ranges/buttons, real scene construction, capsule/surface records and invalid collider/kind refusals. Registry tests require known kinds rather than an empty map.
+Show helpers allocate stable seat, child, result-publisher and membership zone identities and validate collisions, roster lengths and human-slot consistency. Entity references are resolved after conversion. FeatureEmitContext includes seatCount/world kind; all 22 feature kinds remain registered. E4 governs geometry, capsule setup, scaling and supported-shape refusals.
 
+Current limitation: sceneEmitter emits bot memory/route/reaction state but does not attach bot_seat or serialize authored bot_behaviour/show_nav_* rows into playable show worlds. rf_show_bots therefore has no runnable bot seats there. serializeBotData exists separately in ege-show-bots; it is not wired into this construction path.
 
 ## Module: ege-round
 Consumes: ege-scene, bots, character, round-system.
@@ -2138,16 +1994,15 @@ createEngineRound validates eight human flags and simulation data, then creates 
 
 observeRound decodes schema records into RoundObservation and CharObservation; charStateOf supplies the bot-facing CharState. Missing required seats are refused. Event totals accumulate only the interval stepped, including match. Tests exercise record decoding, mode/status/facing/phase values and missing-seat refusal.
 
-
 ## Module: ege-script-core
+
 Consumes: ege-schema.
 
-Files: `scripts/ege/lib/{vec,seats,boxes,units}.as.ts`, `scripts/ege/round/clock.as.ts`.
+Files: scripts/ege/lib/{vec,seats,boxes,units,show_events}.as.ts and scripts/ege/round/clock.as.ts.
 
-Helpers provide arena vectors/quaternions, approach2/turnFacing, inBox, degree/tick conversion, TICK_DT, typed seat/character/transform/velocity access and seat placement/parking. Placement uses feet + stand + .01, zero velocity and air mode; parking uses the source character parking constants.
+Exports arena vector/quaternion helpers, approach2/turnFacing, inBox, degree/tick conversions, TICK_DT, seat/character/transform/velocity access and placement/parking. Placement clears velocity and initializes the character at feet plus stand height and clearance.
 
-`rf_round_clock` uses the pre-step world tick to set intro/playing/overtime/ended, freezes intro/ended characters, places unplaced seats and records their before positions. ended_tick overrides the timed phases. E6 specifies the observation boundary; persistent clock/seat state lives in records.
-
+rf_round_clock retains G6 phase, freezing, placement and previous-position behavior; show schedules have their own clock. recordShowEvent updates transferable cumulative records when present and emits the existing event payload. It is shared by show-enabled seat/features and never invokes external sound or grants. Persistent state lives in schema records.
 
 ## Module: ege-harness
 Consumes: ege-round, ege-scene, ege-build, ege-script-core, node-files.
@@ -2158,16 +2013,15 @@ loadEgeCourse reads courses/<id>.course.json, falling back only on absence to fi
 
 Tests cover construction, first placement/uprightness, zero faults, the tick-60/61 phase boundary and equality of two worlds driven by identical codes. Feature and character tests reuse this harness without GPU/browser/network dependencies.
 
-
 ## Module: ege-view
+
 Consumes: ege-round, scene-view, match-sim.
 
-Files: `packages/game/src/ege/sceneSim.ts`, `packages/game/test/egeSceneSim.test.ts`.
+Files: packages/game/src/ege/sceneSim.ts and packages/game/test/egeSceneSim.test.ts.
 
-EngineSceneSim is the MatchSim-shaped read adapter for SceneView. refresh reads observations and packed poses; accessors provide characters, course, obstacles, mechanism items/body poses and mechanism signals. It clears unsupported character detail, reports parked seats and exposes a playing view phase for the single course. step is a no-op and mechanismEvents returns zero.
+EngineSceneSim implements SceneReadView. constructor(course,scene) and refresh(round) expose observations, poses, characters, obstacles, mechanisms and signals without impersonating MatchSim. Missing/unsupported character detail is cleared and absent seats parked. Any compatibility step method is outside SceneReadView; engine animation uses explicit observeTick calls.
 
-focusCamera uses center+(0,9,-14), target center+(0,1,0), FOV 60, near .1 and far 500. Tests use a fake round to verify poses, character fields, parking and camera values.
-
+focusCamera retains center+(0,9,-14), target center+(0,1,0), FOV 60, near .1 and far 500. Tests cover pose/character reads, parking and camera values.
 
 ## Module: ege-page
 Consumes: ege-view, ege-round, ege-scene, scene-view, web-client, render-port.
@@ -2180,16 +2034,17 @@ main loads the round and existing content, binds EngineSceneSim/SceneView to the
 
 The committed inventory supplies exact capture arguments and requirements. The survival demo row currently captures at frame 750; the crown row at 2280 with an authored path. Tests cover argument validation, input patterns, capture conditions, facts, readiness and HUD behavior; no capture result is implied by these unit tests.
 
-
 ## Module: ege-capture
+
 Consumes: ege-harness, ege-page.
 
-Files: `tools/engineRoundCapture.ts`, `tools/test/engineRoundCapture.test.ts`; command entries in `.nmc/commands.json`.
+Files: tools/{engineRoundCapture,engineCaptureJob}.ts and their tools/test files.
 
-Exports InventoryRow, loadInventory, selectRows, requireProblems, keptRows, renderOrder, judgeImages and main. E8 defines the CLI, store, attempt, requirement and verdict contracts. The implementation reuses content packing, GPU publish/render/wait helpers, unwrapOp, parseScore and harnessRound.
+engineRoundCapture retains InventoryRow, loadInventory, selectRows, requireProblems, keptRows, renderOrder, judgeImages, main and its CLI/inventory adapter. engineCaptureJob exports shared row validation, requirement evaluation, attempt/store management, retained-image restoration, render ordering, freshness and judgment.
 
-Validation rejects duplicate IDs/filenames, invalid PNG names, unsupported arguments and invalid fact rules. Check constructs worlds but does not run them to capture completion. Render validates facts before keeping an image and saves progress after every row. Fresh checks job metadata equality and requirements. Tests cover inventory/rules, selection, reuse, render priority and judge budgets.
+runEngineCaptureJob<A>(config,argv,execution?) accepts topic,inventory,page,parseArgs,validateSelection and run. CaptureRow contains id,stage,filename,args,require,description,held_constant; CaptureResult contains facts and a 1920x1080 PNG capture. Optional CaptureExecution supplies execution boundaries for tests.
 
+The shared lifecycle is check -> clean -> render -> fresh -> judge. Check validates selection/content; clean allocates an attempt without deleting retained records. Render checks facts before persistence and saves each success. Reuse requires matching build/inventory metadata, intact image bytes and judgment inputs; ENGINE_SHOW_RERENDER_ALL disables show reuse. Judge minimum is 6. E8 and Visual execution specify cache/delivery behavior. Show adapters supply scenarios, not duplicate persistence logic.
 
 ## Module: ege-manifest
 Consumes: course-model.
@@ -2198,26 +2053,25 @@ Files: `packages/game/src/gameManifest.ts`, `sdfm.game.json`, `packages/game/tes
 
 GameManifest and parseGameManifest accept optional schema/scripts only as a pair. Schema is a plain relative .schema.json path; scripts is scripts or a plain folder beneath it. Refusals point to /schema or /scripts. The committed manifest names ege.schema.json and scripts/ege, matching the modeler rules. Tests cover the committed file, path/pair refusals and schema existence; the existing formatting test still applies.
 
-
 ## Module: ege-character
-Consumes: ege-script-core, ege-schema, ege-harness, engine contacts/properties, character.
 
-Files: `scripts/ege/character/{constants,pre,post,ground,moves,grab,bump}.as.ts`, `apps/headless/test/egeCharacter.test.ts`.
+Consumes: ege-script-core, ege-schema, ege-harness, ege-body-contacts, character.
 
-rf_character_pre and rf_character_post implement character behavior over generated records, engine queries and contact data. Helpers cover ground/support velocity, movement/timers, player and lever grabs, contact bumps and knockback. Typed constants retain source values; SDK math handles transcendentals. Grab target/lever fields store entity IDs with -1 for absence.
+Files: scripts/ege/character/{constants,pre,post,ground,moves,grab,bump}.as.ts and apps/headless/test/egeCharacter.test.ts.
 
-Persistent modes/timers, button edges, support, facing, slide/carry/swim and protection live in character records. Pre-step precedes feature velocity effects; post-step follows physics/contact tracking. Tests exercise movement, jump, dive-to-slide landing, surfaces, swim, grabs, stun, uprightness, zero faults and equal-world stepping.
+rf_character_pre/post implement movement, support velocity, timers, grabs, bumps, knockback, protection, carrying, sliding/strokes and swimming over generated state and engine queries. Pre reads S1 show_control when present; otherwise it reads SDK axes/buttons. Both paths share controller behavior and transferable state. Neutral show control is 32639, not zero.
 
+Pre precedes feature velocity effects; post follows physics/contacts. Persistent mode/button/support/facing state and entity references survive transfer/restore. Tests cover the controller, mapped show inputs and high seat ids alongside G6 behavior.
 
 ## Module: ege-seat-rules
+
 Consumes: ege-character, ege-script-core, ege-harness.
 
-Files: `scripts/ege/seat/{rules,route,respawn}.as.ts`, `fixtures/ege/ege-strip.course.json`, `apps/headless/test/egeSeatRules.test.ts`.
+Files: scripts/ege/seat/{rules,route,respawn}.as.ts, fixtures/ege/ege-strip.course.json and apps/headless/test/egeSeatRules.test.ts.
 
-rf_seat_rules runs last, skips frozen rounds, consumes feature kill requests and handles due respawns, ordered gates/laps, finish, kill-plane falls, elimination and periodic route progress. Finished/eliminated seats are parked. It recounts statuses and ends a playing/overtime round when alive reaches zero.
+rf_seat_rules handles due respawn, feature kill requests, gates/laps, finish, falling/elimination and route progress, parking terminal seats. G6 retains local recount/closure; show worlds publish cumulative state and leave qualification/closure to show_rules.
 
-Route helpers return scalar gate/finish decisions, sub-tick crossings and route distance. Respawn helpers clamp slots to 1..12, schedule waits/protection and calculate deterministic slot/cursor positions. Anchors use gate/home/shared cursors or the seat's spawn cursor. Teleports clear stale grounding/jump/grab state and update teleport/protection records. Tests cover route, finish, respawn and terminal behavior on the strip fixture.
-
+Route helpers calculate gate/finish decisions, subticks and remaining distance. Respawn uses 1..12 spread slots, wait/protection, transferable anchor cursors and source facing, clearing stale grounding/jump/grab state. Shared show events preserve stable room-seat identity. Tests cover route, respawn and terminal behavior, including restore/transfer cases.
 
 ## Module: ege-features-race
 Consumes: ege-scene, ege-seat-rules, ege-character, ege-harness.
@@ -2228,18 +2082,15 @@ Each emitter exports <kind>Emitter with FeatureEmitter type. Marker updates visu
 
 Boost applies approach2 toward input*(8+boost), with the source acceleration, after character steering; boost 4 yields the bounded 9 m/s ordinary grounded test result rather than an unconditional 12 m/s. Launch computes initial ballistic velocity once; subsequent character air steering remains active. Tests separately cover the initial formula and an apex-4 target-landing scenario, alongside per-kind records, behavior, zero faults and determinism.
 
-
 ## Module: ege-features-hazard
-Consumes: ege-features-race, ege-schema, engine box-collider support.
 
-Owns hexField, memoryTiles, annulus, sweep and risingKill emitters and snake-case scripts, ege-yard-b fixture, egeFeatureEmitHazard and egeFeaturesHazard tests.
+Consumes: ege-features-race, ege-schema, ege-box-collider.
 
-Scripts derive generated geometry at first execution. Annulus tangential half extent is mid*sin(step/2)+.02. Annulus, memory cells and sweep use placeholder cuboids plus ege.box_collider, writing actual dimensions before physics and matching render dimensions. Sweep pools contain one body for all-laser phases, otherwise two; phase changes reuse those bodies. Hex tiles warn/fall after occupancy; risingKill advances its plane and issues seat kill requests.
+Files: hexField, memoryTiles, annulus, sweep and risingKill emitters under packages/game/src/ege/features, corresponding snake-case scripts, ege-yard-b fixture and egeFeatureEmitHazard/egeFeaturesHazard tests.
 
-Memory supports 4..256 cells and 1..20 cycles. Its root tracks idle/reveal/hide/choice/done; children hold cells, cycle targets, eight seat crossing records and cells+1 visual markers. Symbols use the split arrays specified in ege-schema. Pre generates symbols cycle-major, cell-major, then one target draw per cycle using the feature salt. Post advances phases, detects crossings, drops incorrect cells and emits match events. Persistent symbols/state survive world snapshots.
+Scripts initialize deterministic geometry. Annulus tangential half extent is mid*sin(step/2)+.02. Annulus, memory cells and sweep update placeholder cuboids through ege.box_collider before physics and match render dimensions. Sweep reuses one body for all-laser phases or two otherwise. Hex occupancy drives warning/fall; risingKill advances its plane and requests seat kills.
 
-Tests cover per-kind behavior, effective collider/render dimensions, sweep pool size, twenty-cycle symbol storage including cycles 15/16/19, phase boundaries, zero faults and world equality. Schema layout assertions belong in egeSchema.test.ts.
-
+Memory supports 4..256 cells and 1..20 cycles. Root phases are idle/reveal/hide/choice/done. Children hold cells, cycle targets, roster-sized per-seat crossing rows and cells+1 visual markers. Twenty symbols use sixteen-plus-four storage. Generation is cycle-major/cell-major followed by one target draw per cycle. Post handles crossing penalties, incorrect cells and match events through the shared show writer. Persistent state and entity ownership survive snapshots/transfer. Tests cover geometry, pools, phase boundaries, high seats and twenty-cycle layout.
 
 ## Module: ege-features-objective
 Consumes: ege-features-hazard and engine SDK bodyType.
@@ -2250,7 +2101,6 @@ Dynamic props use zero collider density plus explicit additional mass. Scripts m
 
 Bank queries debris overlap, retries at total capacity when truncated, requires bodyType==1 and center containment, and excludes carried-hand proximity within .2 m. Membership records are spawned/despawned without bodies and retain actual bank/item entity IDs and credited team. Neutral credit uses nearest alive seat with seat-ID tie breaks; transitions emit +1/-1 team_score. Tests include dynamic debris without carry records, fixed/kinematic rejection, sleeping bodies and overlap overflow, plus per-kind behavior, zero faults and deterministic stepping.
 
-
 ## Module: ege-box-collider
 
 - Repository: engine
@@ -2259,7 +2109,6 @@ Bank queries debris overlap, retries at total capacity when truncated, requires 
 - Consumes: nothing
 
 Export BOX_COLLIDER: DeclSpec, SYSTEM: SystemDecl and `pub fn run(world: &mut World, schema: &Schema) -> EgeResult<()>` from crates/ege-physics/src/box_collider.rs. Register SYSTEM through ege_physics::register. Component ege.box_collider contains half_extents: f32[3], in metres; its independent 12-byte record has x at byte 0, y at byte 4 and z at byte 8, relative to the record start. No existing record changes. System ege.box.collider reads ege.box_collider and runs after ege.body.props and before ege.physics. Visit entities in ascending id; skip entities without bodies. A body carrying this record must have exactly one cuboid collider, and all three dimensions must be finite and strictly positive. Validate all applicable records before mutating physics. Invalid dimensions return ErrorCode::InvalidArgument with `ege.box_collider of entity <e>: half_extents[<axis>] must be finite and greater than 0`; invalid collider topology returns the same code with `ege.box_collider of entity <e>: expected exactly one cuboid collider`. Axis is 0, 1 or 2. Apply only changed dimensions through Rapier's shape update, preserving collider identity, local pose, material, groups, enabled state and body properties; wake the affected body. Dimensions take effect in the immediately following physics step and survive snapshot/restore. The component does not change ege.render: scripts write matching render parameters. No scene format, WASM ABI export, SDK import or existing component changes. Engine files remain genre-neutral. Public function run returns EgeResult<()>, meaning Result<(), EgeError>: success carries unit and failure carries the existing engine error type, with the codes and messages specified above. BOX_COLLIDER and SYSTEM are typed declaration constants, not functions returning an untyped object.
-
 
 ## Module: ege-script-body-type
 
@@ -2270,36 +2119,43 @@ Export BOX_COLLIDER: DeclSpec, SYSTEM: SystemDecl and `pub fn run(world: &mut Wo
 
 Export `bodyType(entity)` from the engine script ABI and SDK. It returns the authoritative physics classification fixed 0, dynamic 1, position-kinematic 2, velocity-kinematic 3 or absent -1. The host enforces transform-read access, phase/world validity and pointer bounds; engine and SDK 0.1.2/ABI 1 are deployed together for callers of this query. These additions and their access checks are owned and tested in the engine repository.
 
-
 ## Module: ege-show-runtime
 
-- Repository: royal-fiesta
-- Files: `packages/game/src/ege/admission.ts`, `packages/game/src/ege/botData.ts`, `packages/game/src/ege/hub.ts`, `packages/game/src/ege/hubFlow.ts`, `packages/game/src/ege/online.ts`, `packages/game/src/ege/onlineState.ts`, `packages/game/src/ege/showEffects.ts`, `packages/game/src/ege/showFactory.ts`, `packages/game/src/ege/showRuntime.ts`, `packages/game/src/ege/showScene.ts`, `packages/game/src/ege/showState.ts`, `packages/game/src/ege/showTypes.ts`, `packages/game/src/ege/worldRead.ts`, `scripts/ege/bots/behaviour.as.ts`, `scripts/ege/bots/brain.as.ts`, `scripts/ege/bots/routes.as.ts`, `scripts/ege/bots/traversal.as.ts`, `scripts/ege/show/clock.as.ts`, `scripts/ege/show/hub.as.ts`, `scripts/ege/show/ledger.as.ts`, `scripts/ege/show/publish.as.ts`, `scripts/ege/show/qualification.as.ts`, `scripts/ege/show/scheduler.as.ts`, `scripts/ege/show/season.as.ts`, `scripts/ege/show/teams.as.ts`, `scripts/ege/lib/show_events.as.ts`, `packages/game/test/egeHub.test.ts`, `packages/game/test/egeShowEffects.test.ts`, `packages/game/test/egeShowEffectsOnline.test.ts`, `packages/game/test/egeShowFactory.test.ts`, `packages/game/test/egeShowState.test.ts`, `packages/game/test/showFlow.test.ts`, `apps/headless/test/egeShow.test.ts`, `apps/headless/test/egeShowTransfer.test.ts`
-- Owner: M1
-- Consumes: ege-build, ege-schema, ege-scene, ege-round, ege-script-core, ege-manifest
+Repository: royal-fiesta. Consumes: ege-domain-binding, ege-show-rules, ege-show-bots, ege-scene, ege-build.
 
-Exports createEngineShow, createEngineShowFactory, readShowState, readShowRoundResult, readShowSelection, buildShowPhysicsScenes, buildShowRulesScene, buildShowHubScene, catalogCutField, EngineShowEffects, createEngineHub, EngineHubFlow, createEngineOnlineShow, parseEngineIdentity, requireEnginePeers, requireLegacyPeers, registerEngineOnlineStats, engineOnlineStats, onlineSeatMap, EngineVoteBarrier, serializeBotData, readShowViewState, forgetWorldReads and the EngineShow* types. `catalogCutField` packs `show_catalog_entry.cut`: bit 0 is the cut flag and bits 8.. hold the banned-predecessor index plus one; a season entry with two banned predecessors refuses. `EnginePresentationWorld.farSnapshot` returns the live incarnation's raw far poses (`ege_zone_poses(world, 1)`) as independent storage; it refuses once that incarnation is released, its scratch replaced or the factory disposed, even when a domain identifier is reused, and every call returns a fresh copy. Admission, scripted bots, cumulative publication, season rules and hub recovery follow G7.1-G7.3 and G7.5.
+Files: packages/game/src/ege/{showTypes,showScene,showFactory,showRuntime,showState}.ts, apps/headless/src/engineShow.ts and runtime/factory/state/transfer tests. Presentation component read helpers are in worldRead.ts; effects, bots, hub and online integration have their own modules.
 
+EngineShowConfig supplies engine,schemaText,scriptBytes,identity,seed,courses,assets,zones,season,humans and optional plan,testMode,limitCatchup. createEngineShowFactory awaits script admission before returning a usable factory; create/rebuild/reset remain synchronous. Failure releases preparation resources. The factory retains correct selected-course/roster context and live entity mappings, composes EngineDomainFactory/SwapTimeline/RollbackBinding, uses EGZ physics transfer and complete rules snapshots for handoff.
+
+createEngineShow returns EngineShowRuntime with identity, mode, snapshot, frame, vote, worlds, presentation, onPresentation and dispose. Snapshots decode script-owned selection, results and state without recomputing rules. buildShowPhysicsScenes, buildShowRulesScene and buildShowHubScene construct their declared contexts. catalogCutField packs the cut/predecessor field and showState validates it against the season.
+
+frame validates finite nonnegative elapsed time and S1 input batches, samples active humans in stable order and converts inputs once. Default accumulation runs at most eight consecutive 60-Hz ticks and retains debt. limitCatchup enables the rendered-local tick cap and drops excess whole-tick wall-clock debt while preserving fractional time and consecutive simulation tick ids. testMode only changes presentation waits. Bots are not sampled as humans.
+
+Presentation mappings have incarnation lifetimes. farSnapshot calls the live EngineDomainSim.far(writer,1) and returns independent bytes, refusing after release/replacement/disposal. post-tick and before-release observations follow G7.4, including terminal ticks inside accumulated frames. PresentationMemo and worldRead cache read-only data with explicit invalidation. patchLifecycle, patchVote, patchClock and entityBytes are exported for online reuse. The headless engineShow CLI is a local product runner.
 
 ## Module: ege-show-view
 
-- Repository: royal-fiesta
-- Files: `packages/game/src/ege/showView.ts`, `packages/game/src/ege/showFar.ts`, `packages/game/test/egeShowView.test.ts`, `packages/game/test/egeShowFar.test.ts`, `packages/game/test/egePresentationMemo.test.ts`
-- Owner: M2
-- Consumes: ege-show-runtime, ege-view, scene-view
+Repository: royal-fiesta. Consumes: scene-view, ege-show-runtime, render-port.
 
-Exports EngineShowView (a SceneReadView), EngineFarView, EngineViewReaders and ENGINE_VIEW_READERS. EngineShowView.refresh reads component views, entity poses, RenderBridge view buffers and confirmed results; near membership uses stable seat identity and far members are excluded whenever near owns the seat. EngineFarView consumes each live world's farSnapshot. Domain replacement invalidates borrowed views before refresh; HUD, camera and animation may read predicted poses but never commit grants or rewards. The read-only boundary follows G7.4.
+Files: packages/game/src/ege/{showView,showEffects,showFar,worldRead}.ts and egeShowView, egeShowEffects, egeShowEffectsOnline, egeShowFar and egePresentationMemo tests.
 
+EngineShowView(runtime) implements SceneReadView with refresh(alpha), nearSeats and dispose. EngineViewReaders/ENGINE_VIEW_READERS supply engine read boundaries. Reads use live mappings and include optional character animation fields. At most eight active near seats are selected, humans first by input slot/room seat then bots by room seat. Unselected/absent characters park and clear detail; authority is unchanged.
+
+EngineFarView accepts(domain,tick,bytes), read(near) returns RenderBridge records, and clear removes stored snapshots. It decodes the engine format, excludes near/inactive seats and never uses legacy farState. worldRead exports SHOW_VIEW_COMPONENTS, readShowViewState and forgetWorldReads to constrain and invalidate component reads.
+
+EngineShowEffects(runtime,{sound,grant}) subscribes to every post-tick and before-release source. pump is repeat-safe; dispose unsubscribes. Confirmed EventBridge delivery is silent during replay. Stable receipts persist across domain replacement; authoritative results alone authorize grants. deliveryStats returns copied droppedRecords,repeatedSoundDeliveries,repeatedGrantDeliveries, counting actual sink delivery duplicates. Ring loss fails visibly. Tests cover terminal multi-tick delivery, confirmation/replay, retained receipts, membership and borrowed-view invalidation.
 
 ## Module: ege-show-page
 
-- Repository: royal-fiesta
-- Files: `apps/web/engine-show.html`, `apps/web/src/engineShow/main.ts`, `apps/web/src/engineShow/ops.ts`, `apps/web/src/engineShow/page.ts`, `apps/web/src/engineShow/presentation.ts`, `apps/web/src/engineShow/ready.ts`, `apps/web/src/engineShow/testMode.ts`, `apps/web/src/engineShow/scenarios/hub.ts`, `apps/web/src/engineShow/scenarios/online.ts`, `apps/web/public/engine-show/hub.inventory.json`, `apps/web/public/engine-show/offline.inventory.json`, `apps/web/public/engine-show/online.inventory.json`, `apps/web/test/engineHubFlow.test.ts`, `apps/web/test/engineShowPage.test.ts`, `apps/web/test/engineShowPresentation.test.ts`, `apps/web/test/engineShowReady.test.ts`, `apps/web/test/engineShowEffectsWiring.test.ts`, `apps/web/test/showContent.test.ts`, `apps/web/test/showDirector.test.ts`, `apps/web/test/showMode.test.ts`, `apps/web/test/hubWalkPhase.test.ts`, `apps/web/test/engineOnlineInventory.test.ts`, `apps/web/test/engineGameSwitch.test.ts`
-- Owner: M2
-- Consumes: ege-show-runtime, ege-show-view, ege-view, ege-round, ege-capture, ege-manifest, scene-view, web-client, render-port
+Repository: royal-fiesta. Consumes: ege-show-view, ege-capture, ege-page, web-client, render-port, ege-hub, ege-online.
 
-Exports mountEngineShow, EngineShowPageOptions, EngineShowPage, EnginePageState, EngineShowHostApi, engineShowHost, applyConfigOverrides, loadEnginePublication, loadEngineAuthoredShow, setEngineShowWasmUrl, pageOptions, engineShowTestMode, createEngineShowReady, engineEffectSinks, EngineScreenTracker, EngineSeatPresenter, confirmedPodium, podiumPlayers, farPenguinBridge, registerEngineShowOps, runShowOperation, parseShowArgs, ShowFactsCollector and the show scenario arguments. engine-show.html defaults to local, sixty seats and one human; online scenarios require two human clients and fifty-eight bots. Stable signals are page-ready, hub-ready, round-ready, round-ended, podium-ready, hub-returned and script-applied; missing expected transitions fail. The page follows G7.4, G7.5 and G7.7.
+Files: apps/web/engine-show.html, apps/web/src/engineShow/{main,page,ops,ready,presentation,testMode}.ts, offline.inventory.json, engineShow page/readiness/presentation/effects-wiring/content tests and tools/engineShowCapture.ts. Hub, online and saved-script scenario files belong to their respective modules.
 
+mountEngineShow, EngineShowPageOptions, EngineShowPage and EnginePageState follow G7.7. Local and online modes prepare the same engine hub. EngineHubFlow owns hub/loading/show/returning/failed transitions. HubView renders S9 remotes/emotes on the shared port; SceneView/RenderBridge present show worlds. onPresentation explicitly observes every presented tick; EngineShowEffects owns draining/receipts. Failed preparation sets error and never signals ready.
+
+engineShowHost exposes capture operations, flow(), hub(), presence/pushPresence, signals(), showConfig and remountWith(start,overrides?). Online attachment uses remountWith. loadEnginePublication validates the schema/publication key; loadEngineAuthoredShow, applyConfigOverrides and their exported types share loading with the shell. Attached configuration supplies humans/bots; engineOnlineStats supplies desyncs.
+
+main eagerly imports scenarios before registering operations. registerScenario rejects duplicate ids. The offline inventory owns simple-character, sixty-seat-round and winner-podium rows. engineShowCapture selects <stage>.inventory.json, validates its scenario ids/content and delegates persistence to the shared job, storing under NMC_CACHE_DIR/engine-show/<stage> or out/engine-show/<stage>. The staged capture page is engine-show.html. Page/scenario unit checks do not imply a successful judged capture.
 
 ## Module: ege-dev-swap
 
@@ -2317,3 +2173,79 @@ engine-show-dev.html and main.ts are the interactive authoring page under the Vi
 `tools/savedScriptSave.ts` exports runSavedScriptSave and main. In one process, through the modeler library session (createSdfm; game_list, script_list, script_read, script_write -> writeGameFile), it performs: a rejected save and an accepted save of scripts/ege/character/constants.as.ts in the registered disposable checkout; a filesystem compile of the complete set after each save; staging of <page>/ege/swap/events.json and <page>/ege/swap/rf-scripts.wasm, where <page> is the --page directory as given (--page apps/web/dist -> apps/web/dist/ege/swap/events.json); and a verified restore of the original text.
 
 The judged authoring scenario 'engine-saved-script-applied' runs in the engine-show.html capture page. It composes the dev modules reload.ts and status.ts in a local engine-show.html round fed by the modeler-saved staged publications. It observes the rejected edit kept, script-applied, preserved tick/round and a changed jump in the current local round, and captures engine-saved-script-applied.png with the status panel composed. This scenario is QB18's judged control. Its facts add swap: {rejectedKept,rejectedDiagnostics,applied,generation,appliedRevision,moduleChanged,tickPreserved,roundPreserved,riseBeforeM,riseAfterM,behaviorChanged,signals,faults}; swap.inventory.json owns that row. Command registration: g7-swap-unit-check, g7-swap-save, g7-swap-check, g7-swap-clean, g7-swap-render, g7-swap-fresh, g7-swap-judge. Tests cover failed compile, schema mismatch, missing export, out-of-order and superseded results, atomic multi-world validation, preserved state/tick, changed next ticks, duplicate-effect suppression, reload coalescing/cancellation and the tool's save/restore.
+
+## Module: ege-domain-binding
+
+Repository: engine. Consumes: ege-script-body-type.
+
+Files: packages/game-engine/src/{rollback,zones}.ts and rollback, rollback-script, hotswap, zones and events tests.
+
+RollbackBinding.stepCodes(inputs:ArrayLike<number>) requires exactly playerCount dense codes, rejects count errors before stepping, clears captured input on success and runs the configured runner/engine once with tick/resimulation accounting.
+
+EngineDomainOptions.inputPlayers(spec) optionally maps spec.seats to -1 or unique valid world input indices; default behavior retains seat-index mapping. -1 consumes session capture without assigning an engine input. EngineDomainSim retains absolute domain tick and zone export/shadow/far/sleep metadata while delegating ordinary step/snapshot/restore/resimulation to the binding. Inbound shadows apply before the tick. Scratch/release behavior and the rollback protocol remain unchanged. Tests cover high sparse seat identities, script runners, restore/rebuild and muted event draining.
+
+## Module: ege-show-rules
+
+Repository: royal-fiesta. Consumes: ege-schema, ege-script-core, ege-seat-rules, ege-features-objective.
+
+Files: scripts/ege/show/{ledger,qualification,season,scheduler,teams,clock,publish,hub}.as.ts and apps/headless/test/{egeLedger,egeSeason,egeShowTransfer}.test.ts.
+
+Scheduled exports rf_show_ledger, rf_show_season, rf_show_clock, rf_show_publish and rf_show_hub implement G7.1-G7.3. Ledger/qualification, team decisions, selection/votes, points, playoff state and accepted cumulative messages live in snapshotted records; helpers operate within the script tick. Scheduler decodes cut bit 0 and banned predecessor (cut >>> 8)-1, so adjacency follows catalog map identity. Reserved finals remain single-candidate votes.
+
+Hub scripts convert human SDK inputs through s1OfEngine. Lobby bots steer toward wander targets using S1 offset axes, neutral within 0.5 m, without buttons. Tests cover scripted outcomes, ties/overtime, duplicate messages, restore/handoff, high seats and hub movement/input encoding.
+
+## Module: ege-show-bots
+
+Repository: royal-fiesta. Consumes: ege-schema, ege-character, ege-show-rules.
+
+Files: scripts/ege/bots/{brain,routes,behaviour,traversal}.as.ts, packages/game/src/ege/botData.ts and egeBotData/egeBots tests.
+
+rf_show_controls and rf_show_bots run before character pre. serializeBotData(course,behaviours) serializes validated authored navigation/behavior into RawEntity records; TypeScript does not evaluate brains or routes. Scripts implement route costs/ties, decision cadence, predicates/actions, traversal queries, skill/RNG and delayed reactions. Seat-owned initialization and queue state survive restore/transfer. s1OfEngine is shared with the hub; G7.1 specifies the S1/engine encoding boundary. Missing routes produce neutral control and malformed required data refuses.
+
+Current integration limitations: playable show scenes do not emit bot_seat or authored bot/navigation rows. In addition, traversal and behavior locate bot_route by scanning owner==seatEntity although routes are keyed by the live seat entity, and route planning can move memory.path_index backward. These limitations remain in the final source; isolated script tests do not establish end-to-end show navigation.
+
+## Module: ege-hub
+
+Repository: royal-fiesta. Consumes: ege-show-runtime, ege-show-page, ege-show-rules, hub-protocol, hub-world.
+
+Files: packages/game/src/ege/{hub,hubFlow}.ts, packages/game/test/egeHub.test.ts, apps/web/src/engineShow/scenarios/hub.ts, hub.inventory.json and apps/web/test/engineHubFlow.test.ts.
+
+createEngineHub(config,plaza,spawn,bots?) returns HubRuntime with tick,botCount,spawn,faults,step,state,botViews,respawn,onQueuePad,setEmote,emote,free and view():SceneReadView. The roster is local human room seat zero plus 0..8 lobby bots, independent of config.humans. show_hub supplies control/recovery. Respawn rebuilds on the loaded module while preserving monotonic tick; faults reports the module fault count.
+
+EngineHubFlow(hub,startShow) exposes start, frame, state, error and dispose. States are hub/loading/show/returning/failed. start settles with state/error; pending/failed preparation is not ready. The first frame after show done frees the completed show and restores hub.spawn once, preserving the final presentation frame. Disposal frees hub/show and late preparation results exactly once.
+
+Hub scenarios exercise local movement/emotes, S9 remote emotes and show-to-hub return through the page host. Their inventory contains engine-hub-walking-and-emotes.png and engine-show-returned-to-hub.png. HubFacts reports readiness/faults, local/bot movement, emotes, return count and spawn restoration. Tests cover movement, recovery, lobby wandering, resource release and pending/failed/cancelled flow preparation.
+
+## Module: ege-online
+
+Repository: royal-fiesta. Consumes: ege-show-runtime, ege-hub, ege-show-view, webrtc, relay-client, ege-show-page, net-match.
+
+Files: packages/game/src/ege/{online,admission,onlineState}.ts, packages/game/src/net/zoneRelayProtocol.ts, associated admission/state/online/round/podium/protocol tests, apps/web/src/engineShow/scenarios/online.ts, online.inventory.json and engineOnlineInventory.test.ts.
+
+parseEngineIdentity, requireEnginePeers and requireLegacyPeers enforce backend admission. ZoneQueuePayload optionally carries engine identity while retaining legacy validation. createEngineOnlineShow(config,{localPeer,roster,transport,measurements}) awaits factory preparation before constructing ZoneSession/RoundTransport and returns EngineShowRuntime with mode online. It reuses runtime lifecycle/clock/vote encoding helpers at deterministic boundaries, preserves confirmation and nullable recovery results, and disposes prepared/session resources on failure.
+
+onlineSeatMap exposes inputSlotOf,peerOfSeat,localSeats,localHumanSeats; onlineMeasurements copies peer measurements. EngineVoteBarrier exposes complete and ordered choices. registerEngineOnlineStats/engineOnlineStats expose desyncs,confirmedTick,peers,livePeers,spectator without fabricating ready state. Callers skip votes for eliminated seats or absent candidates.
+
+The online inventory has exactly one row: engine-online-late-client-round, seed 7, humans 2, default plan and twelve requirements specified in G7.7. The background-client-podium scenario and podium unit tests remain, but no inventory row requires podium, winner or effect facts. The page budget remains 270 seconds. Tests cover admission/preparation failures, sparse input mapping, session round behavior and inventory requirements; host completion is separate evidence.
+
+## Module: ege-game-switch
+
+Repository: royal-fiesta. Consumes: play-flow, ege-online, ege-hub, ege-show-page, scene-view, ege-show-view, ege-show-runtime.
+
+Files: apps/web/src/game/{main,showMode,showDirector,entry,engineBackend,engineProbe}.ts, client/play sound adapters, packages/game/src/audio/events.ts, packages/game/src/flow/endScreen.ts, apps/web/src/zone/zoneNetScene.ts and associated switch/sound/show/zone/probe tests.
+
+selectGameBackend selects engine only for engine=1; absent/0 selects legacy and other explicit values refuse. loadEngineBackend shares publication/authored loaders and exposes identity,authored,config,createHub,createShow,flowBackend. The existing shell handles engine start/hub/local/online/result/return with its menu/input/costume/audio services, without fallback after engine failure.
+
+engineShowPort adapts authoritative candidates, rounds, done, champion, alive, vote and round plan to ShowDirector's read-only ShowPort. ShowMode.engine uses EngineShowView, ZoneNetScene.present/observe, EngineSeatPresenter/farPenguinBridge and EngineShowEffects. Sound sampling accepts SceneReadView; confirmed engine effects remain the authoritative sink. endScreen accepts a rounds-bearing object.
+
+EngineShellProbe and installEngineProbe expose window.rfEngine.state(), signals() and play(). State extends EnginePageState with flow,lobbyId,lobbyMembers,visibility,online for host automation. Tests cover backend selection, preparation rejection, screen/read boundaries and legacy compatibility.
+
+## Module: ege-online-harness
+
+Repository: royal-fiesta. Consumes: ege-game-switch, ege-online.
+
+Files: tools/onlineChromes.mjs, tools/test/onlineChromes.test.ts and docs/engine-show.md.
+
+The existing launcher supports --engine, --late-client, --background-client and --until round-ended|show-ended alongside URL/server/client/browser options. --bots denotes total seats, so two-human acceptance uses --bots 60. URLSearchParams preserves existing query parameters. CDP waits use shell state/signals, delay the second launch until lobby readiness, exercise actual hidden-tab behavior and require terminal state rather than process survival.
+
+Round acceptance checks two humans/fifty-eight bots, confirmed completion and zero reported desyncs/faults. Missing/error/stalled transitions fail nonzero. Cleanup closes only owned processes on exit, signal or failure. Unit tests fake process/CDP boundaries. The host invocation uses --until round-ended against a locally served build; the online capture inventory contains only engine-online-late-client-round.png. Full background-podium capture is not a current inventory requirement.
